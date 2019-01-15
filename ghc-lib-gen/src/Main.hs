@@ -191,12 +191,14 @@ hsSourceDirs root =
 
 -- |'exeOtherExtensions' extracts a list of "other-extensions" from the GHC
 -- as an exe cabal file.
+exeOtherExtensions :: String -> IO [String]
 exeOtherExtensions root = do
   s <- readFile' $ root </> binCabal
   return $ filter
-             (\l -> not (null l || "--" `isPrefixOf` l))
+             (\l -> not (null l || "--" `isPrefixOf` l
+                             || "if flag" `isPrefixOf` l ))
              (nubOrd (harvest "other-extensions:"
-             (harvest "Other-Extensions:" [] s) s))
+                 (harvest "Other-Extensions:" [] s) s))
 
 -- |'exeOtherModules' extracts a list of "other-modules" from the GHC
 -- as an exe cabal file.
@@ -362,4 +364,3 @@ main = do
   genStackYaml root
   genPrerequisites root
   genCabal root
-  putStrLn "[Gen_ghc_lib_cabal] Done!"
