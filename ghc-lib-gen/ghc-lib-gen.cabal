@@ -1,0 +1,24 @@
+name:                ghc-lib-gen
+version:             0.1.0.0
+synopsis:            Cabal file generator for GHC as a library
+description:         Generate a cabal file for a subset of GHC for use as a library.
+homepage:            https://github.com/digital-asset/ghc-lib
+license:             BSD3
+x-license:           BSD-3-Clause OR Apache-2.0
+license-file:        LICENSE
+author:              Shayne Fletcher (shayne.fletcher@digitalasset.com)
+maintainer:          Shayne Fletcher (shayne.fletcher@digitalasset.com)
+copyright:           Digital Asset 2018-2019
+category:            Development
+build-type:          Simple
+extra-source-files:  ChangeLog.md
+cabal-version:       >=1.10
+
+executable ghc-lib-gen
+  main-is:             Main.hs
+  build-depends:       base >=4.11
+                     , process >=1.6
+                     , filepath >=1.4
+                     , extra >=1.6
+  hs-source-dirs:      src
+  default-language:    Haskell2010
