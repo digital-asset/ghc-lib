@@ -20,7 +20,7 @@ cabal = "ghc-lib.cabal"
 cabals :: [FilePath]
 cabals =
   [
-    "libraries/template-haskell/template-haskell.cabal"
+     "libraries/template-haskell/template-haskell.cabal"
    , "libraries/ghc-heap/ghc-heap.cabal"
    , "libraries/ghc-boot-th/ghc-boot-th.cabal"
    , "libraries/ghc-boot/ghc-boot.cabal"
@@ -196,7 +196,7 @@ exeOtherExtensions root = do
   s <- readFile' $ root </> binCabal
   return $ filter
              (\l -> not (null l || "--" `isPrefixOf` l
-                             || "if flag" `isPrefixOf` l ))
+                                || "if flag" `isPrefixOf` l ))
              (nubOrd (harvest "other-extensions:"
                  (harvest "Other-Extensions:" [] s) s))
 
@@ -231,7 +231,7 @@ genCabal root = do
       dat' = map (\x -> "  " ++ x ++ "\n") dataFiles
       ext' = map (\x -> "  " ++ x ++ "\n")
                 -- Tiny bit of monkey business here where we separate
-                -- data files genuine source files and add
+                -- data files from genuine source files and add
                 -- libHeapPrim.a as a source file.
                 ("ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits/libHeapPrim.a" :
                 (let fs = map (\f -> dataDir </> f) dataFiles in
@@ -244,7 +244,7 @@ genCabal root = do
           "cabal-version: 2.1" -- or cabal check complains about cmm-sources
         , "build-type: Simple"
         , "name: ghc-lib"
-        , "version: 1.1.0"
+        , "version: 0.1.0"
         , "license: BSD-3-Clause"
         , "license-file: LICENSE"
         , "category: Development"
@@ -269,7 +269,7 @@ genCabal root = do
         , "tested-with:GHC==8.4.3"
         , "source-repository head"
         , "    type: git"
-        , "    location: https://github.com/shayne-fletcher-da/ghc-in-ghci.git"
+        , "    location: git://git.haskell.org/ghc.git"
         , "Flag with-heap-prim"
         , "    Description: Link with HeapPrim.a."
         , "    Default: False"
