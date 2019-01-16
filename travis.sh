@@ -38,4 +38,5 @@ happy --version
 alex --version
 haddock --version
 
+cabal install extra
 runhaskell CI.hs
