@@ -12,8 +12,10 @@ environment:
     STACK_ROOT: "c:\\sr"
 
 test_script:
+# make sure stack.exe is on the PATH even when Hadrian changes directory
 - set PATH=C:\project;%PATH%
-- stack init ghc-lib-gen
+# match the Hadrian resolver, so we download less stuff
+- stack init ghc-lib-gen --resolver=lts-12.10
 - stack setup > nul
 - echo "" | stack --no-terminal build ghc-lib-gen
 - git clone git://git.haskell.org/ghc.git --recursive
