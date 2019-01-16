@@ -74,7 +74,7 @@ analyzeExpr flags (L loc expr) = do
     OpApp _ x y z -> do {
           analyzeExpr flags x
         ; analyzeExpr flags y
-        ; analyzeExpr flags z}
+        ; analyzeExpr flags z }
     _ -> return ()
 
 analyzeGrhs :: DynFlags -> Located (GRHS GhcPs (LHsExpr GhcPs)) -> IO ()
