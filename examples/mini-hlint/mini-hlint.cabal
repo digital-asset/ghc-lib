@@ -18,3 +18,4 @@ executable mini-hlint
   default-language:    Haskell2010
   default-extensions:  PackageImports
   ghc-options:         -Wno-missing-fields
+  hs-source-dirs:      src
