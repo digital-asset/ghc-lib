@@ -178,10 +178,10 @@ cmmSrcs root =
 hsSourceDirs :: String -> IO [String]
 hsSourceDirs root =
   let f file s =
-        let dir = takeDirectory file
+        let dir = map (\x -> if isPathSeparator x then '/' else x) $ takeDirectory file
             dir' = fromMaybe "" (stripPrefix (root ++ "/") dir)
               in dir' : map (\f ->
-                            fromMaybe "" (stripPrefix (root ++ "/") (dir </> f))
+                            fromMaybe "" (stripPrefix (root ++ "/") (dir ++ "/" ++ f))
                            ) fs
         where fs = filter
                 (\l -> not (null l || "--" `isPrefixOf` l))
