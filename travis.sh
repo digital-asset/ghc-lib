@@ -34,9 +34,6 @@ export PATH=$HOME/.cabal/bin:$PATH
 
 ghc --version
 cabal --version
-happy --version
-alex --version
-haddock --version
 
 cabal install extra
 runhaskell CI.hs
