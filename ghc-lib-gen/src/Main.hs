@@ -3,8 +3,10 @@
 {- Prep. for building GHC as a library. -}
 
 import System.Environment
-import System.Process
+import System.Info.Extra
+import System.Process.Extra
 import System.FilePath
+import System.Directory
 import System.IO.Extra
 import Control.Monad
 import Data.Maybe
@@ -334,26 +336,37 @@ genStackYaml root = do
 
 genPrerequisites :: String -> IO ()
 genPrerequisites root = do
-  let contents =
-       "(cd " ++ root </> "hadrian && " ++
-       (unlines [
-          "stack build --no-library-profiling && \\"
-        , "stack exec hadrian -- \\"
-        , (" --directory " ++ "\"" ++ root ++ "\" \\")
-        ,  " --configure \\"
-        ,  " --integer-simple\\"
-        ,  " --build-root=\"ghc-lib\" \\"
-        ])
+  -- FIXME: We want to use Cabal, but it has issues with Alex we have difficulty with
+  when False $
+    withCurrentDirectory root $
+      system_ $ unwords $
+        ["hadrian" </> "build.cabal." ++ (if isWindows then "bat" else "sh")
+        ,"--configure"
+        ,"--integer-simple"
+        ,"--build-root=ghc-lib"] ++
+          -- 'extraSrcFiles' intentionally doesn't contain
+          -- 'libHeapPrim.a'. It is produced in the follow up step below
+          -- (see also 'main' where it's added in to the "extra-sources"
+          -- as an addendum).
+        extraSrcFiles ++
+        ["ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits/HeapPrim.o"]
+
+  withCurrentDirectory (root </> "hadrian") $ do
+    system_ "stack build --no-library-profiling"
+    system_ $ unwords $
+      ["stack exec hadrian --"
+      ,"--directory=.."
+      ,"--configure"
+      ,"--integer-simple"
+      ,"--build-root=ghc-lib"] ++
        -- 'extraSrcFiles' intentionally doesn't contain
        -- 'libHeapPrim.a'. It is produced in the follow up step below
        -- (see also 'main' where it's added in to the "extra-sources"
        -- as an addendum).
-       ++ unlines (map (\l -> l ++ " \\") extraSrcFiles)
-       ++ unlines (["ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits/HeapPrim.o \\"
-        , ") && (cd " ++ (root </> "ghc-lib" </> "stage0" </> "libraries" </> "ghc-heap" </> "build" </> "cmm" </> "cbits") ++ " && ar -cr libHeapPrim.a HeapPrim.o)"
-        ])
-  putStrLn contents
-  callCommand contents
+      extraSrcFiles ++
+      ["ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits/HeapPrim.o"]
+  withCurrentDirectory (root </> "ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits") $
+    system_ "ar -cr libHeapPrim.a HeapPrim.o"
 
 -- Driver.
 
