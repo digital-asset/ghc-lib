@@ -8,4 +8,4 @@ matrix:
   - os: osx
 
 script:
-- ./travis.sh
+- sh travis.sh
