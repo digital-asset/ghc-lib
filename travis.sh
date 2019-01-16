@@ -22,7 +22,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
         sudo apt-get  --allow-unauthenticated update && sudo apt-get --allow-unauthenticated install ghc-$GHCVER cabal-install-2.4
     }
     retry update_install
-    export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/bin$PATH
+    export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/2.4/bin:$PATH
     retry cabal update
 else
     brew update
