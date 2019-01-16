@@ -1,0 +1,2 @@
+:set -fwarn-unused-binds -fwarn-unused-imports -fwarn-orphans
+:load ghc-lib-gen/src/Main.hs
