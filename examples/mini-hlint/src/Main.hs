@@ -77,13 +77,13 @@ analyzeExpr flags (L loc expr) = do
         ; analyzeExpr flags z}
     _ -> return ()
 
-analyzeGHRs :: DynFlags -> Located (GRHS GhcPs (LHsExpr GhcPs)) -> IO ()
-analyzeGHRs flags (L _ (GRHS _ _ expr)) = analyzeExpr flags expr
-analyzeGHRs _ _ = return ()
+analyzeGrhs :: DynFlags -> Located (GRHS GhcPs (LHsExpr GhcPs)) -> IO ()
+analyzeGrhs flags (L _ (GRHS _ _ expr)) = analyzeExpr flags expr
+analyzeGrhs _ _ = return ()
 
 analyzeMatch :: DynFlags -> Located (Match GhcPs (LHsExpr GhcPs)) -> IO ()
 analyzeMatch flags (L _ (Match {m_grhss=(GRHSs {grhssGRHSs=grhss})})) = do
-  forM_ grhss (analyzeGHRs flags)
+  forM_ grhss (analyzeGrhs flags)
 analyzeMatch _ _ = return ()
 
 analyzeDecl :: DynFlags -> Located (HsDecl GhcPs) -> IO ()
