@@ -19,10 +19,10 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     retry sudo add-apt-repository -y ppa:hvr/ghc
     # Sometimes apt-get update fails silently, but then apt-get install fails loudly, so retry both
     update_install(){
-        sudo apt-get  --allow-unauthenticated update && sudo apt-get --allow-unauthenticated install ghc-$GHCVER cabal-install-2.2 happy-1.19.4 alex-3.1.3
+        sudo apt-get  --allow-unauthenticated update && sudo apt-get --allow-unauthenticated install ghc-$GHCVER cabal-install-2.4
     }
     retry update_install
-    export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/2.2/bin:/opt/happy/1.19.4/bin:/opt/alex/3.1.3/bin:$PATH
+    export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/2.4/bin$PATH
     retry cabal update
 else
     brew update
