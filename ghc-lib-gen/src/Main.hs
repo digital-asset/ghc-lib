@@ -178,10 +178,10 @@ cmmSrcs root =
 hsSourceDirs :: String -> IO [String]
 hsSourceDirs root =
   let f file s =
-        let dir = takeDirectory file
+        let dir = map (\x -> if isPathSeparator x then '/' else x) $ takeDirectory file
             dir' = fromMaybe "" (stripPrefix (root ++ "/") dir)
               in dir' : map (\f ->
-                            fromMaybe "" (stripPrefix (root ++ "/") (dir </> f))
+                            fromMaybe "" (stripPrefix (root ++ "/") (dir ++ "/" ++ f))
                            ) fs
         where fs = filter
                 (\l -> not (null l || "--" `isPrefixOf` l))
@@ -289,10 +289,14 @@ genCabal root = do
         , "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "    cc-options: -DTHREADED_RTS"
         , "    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
+        , "    if !os(windows)"
+        , "        build-depends: unix"
+        , "    else"
+        , "        build-depends: Win32"
         , "    build-depends:"
         , "      ghc-prim"
         , "      , base == 4.*, containers, bytestring, binary"
-        , "      , unix, filepath, directory, array, deepseq"
+        , "      , filepath, directory, array, deepseq"
         , "      , pretty, time, transformers, process, haskeline, hpc"
         , "    if flag(with-heap-prim)"
         , "        extra-lib-dirs: ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits"
@@ -311,10 +315,14 @@ genCabal root = do
        ++ (unlines [
           "executable ghc-lib"
         , "    default-language:   Haskell2010"
+        , "    if !os(windows)"
+        , "        build-depends: unix"
+        , "    else"
+        , "        build-depends: Win32"
         , "    build-depends:"
         , "        base == 4.*, array, bytestring, directory, process, filepath,"
         , "        containers, deepseq, ghc-prim, haskeline, time, transformers,"
-        , "        unix, ghc-lib"
+        , "        ghc-lib"
         , "    hs-source-dirs: ghc"
         , "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "    cc-options: -DTHREADED_RTS"
