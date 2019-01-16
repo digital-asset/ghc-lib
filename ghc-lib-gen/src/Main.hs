@@ -336,16 +336,33 @@ genStackYaml root = do
 
 genPrerequisites :: String -> IO ()
 genPrerequisites root = do
-  withCurrentDirectory root $
+  -- FIXME: We want to use Cabal, but it has issues with Alex we have difficulty with
+  when False $
+    withCurrentDirectory root $
+      system_ $ unwords $
+        ["hadrian" </> "build.cabal." ++ (if isWindows then "bat" else "sh")
+        ,"--configure"
+        ,"--integer-simple"
+        ,"--build-root=ghc-lib"] ++
+          -- 'extraSrcFiles' intentionally doesn't contain
+          -- 'libHeapPrim.a'. It is produced in the follow up step below
+          -- (see also 'main' where it's added in to the "extra-sources"
+          -- as an addendum).
+        extraSrcFiles ++
+        ["ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits/HeapPrim.o"]
+
+  withCurrentDirectory (root </> "hadrian") $ do
+    system_ "stack build --no-library-profiling"
     system_ $ unwords $
-      ["hadrian" </> "build.cabal." ++ (if isWindows then "bat" else "sh")
+      ["stack exec hadrian --"
+      ,"--directory=.."
       ,"--configure"
       ,"--integer-simple"
       ,"--build-root=ghc-lib"] ++
-        -- 'extraSrcFiles' intentionally doesn't contain
-        -- 'libHeapPrim.a'. It is produced in the follow up step below
-        -- (see also 'main' where it's added in to the "extra-sources"
-        -- as an addendum).
+       -- 'extraSrcFiles' intentionally doesn't contain
+       -- 'libHeapPrim.a'. It is produced in the follow up step below
+       -- (see also 'main' where it's added in to the "extra-sources"
+       -- as an addendum).
       extraSrcFiles ++
       ["ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits/HeapPrim.o"]
   withCurrentDirectory (root </> "ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits") $
