@@ -97,6 +97,7 @@ main = do
   s <- readFile' filename
   let flags = defaultDynFlags fakeSettings fakeLlvmConfig
   case parse filename flags s of
-    POk _ (L _ (HsModule {hsmodDecls=decls})) -> forM_ decls (analyzeDecl flags)
+    POk _ (L _ (HsModule {hsmodDecls=decls})) ->
+      forM_ decls (analyzeDecl flags)
     PFailed _ loc err ->
       putStrLn (showSDoc flags (pprLocErrMsg (mkPlainErrMsg flags loc err)))
