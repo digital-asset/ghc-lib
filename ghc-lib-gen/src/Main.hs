@@ -3,6 +3,7 @@
 {- Prep. for building GHC as a library. -}
 
 import System.Environment
+import System.Info.Extra
 import System.Process.Extra
 import System.FilePath
 import System.Directory
@@ -335,18 +336,16 @@ genStackYaml root = do
 
 genPrerequisites :: String -> IO ()
 genPrerequisites root = do
-  withCurrentDirectory (root </> "hadrian") $ do
-    system_ "stack build --no-library-profiling"
+  withCurrentDirectory root $
     system_ $ unwords $
-      ["stack exec hadrian --"
-      ,"--directory=.."
+      ["hadrian" </> "build.cabal." ++ (if isWindows then "bat" else "sh")
       ,"--configure"
       ,"--integer-simple"
       ,"--build-root=ghc-lib"] ++
-       -- 'extraSrcFiles' intentionally doesn't contain
-       -- 'libHeapPrim.a'. It is produced in the follow up step below
-       -- (see also 'main' where it's added in to the "extra-sources"
-       -- as an addendum).
+        -- 'extraSrcFiles' intentionally doesn't contain
+        -- 'libHeapPrim.a'. It is produced in the follow up step below
+        -- (see also 'main' where it's added in to the "extra-sources"
+        -- as an addendum).
       extraSrcFiles ++
       ["ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits/HeapPrim.o"]
   withCurrentDirectory (root </> "ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits") $
