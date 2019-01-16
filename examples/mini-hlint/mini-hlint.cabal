@@ -14,8 +14,5 @@ executable mini-hlint
   build-depends:       base >=4.11
                      , extra
                      , ghc-lib
-                     , time
   default-language:    Haskell2010
-  default-extensions:  PackageImports
-  ghc-options:         -Wno-missing-fields
   hs-source-dirs:      src

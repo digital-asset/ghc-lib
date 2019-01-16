@@ -1,4 +1,7 @@
-module Main where
+{-# LANGUAGE PackageImports #-}
+{-# OPTIONS_GHC -Wno-missing-fields #-}
+
+module Main (main) where
 
 import "ghc-lib" GHC
 import "ghc-lib" Config
@@ -19,7 +22,6 @@ import SrcLoc
 import System.Environment
 import System.IO.Extra
 import Control.Monad
-import FastString
 
 fakeSettings :: Settings
 fakeSettings = Settings
