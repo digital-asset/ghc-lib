@@ -54,7 +54,7 @@ idNot = mkVarUnqual (fsLit "not")
 isNegated :: HsExpr GhcPs -> Bool
 isNegated (HsApp _ ((L _ (HsVar _ (L _ id)))) _) = id == idNot
 isNegated (HsPar _ (L _ e)) = isNegated e
-isNegated _ = True
+isNegated _ = False
 
 analyzeExpr :: DynFlags -> Located (HsExpr GhcPs) -> IO ()
 analyzeExpr flags (L loc expr) = do
