@@ -24,5 +24,5 @@ test_script:
 # stack init doesn't work because of https://github.com/commercialhaskell/stack/issues/4508
 - echo - examples/mini-hlint >> stack.yaml
 - echo - ghc >> stack.yaml
-- stack build --flag ghc-lib:with-heap-prim --flag ghc-lib:-build-exe
-- stack exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs
+# - stack build --flag ghc-lib:with-heap-prim --flag ghc-lib:-build-exe
+# - stack exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs
