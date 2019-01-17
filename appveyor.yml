@@ -23,6 +23,7 @@ test_script:
 # match the Hadrian resolver, so we download less stuff
 - stack init ghc-lib-gen --resolver=lts-12.10
 - stack setup > nul
+- stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm
 - echo "" | stack --no-terminal build ghc-lib-gen
 - git clone git://git.haskell.org/ghc.git --recursive
 - stack exec -- ghc-lib-gen ghc
