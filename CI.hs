@@ -11,4 +11,4 @@ main = do
         system_ "cabal build lib:ghc-lib"
         system_ "cabal build exe:ghc-lib"
         system_ "cabal install --verbose=1"
-    -- withCurrentDirectory "examples/mini-hlint" $ system_ "cabal run mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
+    withCurrentDirectory "examples/mini-hlint" $ system_ "cabal run mini-hlint test/MiniHlintTest.hs"
