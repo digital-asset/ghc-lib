@@ -11,5 +11,5 @@ main = do
     withCurrentDirectory "ghc" $ do
         system_ "cabal configure --disable-library-profiling --disable-optimisation"
         system_ "cabal build lib:ghc-lib"
-        system_ "cabal install --verobse=3"
+        system_ "cabal install --verbose=3"
     -- withCurrentDirectory "examples/mini-hlint" $ system_ "cabal run mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
