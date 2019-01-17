@@ -22,7 +22,7 @@ test_script:
 - git clone git://git.haskell.org/ghc.git --recursive
 - stack exec -- ghc-lib-gen ghc
 - echo - examples/mini-hlint >> stack.yaml
-- echo - examples/ghc >> stack.yaml
+- echo - ghc >> stack.yaml
 # doesn't work with Stack for some reason
 # - stack init ghc examples/mini-hlint --resolver=lts-12.10 --force --ignore-subdirs
 - stack build
