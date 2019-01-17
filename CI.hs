@@ -1,7 +1,5 @@
-
 import System.Directory
 import System.Process.Extra
-
 
 main :: IO ()
 main = do
@@ -10,7 +8,7 @@ main = do
     withCurrentDirectory "ghc-lib-gen" $ system_ "cabal run ../ghc"
     withCurrentDirectory "ghc" $ do
         system_ "cabal configure --disable-library-profiling --disable-optimisation"
-        -- system_ "cabal build lib:ghc-lib"
-        system_ "cabal build"
-        system_ "cabal install --verbose=3"
+        system_ "cabal build lib:ghc-lib"
+        system_ "cabal build exe:ghc-lib"
+        system_ "cabal install --verbose=1"
     -- withCurrentDirectory "examples/mini-hlint" $ system_ "cabal run mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
