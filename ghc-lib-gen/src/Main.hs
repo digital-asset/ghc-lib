@@ -301,6 +301,7 @@ genCabal root = do
         , "    if flag(with-heap-prim)"
         , "        extra-lib-dirs: ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits"
         , "        extra-libraries: HeapPrim"
+        , "    build-tools: alex >= 3.1 , happy >= 1.19.4"
         ])
        ++ "    other-extensions:\n"   ++ (concat oxt')
        ++ "    c-sources:\n"          ++ (concat csf')
