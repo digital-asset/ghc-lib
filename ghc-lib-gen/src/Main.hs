@@ -275,6 +275,9 @@ genCabal root = do
         , "Flag with-heap-prim"
         , "    Description: Link with HeapPrim.a."
         , "    Default: False"
+        , "Flag build-exe"
+        , "    Description: Build the executable."
+        , "    Default: True"
 
         -- library
 
@@ -324,6 +327,7 @@ genCabal root = do
         , "        base == 4.*, array, bytestring, directory, process, filepath,"
         , "        containers, deepseq, ghc-prim, haskeline, time, transformers,"
         , "        ghc-lib"
+        , "    buildable: flag(build-exe)"
         , "    hs-source-dirs: ghc"
         , "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "    cc-options: -DTHREADED_RTS"
