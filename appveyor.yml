@@ -13,7 +13,9 @@ environment:
 
 test_script:
 # make sure stack.exe is on the PATH even when Hadrian changes directory
-- set PATH=C:\project;%PATH%
+- set PATH=C:\project;C:\Python37-x64;%PATH%
+- python --version
+- python3 --version
 # match the Hadrian resolver, so we download less stuff
 - stack init ghc-lib-gen --resolver=lts-12.10
 - stack setup > nul
