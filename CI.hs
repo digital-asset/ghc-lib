@@ -7,8 +7,7 @@ main = do
     system_ "curl -sSL https://get.haskellstack.org/ | sh" -- we'd like to use Cabal
     withCurrentDirectory "ghc-lib-gen" $ system_ "cabal run ../ghc"
     withCurrentDirectory "ghc" $ do
-        system_ "cabal configure --disable-library-profiling --disable-optimisation"
-        system_ "cabal build lib:ghc-lib"
-        system_ "cabal build exe:ghc-lib"
+        system_ "cabal configure -fwith-heap-prim --disable-library-profiling --disable-optimisation"
+        system_ "cabal build "
         system_ "cabal install --verbose=1"
     withCurrentDirectory "examples/mini-hlint" $ system_ "cabal run mini-hlint test/MiniHlintTest.hs"
