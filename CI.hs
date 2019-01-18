@@ -9,6 +9,6 @@ main = do
     withCurrentDirectory "ghc" $ do
         system_ "cabal configure"
         system_ "cabal build"
-        system_ "cabal install --verbose=3"
+        system_ "cabal install"
     withCurrentDirectory "examples/mini-hlint" $
-        system_ "cabal run mini-hlint test/MiniHlintTest.hs"
+        system_ "cabal test/MiniHlintTest.hs"
