@@ -144,7 +144,7 @@ otherExtensions root =
 cSrcs :: String -> IO [String]
 cSrcs root =
   let f file s =
-        let dir = takeDirectory file
+        let dir = map (\x -> if isPathSeparator x then '/' else x) $ takeDirectory file
               in map (\f ->
                          fromMaybe "" (stripPrefix (root ++ "/") (dir </> f))
                      ) fs
@@ -161,7 +161,7 @@ cSrcs root =
 cmmSrcs :: String -> IO [String]
 cmmSrcs root =
   let f file s =
-        let dir = takeDirectory file
+        let dir = map (\x -> if isPathSeparator x then '/' else x) $ takeDirectory file
               in map (\f ->
                          fromMaybe "" (stripPrefix (root ++ "/") (dir </> f))
                  ) fs
