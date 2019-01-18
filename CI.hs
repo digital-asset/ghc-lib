@@ -11,4 +11,4 @@ main = do
         system_ "cabal build"
         system_ "cabal install"
     withCurrentDirectory "examples/mini-hlint" $
-        system_ "cabal test/MiniHlintTest.hs"
+        system_ "cabal mini-hlint test/MiniHlintTest.hs"
