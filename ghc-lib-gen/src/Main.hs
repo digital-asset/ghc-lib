@@ -355,9 +355,6 @@ genCabal root = do
         , "        ghc-lib"
         , "    if !flag(build-exe)"
         , "        buildable: False"
-        , "    if flag(with-heap-prim)"
-        , "        extra-lib-dirs: ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits"
-        , "        extra-libraries: HeapPrim"
         , "    hs-source-dirs: ghc"
         , "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "    cc-options: -DTHREADED_RTS"
@@ -365,7 +362,6 @@ genCabal root = do
         ])
        ++ "    other-modules:\n" ++ (concat eom')
        ++ "    other-extensions:\n" ++ (concat eoe')
-       ++ "    c-sources:\n"          ++ (concat csf')
        ++ (unlines [
           "    default-extensions: NoImplicitPrelude"
         , "    main-is: Main.hs"
