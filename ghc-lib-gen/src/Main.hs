@@ -86,6 +86,31 @@ dataFiles =
   , "platformConstants"
   ]
 
+-- |'appPatchHeapClosures' stubs out a couple of definitions on a
+-- particular file in the ghc-heap library.
+appPatchHeapClosures :: FilePath -> IO ()
+appPatchHeapClosures root =
+  do
+    s <- readFile' src
+    writeFile src $ fromMaybe s ((fixaToWord >=> fixReallyUnsafePtrEqualityUpToTag) s)
+  where
+      src = root </> "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
+      aToWord ="foreign import prim \"aToWordzh\" aToWord# :: Any -> Word#"
+      reallyUnsafePtrEqualityUpToTag="foreign import prim \"reallyUnsafePtrEqualityUpToTag\"\n    reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#"
+
+      fixaToWord s =
+        case stripInfix aToWord s of
+          Nothing -> Nothing
+          Just (b, rest) ->
+            Just (b ++ "aToWord# :: Any -> Word#\naToWord# _ = 0##\n" ++ rest)
+
+      fixReallyUnsafePtrEqualityUpToTag s =
+        case stripInfix reallyUnsafePtrEqualityUpToTag s of
+          Nothing -> Nothing
+          Just (b, rest) ->
+            Just (b
+                  ++ "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n" ++ rest)
+
 -- Functions for generating files.
 
 -- |'harvest' finds all entries for a given section in the text of a
@@ -190,6 +215,7 @@ hsSourceDirs root =
   in do
        files <- withCabals f root
        return $ ("ghc-lib/stage1/compiler/build") : files
+
 
 -- |'exeOtherExtensions' extracts a list of "other-extensions" from the GHC
 -- as an exe cabal file.
@@ -388,6 +414,7 @@ genPrerequisites root = do
 main :: IO ()
 main = do
   [root] <- getArgs
+  appPatchHeapClosures root
   genStackYaml root
   genPrerequisites root
   genCabal root
