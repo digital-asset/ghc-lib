@@ -9,5 +9,5 @@ main = do
     withCurrentDirectory "ghc" $ do
         system_ "cabal configure --disable-library-profiling --disable-optimisation"
         system_ "cabal build"
-    --     -- system_ "cabal install --verbose=1"
+        system_ "cabal install"
     -- withCurrentDirectory "examples/mini-hlint" $ system_ "cabal run mini-hlint test/MiniHlintTest.hs"
