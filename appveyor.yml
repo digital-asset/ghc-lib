@@ -28,6 +28,6 @@ test_script:
 - echo - examples/mini-hlint >> stack.yaml
 - echo - ghc >> stack.yaml
 # Build ghc-lib and exec tests
-- stack build --no-terminal --interleaved-output --cabal-verbose --ghc-options="-v"
-- stack exec --no-terminal --interleaved-output --cabal-verbose --ghc-options="-v" -- ghc-lib --version
-- stack exec --no-terminal --interleaved-output --cabal-verbose --ghc-options="-v" -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs
+- stack build --no-terminal --interleaved-output
+- stack exec --no-terminal --interleaved-output -- ghc-lib --version
+- stack exec --no-terminal --interleaved-output -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs
