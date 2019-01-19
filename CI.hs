@@ -10,5 +10,7 @@ main = do
         system_ "cabal configure"
         system_ "cabal build"
         system_ "cabal install"
+    withCurrentDirectory "ghc" $
+        system_ "cabal run -- --version"
     withCurrentDirectory "examples/mini-hlint" $
         system_ "cabal run test/MiniHlintTest.hs"

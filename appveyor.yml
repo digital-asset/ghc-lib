@@ -27,6 +27,7 @@ test_script:
 # Set up stack configs for ghc -lib and mini-hlint
 - echo - examples/mini-hlint >> stack.yaml
 - echo - ghc >> stack.yaml
-# Build ghc-lib and exec mini-hlint
+# Build ghc-lib and exec tests
 - stack build
+- stack exec -- ghc-lib --version
 - stack exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs
