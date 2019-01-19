@@ -19,7 +19,7 @@ test_script:
 - stack setup > nul
 - stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm
 # Build ghc-lib-gen
-stack --no-terminal build ghc-lib-gen
+- stack --no-terminal build ghc-lib-gen
 # Clone ghc
 - git clone git://git.haskell.org/ghc.git --recursive
 #  Exec ghc-lib-gen on ghc
