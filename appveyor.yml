@@ -30,5 +30,5 @@ test_script:
 - echo - ghc >> stack.yaml
 # Build ghc-lib and exec tests
 - stack build --no-terminal --interleaved-output
-- stack exec --no-terminal --interleaved-output -- ghc-lib --version
-- stack exec --no-terminal --interleaved-output -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs
+- stack exec --no-terminal -- ghc-lib --version
+- stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs
