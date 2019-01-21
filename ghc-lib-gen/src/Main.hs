@@ -91,6 +91,16 @@ appPatchHeapClosures root = do
 
 -- Functions for generating files.
 
+-- | Given a file, produce the key/value pairs
+parseCabal :: String -> (String -> [String])
+parseCabal src = \x -> concatMap snd $ filter ((==) x . fst) fields
+    where
+        fields = repeatedly f $ wordsBy (\x -> isSpace x || x == ',') $ unlines $ filter (not . isIf) . map trimComment $ lines src
+        isIf x = "if " `isPrefixOf` trim x
+        trimComment x = maybe x fst $ stripInfix "--" x
+        f (x:xs) = let (a,b) = break (":" `isSuffixOf`) xs in ((lower x,a),b)
+
+
 -- |'harvest' finds all entries for a given section in the text of a
 -- cabal file.
 harvest :: String -> String -> [String]
@@ -194,19 +204,13 @@ hsSourceDirs root =
 exeOtherExtensions :: String -> IO [String]
 exeOtherExtensions root = do
   s <- readFile' $ root </> cabalFileBinary
-  return $ filter
-             (\l -> not (null l || "--" `isPrefixOf` l
-                                || "if flag" `isPrefixOf` l ))
-             (nubOrd (harvest "other-extensions:" s ++
-                 harvest "Other-Extensions:" s))
+  return $ parseCabal s "other-extensions:"
 
 -- |'exeOtherModules' extracts a list of "other-modules" from the GHC
 -- as an exe cabal file.
 exeOtherModules root = do
   s <- readFile' $ root </> cabalFileBinary
-  return $ filter
-             (\l -> not (null l || "--" `isPrefixOf` l))
-             (nubOrd $ harvest "other-modules:" s ++ harvest "Other-Modules:" s)
+  return $ parseCabal s "other-modules:"
 
 -- |'genCabal' produces a cabal file for ghc with supporting
 -- libraries.
