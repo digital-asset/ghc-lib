@@ -4,6 +4,7 @@
 
 `ghc-lib` is useful when you require the services of a Haskell compiler at runtime. Some example applications:
   - quick feedback loops using `ghci` when hacking on GHC;
+  - Haskell IDEs;
   - static analysis tools (like (HLint)[https://github.com/ndmitchell/hlint] for example).
 
 # Building
