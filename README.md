@@ -11,7 +11,7 @@
 
 # Build and install
 
-To build and install `ghc-lib` you'll need clones of this repository and the [GHC repository](https://git.haskell.org/ghc.git):
+To build and install `ghc-lib` you'll need clones of this repository and the [GHC repository](https://git.haskell.org/ghc.git)(with the git option `--recursive`):
 ```
   cd <path-to-ghc-lib>/ghc-lib-gen
   cabal run <path-to-ghc>
