@@ -9,9 +9,9 @@
   - Haskell IDEs;
   - static analysis tools (like [HLint](https://github.com/ndmitchell/hlint) for example).
 
-# Building
+# Build and install
 
-To build `ghc-lib` you'll need clones of this repository and the [GHC repository](https://git.haskell.org/ghc.git):
+To build and install `ghc-lib` you'll need clones of this repository and the [GHC repository](https://git.haskell.org/ghc.git):
 ```
   cd <path-to-ghc-lib>/ghc-lib-gen
   cabal run <path-to-ghc>
