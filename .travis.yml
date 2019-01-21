@@ -1,12 +1,13 @@
 sudo: required
 
-matrix:
-  include:
-#  - env: GHCVER=8.4.4
-# temporary - let's only debug on one CI machine
-  - env: GHCVER=8.6.3
-#  - env: GHCVER=head
-#  - os: osx
+os:
+- linux
+# - osx
+
 
 script:
-- sh travis.sh
+- curl -sSL https://get.haskellstack.org/ | sh
+- stack init ghc-lib-gen --resolver=lts-12.10
+- stack setup > nul
+- stack --no-terminal build ghc-lib-gen
+- stack exec runhaskell CI.hs
