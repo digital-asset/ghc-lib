@@ -16,6 +16,6 @@ To build and install `ghc-lib` you'll need clones of this repository and the [GH
   cd <path-to-ghc-lib>/ghc-lib-gen
   cabal run <path-to-ghc>
   cd <path-to-ghc>
-  cabal configure && cabal build && cabal install
+  cabal cabal install
 ```
 where `<path-to-ghc-lib>` and `<path-to-ghc>` are paths to the `ghc-lib` and `ghc` clones respectively.
