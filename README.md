@@ -2,7 +2,7 @@
 
 `ghc-lib` is for embedding GHC as a library in your own programs.
 
-`ghc-lib` contains that part of a GHC distribution implementing the compiler pipeline. The compiler version used to build `ghc-lib` may differ from the version of the GHC sources involved. For example, you might build HEAD sources using 8.6.3.
+`ghc-lib` contains that part of a GHC distribution implementing the compiler pipeline. The compiler version used for building may differ from the version of the GHC sources involved. For example, you might build HEAD sources using 8.6.3.
 
 `ghc-lib` is useful when you require the services of a Haskell compiler at runtime. Some example applications:
   - quick feedback loops using `ghci` when hacking on GHC itself;
