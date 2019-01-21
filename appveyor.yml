@@ -2,10 +2,6 @@ build: off
 cache:
 - "c:\\sr -> appveyor.yml"
 
-before_test:
-- curl -ostack.zip -L --insecure http://www.stackage.org/stack/windows-x86_64
-- 7z x stack.zip stack.exe
-
 clone_folder: "c:\\project"
 environment:
   global:
@@ -13,7 +9,10 @@ environment:
 
 test_script:
 # Make sure stack.exe is on the PATH even when Hadrian changes directory
+- curl -ostack.zip -L --insecure http://www.stackage.org/stack/windows-x86_64
+- 7z x stack.zip stack.exe
 - set PATH=C:\project;%PATH%
+
 # Match the Hadrian resolver, so we download less stuff
 - stack init ghc-lib-gen --resolver=lts-12.10
 - stack setup > nul
