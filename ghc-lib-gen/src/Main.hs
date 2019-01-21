@@ -138,40 +138,41 @@ modules :: String -> String -> String -> IO [String]
 modules prim alt =
   withCabals (\_ s -> nubOrd (harvest prim (harvest alt [] s) s))
 
+
 -- |'otherExtensions' extracts a list of "other-extensions" from the
 -- set of cabal files (playing a bit fast and loose here to be honest).
 otherExtensions :: String -> IO [String]
-otherExtensions root =
-  let f file s =
-        filter
-          (\l -> not (null l || "--" `isPrefixOf` l
-                             || "if flag" `isPrefixOf` l ))
-            (harvest "other-extensions:"
-            (harvest "Other-Extensions:" [] s) s)
-  in withCabals' f root  where
-         withCabals' f root =
-             foldM fun [] (map (root </>)
-               -- This particular file has ',' and its extensions are
-               -- covered elsewhere.
-               (delete "libraries/ghc-boot/ghc-boot.cabal" cabalFileLibraries)) where
-           fun acc c = do
+otherExtensions root = foldM fun [] (map (root </>)
+      -- This particular file has ',' and its extensions are
+      -- covered elsewhere.
+      (delete "libraries/ghc-boot/ghc-boot.cabal" cabalFileLibraries))
+    where
+        fun acc c = do
                  s <- readFile' c
                  return (nubOrd (f c s ++ acc))
+
+        f file s =
+          filter
+            (\l -> not (null l || "--" `isPrefixOf` l
+                              || "if flag" `isPrefixOf` l ))
+              (harvest "other-extensions:"
+              (harvest "Other-Extensions:" [] s) s)
+
 
 -- |'cSrcs' extracts a list of C source files (i.e. "c-sources") from
 -- the set of cabal files.
 cSrcs :: String -> IO [String]
-cSrcs root =
-  let f file s =
-        let dir = map (\x -> if isPathSeparator x then '/' else x) $ takeDirectory file
-              in map (\f ->
-                         fromMaybe "" (stripPrefix (root ++ "/") (dir </> f))
-                     ) fs
-        where fs = filter
-                (\l -> not (null l || "--" `isPrefixOf` l))
-                (nubOrd (harvest "c-sources:"
-                             (harvest "C-Sources:" [] s) s))
-  in withCabals f root
+cSrcs root = withCabals f root
+    where
+        f file s =
+          let dir = map (\x -> if isPathSeparator x then '/' else x) $ takeDirectory file
+                in map (\f ->
+                          fromMaybe "" (stripPrefix (root ++ "/") (dir </> f))
+                      ) fs
+            where fs = filter
+                    (\l -> not (null l || "--" `isPrefixOf` l))
+                    (nubOrd (harvest "c-sources:"
+                                (harvest "C-Sources:" [] s) s))
 
 -- |'cmmSrcs' extracts a list of C-- source files (i.e. "cmm-sources")
 -- from the set of cabal files.
