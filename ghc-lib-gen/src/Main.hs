@@ -122,7 +122,7 @@ harvest tag acc s =
           let ms =
                 map
                 (dropWhile isSpace)
-                (takeWhile (\s -> not (':' `elem` s)) ls) in
+                (takeWhile (':' `notElem`) ls) in
             harvest tag (acc ++ ms) s in
     case stripInfix tag s of
       Nothing -> acc
@@ -135,13 +135,13 @@ withCabals f root =
   foldM fun [] (map (root </>) cabals) where
   fun acc c = do
       s <- readFile' c
-      return ((f c s) ++ acc)
+      return (f c s ++ acc)
 
 -- |'modules' extracts a list of modules (e.g. "exposed-modules") from
 -- the set of cabal files.
 modules :: String -> String -> String -> IO [String]
-modules prim alt root =
-  withCabals (\_ s -> nubOrd (harvest prim (harvest alt [] s) s)) root
+modules prim alt =
+  withCabals (\_ s -> nubOrd (harvest prim (harvest alt [] s) s))
 
 -- |'otherExtensions' extracts a list of "other-extensions" from the
 -- set of cabal files (playing a bit fast and loose here to be honest).
@@ -153,8 +153,7 @@ otherExtensions root =
                              || "if flag" `isPrefixOf` l ))
             (harvest "other-extensions:"
             (harvest "Other-Extensions:" [] s) s)
-  in do
-       withCabals' f root  where
+  in withCabals' f root  where
          withCabals' f root =
              foldM fun [] (map (root </>)
                -- This particular file has ',' and its extensions are
@@ -162,7 +161,7 @@ otherExtensions root =
                (delete "libraries/ghc-boot/ghc-boot.cabal" cabals)) where
            fun acc c = do
                  s <- readFile' c
-                 return (nubOrd ((f c s) ++ acc))
+                 return (nubOrd (f c s ++ acc))
 
 -- |'cSrcs' extracts a list of C source files (i.e. "c-sources") from
 -- the set of cabal files.
@@ -177,9 +176,7 @@ cSrcs root =
                 (\l -> not (null l || "--" `isPrefixOf` l))
                 (nubOrd (harvest "c-sources:"
                              (harvest "C-Sources:" [] s) s))
-  in do
-       files <- withCabals f root
-       return $ files
+  in withCabals f root
 
 -- |'cmmSrcs' extracts a list of C-- source files (i.e. "cmm-sources")
 -- from the set of cabal files.
@@ -194,9 +191,7 @@ cmmSrcs root =
                 (\l -> not (null l || "--" `isPrefixOf` l))
                 (nubOrd (harvest "cmm-sources:"
                              (harvest "Cmm-Sources:" [] s) s))
-  in do
-       files <- withCabals f root
-       return $ files
+  in withCabals f root
 
 -- |'hsSourceDirs' extracts a list of source directories from the set
 -- of cabal files.
@@ -214,7 +209,7 @@ hsSourceDirs root =
                              (harvest "Hs-Source-Dirs:" [] s) s))
   in do
        files <- withCabals f root
-       return $ ("ghc-lib/stage1/compiler/build") : files
+       return $ "ghc-lib/stage1/compiler/build" : files
 
 
 -- |'exeOtherExtensions' extracts a list of "other-extensions" from the GHC
@@ -261,9 +256,9 @@ genCabal root = do
                 -- Tiny bit of monkey business here where we separate
                 -- data files from genuine source files.
                 (let fs = map (\f -> dataDir </> f) dataFiles in
-                            foldl (\acc f -> delete f acc) extraSrcFiles fs)
+                            foldl (flip delete) extraSrcFiles fs)
   let contents =
-       (unlines [
+       unlines [
 
           -- header
 
@@ -282,8 +277,8 @@ genCabal root = do
         , "homepage: XXX"
         , "bug-reports: XXX"
         , "data-dir: " ++ dataDir
-        , "data-files:\n" ++ (concat dat')
-        , "extra-source-files:\n" ++ (concat ext')
+        , "data-files:\n" ++ concat dat'
+        , "extra-source-files:\n" ++ concat ext'
                                   ++ "  includes/*.h\n"
                                   ++ "  includes/CodeGen.Platform.hs\n"
                                   ++ "  includes/rts/*.h\n"
@@ -320,18 +315,18 @@ genCabal root = do
         , "      , filepath, directory, array, deepseq"
         , "      , pretty, time, transformers, process, haskeline, hpc"
         , "    build-tools: alex >= 3.1 , happy >= 1.19.4"
-        ])
-       ++ "    other-extensions:\n"   ++ (concat oxt')
-       ++ "    c-sources:\n"          ++ (concat csf')
-       ++ "    cmm-sources:\n"        ++ (concat cmm')
-       ++ "    hs-source-dirs:\n"     ++ (concat src')
-       ++ "    exposed-modules:\n"    ++ (concat ems')
-       ++ "    other-modules:\n"      ++ (concat oms')
+        ]
+       ++ "    other-extensions:\n"   ++ concat oxt'
+       ++ "    c-sources:\n"          ++ concat csf'
+       ++ "    cmm-sources:\n"        ++ concat cmm'
+       ++ "    hs-source-dirs:\n"     ++ concat src'
+       ++ "    exposed-modules:\n"    ++ concat ems'
+       ++ "    other-modules:\n"      ++ concat oms'
        ++ "\n"
 
        -- exe
 
-       ++ (unlines [
+       ++ unlines [
           "executable ghc-lib"
         , "    default-language:   Haskell2010"
         , "    if !os(windows)"
@@ -346,18 +341,18 @@ genCabal root = do
         , "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "    cc-options: -DTHREADED_RTS"
         , "    cpp-options: -DGHCI -DTHREADED_RTS -DGHC_LOADED_INTO_GHCI"
-        ])
-       ++ "    other-modules:\n" ++ (concat eom')
-       ++ "    other-extensions:\n" ++ (concat eoe')
-       ++ (unlines [
+        ]
+       ++ "    other-modules:\n" ++ concat eom'
+       ++ "    other-extensions:\n" ++ concat eoe'
+       ++ unlines [
           "    default-extensions: NoImplicitPrelude"
         , "    main-is: Main.hs"
-        ])
+        ]
   writeFile (root </> cabal) contents
 
 -- |'genStackYaml' produces a file @stack.Yaml@ in the @root@ directory.
 genStackYaml :: String -> IO ()
-genStackYaml root = do
+genStackYaml root =
   writeFile (root </> "stack.yaml") $
       unlines ["resolver: lts-12.6", "packages:", "- ."]
 
