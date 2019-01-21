@@ -214,116 +214,103 @@ exeOtherModules root = do
 -- |'genCabal' produces a cabal file for ghc with supporting
 -- libraries.
 genCabal root = do
-  src <- hsSourceDirs root
-  ems <- modules "exposed-modules:" "Exposed-Modules:" root
-  oms <- modules "other-modules:" "Other-Modules:" root
-  csf <- cSrcs root
-  cmm <- cmmSrcs root
-  oxt <- otherExtensions root
-  eoe <- exeOtherExtensions root
-  eom <- exeOtherModules root
-  let src' = map (\x -> "      " ++ x ++ "\n") src
-      ems' = map (\x -> "      " ++ x ++ "\n") ems
-      oms' = map (\x -> "      " ++ x ++ "\n") oms
-      csf' = map (\x -> "      " ++ x ++ "\n") csf
-      cmm' = map (\x -> "      " ++ x ++ "\n") cmm
-      oxt' = map (\x -> "      " ++ x ++ "\n") oxt
-      eoe' = map (\x -> "      " ++ x ++ "\n") eoe
-      eom' = map (\x -> "      " ++ x ++ "\n") eom
-      dat' = map (\x -> "  " ++ x ++ "\n") dataFiles
-      ext' = map (\x -> "  " ++ x ++ "\n") extraFiles
-  let contents =
-       unlines [
-
-          -- header
-
-          "cabal-version: 2.1" -- or cabal check complains about cmm-sources
-        , "build-type: Simple"
-        , "name: ghc-lib"
-        , "version: 0.1.0"
-        , "license: BSD-3-Clause"
-        , "license-file: LICENSE"
-        , "category: Development"
-        , "author: XXX"
-        , "maintainer: XXX"
-        , "copyright: XXX"
-        , "synopsis: GHC as a library"
-        , "description: GHC as a library that can be loaded into GHCi."
-        , "homepage: XXX"
-        , "bug-reports: XXX"
-        , "data-dir: " ++ dataDir
-        , "data-files:\n" ++ concat dat'
-        , "extra-source-files:\n" ++ concat ext'
-                                  ++ "  includes/*.h\n"
-                                  ++ "  includes/CodeGen.Platform.hs\n"
-                                  ++ "  includes/rts/*.h\n"
-                                  ++ "  includes/rts/storage/*.h\n"
-                                  ++ "  includes/rts/prof/*.h\n"
-                                  ++ "  compiler/nativeGen/*.h\n"
-                                  ++ "  compiler/utils/*.h\n"
-                                  ++ "  compiler/*.h\n"
-        , "tested-with:GHC==8.4.3"
-        , "source-repository head"
-        , "    type: git"
-        , "    location: git://git.haskell.org/ghc.git"
-
-        -- library
-
-        , "library"
-        , "    default-language:   Haskell2010"
-        , "    default-extensions: NoImplicitPrelude\n"
-        , "    include-dirs:"
-        , "      ghc-lib/generated"
-        , "      ghc-lib/stage1/compiler/build"
-        , "      compiler"
-        , "      compiler/utils"
-        , "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
-        , "    cc-options: -DTHREADED_RTS"
-        , "    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
-        , "    if !os(windows)"
-        , "        build-depends: unix"
-        , "    else"
-        , "        build-depends: Win32"
-        , "    build-depends:"
-        , "      ghc-prim"
-        , "      , base == 4.*, containers, bytestring, binary"
-        , "      , filepath, directory, array, deepseq"
-        , "      , pretty, time, transformers, process, haskeline, hpc"
-        , "    build-tools: alex >= 3.1 , happy >= 1.19.4"
+    src <- hsSourceDirs root
+    ems <- modules "exposed-modules:" "Exposed-Modules:" root
+    oms <- modules "other-modules:" "Other-Modules:" root
+    csf <- cSrcs root
+    cmm <- cmmSrcs root
+    oxt <- otherExtensions root
+    eoe <- exeOtherExtensions root
+    eom <- exeOtherModules root
+    writeFile (root </> "ghc-lib.cabal") $ unlines $
+        -- header
+        ["cabal-version: 2.1" -- or cabal check complains about cmm-sources
+        ,"build-type: Simple"
+        ,"name: ghc-lib"
+        ,"version: 0.1.0"
+        ,"license: BSD-3-Clause"
+        ,"license-file: LICENSE"
+        ,"category: Development"
+        ,"author: XXX"
+        ,"maintainer: XXX"
+        ,"copyright: XXX"
+        ,"synopsis: GHC as a library"
+        ,"description: GHC as a library that can be loaded into GHCi."
+        ,"homepage: XXX"
+        ,"bug-reports: XXX"
+        ,"data-dir: " ++ dataDir
+        ,"data-files:"] ++
+        map ("  " ++) dataFiles ++
+        ["extra-source-files:"] ++
+        map ("  " ++) extraFiles ++
+        ["  includes/*.h"
+        ,"  includes/CodeGen.Platform.hs"
+        ,"  includes/rts/*.h"
+        ,"  includes/rts/storage/*.h"
+        ,"  includes/rts/prof/*.h"
+        ,"  compiler/nativeGen/*.h"
+        ,"  compiler/utils/*.h"
+        ,"  compiler/*.h"
+        ,"tested-with:GHC==8.4.3"
+        ,"source-repository head"
+        ,"    type: git"
+        ,"    location: git://git.haskell.org/ghc.git"
+        ,""
+        ,"library"
+        ,"    default-language:   Haskell2010"
+        ,"    default-extensions: NoImplicitPrelude"
+        ,"    include-dirs:"
+        ,"      ghc-lib/generated"
+        ,"      ghc-lib/stage1/compiler/build"
+        ,"      compiler"
+        ,"      compiler/utils"
+        ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
+        ,"    cc-options: -DTHREADED_RTS"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
+        ,"    if !os(windows)"
+        ,"        build-depends: unix"
+        ,"    else"
+        ,"        build-depends: Win32"
+        ,"    build-depends:"
+        ,"      ghc-prim"
+        ,"      , base == 4.*, containers, bytestring, binary"
+        ,"      , filepath, directory, array, deepseq"
+        ,"      , pretty, time, transformers, process, haskeline, hpc"
+        ,"    build-tools: alex >= 3.1 , happy >= 1.19.4"
+        ,"    other-extensions:"] ++
+        map ("      " ++) oxt ++
+        ["    c-sources:"] ++
+        map ("      " ++) csf ++
+        ["    cmm-sources:"] ++
+        map ("      " ++) cmm ++
+        ["    hs-source-dirs:"] ++
+        map ("      " ++) src ++
+        ["    exposed-modules:"] ++
+        map ("      " ++) ems ++
+        ["    other-modules:"] ++
+        map ("      " ++) oms ++
+        [""
+        ,"executable ghc-lib"
+        ,"    default-language:   Haskell2010"
+        ,"    if !os(windows)"
+        ,"        build-depends: unix"
+        ,"    else"
+        ,"        build-depends: Win32"
+        ,"    build-depends:"
+        ,"        base == 4.*, array, bytestring, directory, process, filepath,"
+        ,"        containers, deepseq, ghc-prim, haskeline, time, transformers,"
+        ,"        ghc-lib"
+        ,"    hs-source-dirs: ghc"
+        ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
+        ,"    cc-options: -DTHREADED_RTS"
+        ,"    cpp-options: -DGHCI -DTHREADED_RTS -DGHC_LOADED_INTO_GHCI"
+        ,"    other-modules:"] ++
+        map ("      " ++) eom ++
+        ["    other-extensions:"] ++
+        map ("      " ++) eoe ++
+        ["    default-extensions: NoImplicitPrelude"
+        ,"    main-is: Main.hs"
         ]
-       ++ "    other-extensions:\n"   ++ concat oxt'
-       ++ "    c-sources:\n"          ++ concat csf'
-       ++ "    cmm-sources:\n"        ++ concat cmm'
-       ++ "    hs-source-dirs:\n"     ++ concat src'
-       ++ "    exposed-modules:\n"    ++ concat ems'
-       ++ "    other-modules:\n"      ++ concat oms'
-       ++ "\n"
-
-       -- exe
-
-       ++ unlines [
-          "executable ghc-lib"
-        , "    default-language:   Haskell2010"
-        , "    if !os(windows)"
-        , "        build-depends: unix"
-        , "    else"
-        , "        build-depends: Win32"
-        , "    build-depends:"
-        , "        base == 4.*, array, bytestring, directory, process, filepath,"
-        , "        containers, deepseq, ghc-prim, haskeline, time, transformers,"
-        , "        ghc-lib"
-        , "    hs-source-dirs: ghc"
-        , "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
-        , "    cc-options: -DTHREADED_RTS"
-        , "    cpp-options: -DGHCI -DTHREADED_RTS -DGHC_LOADED_INTO_GHCI"
-        ]
-       ++ "    other-modules:\n" ++ concat eom'
-       ++ "    other-extensions:\n" ++ concat eoe'
-       ++ unlines [
-          "    default-extensions: NoImplicitPrelude"
-        , "    main-is: Main.hs"
-        ]
-  writeFile (root </> "ghc-lib.cabal") contents
 
 genPrerequisites :: String -> IO ()
 genPrerequisites root =
