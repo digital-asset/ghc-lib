@@ -7,7 +7,6 @@ os:
 
 script:
 - curl -sSL https://get.haskellstack.org/ | sh
-- stack init ghc-lib-gen --resolver=lts-12.10
 - stack setup > nul
 - stack --no-terminal build ghc-lib-gen
 - stack exec runhaskell CI.hs

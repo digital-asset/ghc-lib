@@ -13,8 +13,6 @@ test_script:
 - 7z x stack.zip stack.exe
 - set PATH=C:\project;%PATH%
 
-# Match the Hadrian resolver, so we download less stuff
-- stack init ghc-lib-gen --resolver=lts-12.10
 - stack setup > nul
 - stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm
 - stack --no-terminal build ghc-lib-gen

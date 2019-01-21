@@ -7,7 +7,7 @@ main = do
     cmd "git clone git://git.haskell.org/ghc.git --recursive" -- --recurse-submodules=libraries/Cabal"
     cmd "stack exec -- ghc-lib-gen ghc"
 
-    -- stack init doesn't work because of https://github.com/commercialhaskell/stack/issues/4508
+    -- Add the new projects to the stack.yaml, so we compile/test them
     appendFile "stack.yaml" $ unlines ["- ghc","- examples/mini-hlint"]
     cmd "stack build --no-terminal --interleaved-output"
     cmd "stack exec --no-terminal -- ghc-lib --version"
