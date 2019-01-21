@@ -67,13 +67,13 @@ dataDir = "ghc-lib/stage1/lib"
 
 -- |'dataFiles' is a list of files to be installed for run-time use by
 -- the package.
+dataFiles :: [FilePath]
 dataFiles =
-  [
-    "settings"
-  , "llvm-targets"
-  , "llvm-passes"
-  , "platformConstants"
-  ]
+    ["settings"
+    ,"llvm-targets"
+    ,"llvm-passes"
+    ,"platformConstants"
+    ]
 
 -- |'appPatchHeapClosures' stubs out a couple of definitions on a
 -- particular file in the ghc-heap library.
