@@ -15,9 +15,6 @@ import Data.Char
 
 -- Constants.
 
--- |'cabal' is where the cabal file will be written.
-cabal = "ghc-lib.cabal"
-
 -- |'cabals' is the set of input cabal files consulted.
 cabals :: [FilePath]
 cabals =
@@ -348,7 +345,7 @@ genCabal root = do
           "    default-extensions: NoImplicitPrelude"
         , "    main-is: Main.hs"
         ]
-  writeFile (root </> cabal) contents
+  writeFile (root </> "ghc-lib.cabal") contents
 
 -- |'genStackYaml' produces a file @stack.Yaml@ in the @root@ directory.
 genStackYaml :: String -> IO ()
