@@ -4,11 +4,11 @@
 
 import System.Environment
 import System.Process.Extra
-import System.FilePath
+import System.FilePath hiding ((</>))
+import System.FilePath.Posix((</>)) -- make sure we generate / on all platforms
 import System.Directory
 import System.IO.Extra
 import Control.Monad
-import Data.Maybe
 import Data.List.Extra
 import Data.Char
 
@@ -101,27 +101,11 @@ parseCabal src = \x -> concatMap snd $ filter ((==) x . fst) fields
         f (x:xs) = let (a,b) = break (":" `isSuffixOf`) xs in ((lower x,a),b)
 
 
--- |'harvest' finds all entries for a given section in the text of a
--- cabal file.
-harvest :: String -> String -> [String]
-harvest tag s =
-  let reallyHarvest s =
-        let ls = lines s in
-          let ms =
-                map
-                (dropWhile isSpace)
-                (takeWhile (':' `notElem`) ls) in
-            ms ++ harvest tag s in
-    case stripInfix tag s of
-      Nothing -> []
-      Just (_, '\n' : after) -> reallyHarvest after
-      Just (_, after) -> reallyHarvest after
-
 -- |'withCabals' folds a function over the set of cabal files.
 withCabals :: (String -> String -> [String]) -> String -> IO [String]
 withCabals f root = fmap (nubOrd . concat . reverse) $ forM cabalFileLibraries $ \file -> do
   src <- readFile' $ root </> file
-  return $ f (root </> file) src
+  return $ f (takeDirectory file) src
 
 -- |'modules' extracts a list of modules (e.g. "exposed-modules") from
 -- the set of cabal files.
@@ -138,50 +122,17 @@ otherExtensions = withCabals $ \_ s -> parseCabal s "other-extensions:"
 -- |'cSrcs' extracts a list of C source files (i.e. "c-sources") from
 -- the set of cabal files.
 cSrcs :: String -> IO [String]
-cSrcs root = withCabals f root
-    where
-        f file s =
-          let dir = map (\x -> if isPathSeparator x then '/' else x) $ takeDirectory file
-                in map (\f ->
-                          fromMaybe "" (stripPrefix (root ++ "/") (dir </> f))
-                      ) fs
-            where fs = filter
-                    (\l -> not (null l || "--" `isPrefixOf` l))
-                    (nubOrd (harvest "c-sources:" s ++
-                                harvest "C-Sources:" s))
+cSrcs = withCabals $ \dir s -> map (dir </>) $ parseCabal s "c-sources:"
 
 -- |'cmmSrcs' extracts a list of C-- source files (i.e. "cmm-sources")
 -- from the set of cabal files.
 cmmSrcs :: String -> IO [String]
-cmmSrcs root =
-  let f file s =
-        let dir = map (\x -> if isPathSeparator x then '/' else x) $ takeDirectory file
-              in map (\f ->
-                         fromMaybe "" (stripPrefix (root ++ "/") (dir </> f))
-                 ) fs
-        where fs = filter
-                (\l -> not (null l || "--" `isPrefixOf` l))
-                (nubOrd (harvest "cmm-sources:" s ++
-                             harvest "Cmm-Sources:" s))
-  in withCabals f root
+cmmSrcs = withCabals $ \dir s -> map (dir </>) $ parseCabal s "cmm-sources:"
 
 -- |'hsSourceDirs' extracts a list of source directories from the set
 -- of cabal files.
 hsSourceDirs :: String -> IO [String]
-hsSourceDirs root =
-  let f file s =
-        let dir = map (\x -> if isPathSeparator x then '/' else x) $ takeDirectory file
-            dir' = fromMaybe "" (stripPrefix (root ++ "/") dir)
-              in dir' : map (\f ->
-                            fromMaybe "" (stripPrefix (root ++ "/") (dir ++ "/" ++ f))
-                           ) fs
-        where fs = filter
-                (\l -> not (null l || "--" `isPrefixOf` l))
-                (nubOrd (harvest "hs-source-dirs:" s ++
-                             harvest "Hs-Source-Dirs:" s))
-  in do
-       files <- withCabals f root
-       return $ "ghc-lib/stage1/compiler/build" : files
+hsSourceDirs = withCabals $ \dir s -> dir : map (dir </>) (parseCabal s "hs-source-dirs:")
 
 
 -- |'exeOtherExtensions' extracts a list of "other-extensions" from the GHC
@@ -269,7 +220,8 @@ genCabal root = do
         map ("      " ++) csf ++
         ["    cmm-sources:"] ++
         map ("      " ++) cmm ++
-        ["    hs-source-dirs:"] ++
+        ["    hs-source-dirs:"
+        ,"      ghc-lib/stage1/compiler/build"] ++
         map ("      " ++) src ++
         ["    exposed-modules:"] ++
         map ("      " ++) ems ++
