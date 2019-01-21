@@ -19,6 +19,8 @@ main = do
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
     cmd "git clone git://git.haskell.org/ghc.git --recursive" -- --recurse-submodules=libraries/Cabal"
+    -- not essential, but make the cache work between Hadrian and ghc-lib and build Hadrian quicker
+    appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc"
 
     -- Add the new projects to the stack.yaml, so we compile/test them
