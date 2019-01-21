@@ -109,11 +109,9 @@ harvest tag s =
 
 -- |'withCabals' folds a function over the set of cabal files.
 withCabals :: (String -> String -> [String]) -> String -> IO [String]
-withCabals f root =
-  foldM fun [] (map (root </>) cabalFileLibraries) where
-  fun acc c = do
-      s <- readFile' c
-      return (f c s ++ acc)
+withCabals f root = fmap (concat . reverse) $ forM cabalFileLibraries $ \file -> do
+  src <- readFile' $ root </> file
+  return $ f (root </> file) src
 
 -- |'modules' extracts a list of modules (e.g. "exposed-modules") from
 -- the set of cabal files.
