@@ -58,11 +58,6 @@ extraFiles =
     ,"ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
     ,"ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
     ,"ghc-lib/stage1/compiler/build/Config.hs"
-    -- data files
-    ,"ghc-lib/stage1/lib/settings"
-    ,"ghc-lib/stage1/lib/llvm-targets"
-    ,"ghc-lib/stage1/lib/llvm-passes"
-    ,"ghc-lib/stage1/lib/platformConstants"
     ]
 
 -- |'dataDir' is the directory cabal looks for data files to install,
@@ -247,11 +242,7 @@ genCabal root = do
       eoe' = map (\x -> "      " ++ x ++ "\n") eoe
       eom' = map (\x -> "      " ++ x ++ "\n") eom
       dat' = map (\x -> "  " ++ x ++ "\n") dataFiles
-      ext' = map (\x -> "  " ++ x ++ "\n")
-                -- Tiny bit of monkey business here where we separate
-                -- data files from genuine source files.
-                (let fs = map (dataDir </>) dataFiles in
-                            foldl (flip delete) extraFiles fs)
+      ext' = map (\x -> "  " ++ x ++ "\n") extraFiles
   let contents =
        unlines [
 
@@ -355,7 +346,8 @@ genPrerequisites root =
       ,"--configure"
       ,"--integer-simple"
       ,"--build-root=ghc-lib"
-      ] ++ extraFiles
+      ] ++ extraFiles ++
+      map (dataDir </>) dataFiles
 
 -- Driver.
 
