@@ -15,58 +15,56 @@ import Data.Char
 
 -- Constants.
 
--- |'cabals' is the set of input cabal files consulted.
-cabals :: [FilePath]
-cabals =
-  [
-     "libraries/template-haskell/template-haskell.cabal"
-   , "libraries/ghc-heap/ghc-heap.cabal"
-   , "libraries/ghc-boot-th/ghc-boot-th.cabal"
-   , "libraries/ghc-boot/ghc-boot.cabal"
-   , "libraries/ghci/ghci.cabal"
-   , "compiler/ghc.cabal"
-  ]
+-- | Cabal files from libraries inside GHC that are merged together
+cabalFileLibraries :: [FilePath]
+cabalFileLibraries =
+    ["libraries/template-haskell/template-haskell.cabal"
+    ,"libraries/ghc-heap/ghc-heap.cabal"
+    ,"libraries/ghc-boot-th/ghc-boot-th.cabal"
+    ,"libraries/ghc-boot/ghc-boot.cabal"
+    ,"libraries/ghci/ghci.cabal"
+    ,"compiler/ghc.cabal"
+    ]
 
--- |'binCabal' is the path to the GHC as an executable cabal file.
-binCabal :: FilePath
-binCabal = "ghc/ghc-bin.cabal"
+-- | Cabal file for the GHC binary
+cabalFileBinary :: FilePath
+cabalFileBinary = "ghc/ghc-bin.cabal"
 
--- |'extraSrcFiles' is a list of additional source files to be
--- included in source distributions. The files in this list are all
--- copied into position by hadrian.
-extraSrcFiles :: [FilePath]
-extraSrcFiles =
-  [
-    "ghc-lib/generated/ghcautoconf.h"
-  , "ghc-lib/generated/ghcplatform.h"
-  , "ghc-lib/generated/ghcversion.h"
-  , "ghc-lib/generated/DerivedConstants.h"
-  , "ghc-lib/generated/GHCConstantsHaskellExports.hs"
-  , "ghc-lib/generated/GHCConstantsHaskellType.hs"
-  , "ghc-lib/generated/GHCConstantsHaskellWrappers.hs"
-  , "ghc-lib/stage1/compiler/build/ghc_boot_platform.h"
-  , "ghc-lib/stage1/compiler/build/primop-can-fail.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-code-size.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-commutable.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-data-decl.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-fixity.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-has-side-effects.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-list.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-out-of-line.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-primop-info.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-strictness.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-tag.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-vector-tycons.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-vector-tys-exports.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
-  , "ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
-  , "ghc-lib/stage1/compiler/build/Config.hs"
-  -- Technically these are data files (c.f. 'dataFiles' below).
-  , "ghc-lib/stage1/lib/settings"
-  , "ghc-lib/stage1/lib/llvm-targets"
-  , "ghc-lib/stage1/lib/llvm-passes"
-  , "ghc-lib/stage1/lib/platformConstants"
-  ]
+-- | Additional source and data files for Cabal.
+--   The files in this list are all created by Hadrian.
+extraFiles :: [FilePath]
+extraFiles =
+    -- source files
+    ["ghc-lib/generated/ghcautoconf.h"
+    ,"ghc-lib/generated/ghcplatform.h"
+    ,"ghc-lib/generated/ghcversion.h"
+    ,"ghc-lib/generated/DerivedConstants.h"
+    ,"ghc-lib/generated/GHCConstantsHaskellExports.hs"
+    ,"ghc-lib/generated/GHCConstantsHaskellType.hs"
+    ,"ghc-lib/generated/GHCConstantsHaskellWrappers.hs"
+    ,"ghc-lib/stage1/compiler/build/ghc_boot_platform.h"
+    ,"ghc-lib/stage1/compiler/build/primop-can-fail.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-code-size.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-commutable.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-data-decl.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-fixity.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-has-side-effects.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-list.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-out-of-line.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-primop-info.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-strictness.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-tag.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-vector-tycons.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-vector-tys-exports.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
+    ,"ghc-lib/stage1/compiler/build/Config.hs"
+    -- data files
+    ,"ghc-lib/stage1/lib/settings"
+    ,"ghc-lib/stage1/lib/llvm-targets"
+    ,"ghc-lib/stage1/lib/llvm-passes"
+    ,"ghc-lib/stage1/lib/platformConstants"
+    ]
 
 -- |'dataDir' is the directory cabal looks for data files to install,
 -- relative to the source directory.
@@ -129,7 +127,7 @@ harvest tag acc s =
 -- |'withCabals' folds a function over the set of cabal files.
 withCabals :: (String -> String -> [String]) -> String -> IO [String]
 withCabals f root =
-  foldM fun [] (map (root </>) cabals) where
+  foldM fun [] (map (root </>) cabalFileLibraries) where
   fun acc c = do
       s <- readFile' c
       return (f c s ++ acc)
@@ -155,7 +153,7 @@ otherExtensions root =
              foldM fun [] (map (root </>)
                -- This particular file has ',' and its extensions are
                -- covered elsewhere.
-               (delete "libraries/ghc-boot/ghc-boot.cabal" cabals)) where
+               (delete "libraries/ghc-boot/ghc-boot.cabal" cabalFileLibraries)) where
            fun acc c = do
                  s <- readFile' c
                  return (nubOrd (f c s ++ acc))
@@ -213,7 +211,7 @@ hsSourceDirs root =
 -- as an exe cabal file.
 exeOtherExtensions :: String -> IO [String]
 exeOtherExtensions root = do
-  s <- readFile' $ root </> binCabal
+  s <- readFile' $ root </> cabalFileBinary
   return $ filter
              (\l -> not (null l || "--" `isPrefixOf` l
                                 || "if flag" `isPrefixOf` l ))
@@ -223,7 +221,7 @@ exeOtherExtensions root = do
 -- |'exeOtherModules' extracts a list of "other-modules" from the GHC
 -- as an exe cabal file.
 exeOtherModules root = do
-  s <- readFile' $ root </> binCabal
+  s <- readFile' $ root </> cabalFileBinary
   return $ filter
              (\l -> not (null l || "--" `isPrefixOf` l))
              (nubOrd (harvest "other-modules:"
@@ -253,7 +251,7 @@ genCabal root = do
                 -- Tiny bit of monkey business here where we separate
                 -- data files from genuine source files.
                 (let fs = map (\f -> dataDir </> f) dataFiles in
-                            foldl (flip delete) extraSrcFiles fs)
+                            foldl (flip delete) extraFiles fs)
   let contents =
        unlines [
 
@@ -363,7 +361,7 @@ genPrerequisites root = do
         ,"--configure"
         ,"--integer-simple"
         ,"--build-root=ghc-lib"
-        ] ++ extraSrcFiles
+        ] ++ extraFiles
 
   withCurrentDirectory (root </> "hadrian") $ do
     system_ "stack build --no-library-profiling"
@@ -373,7 +371,7 @@ genPrerequisites root = do
       ,"--configure"
       ,"--integer-simple"
       ,"--build-root=ghc-lib"
-      ] ++ extraSrcFiles
+      ] ++ extraFiles
 
 -- Driver.
 
