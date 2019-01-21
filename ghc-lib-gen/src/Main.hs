@@ -3,7 +3,6 @@
 {- Prep. for building GHC as a library. -}
 
 import System.Environment
-import System.Info.Extra
 import System.Process.Extra
 import System.FilePath
 import System.Directory
@@ -347,17 +346,7 @@ genCabal root = do
   writeFile (root </> "ghc-lib.cabal") contents
 
 genPrerequisites :: String -> IO ()
-genPrerequisites root = do
-  -- FIXME: We want to use Cabal, but it has issues with Alex we have difficulty with
-  when False $
-    withCurrentDirectory root $
-      system_ $ unwords $
-        ["hadrian" </> "build.cabal." ++ (if isWindows then "bat" else "sh")
-        ,"--configure"
-        ,"--integer-simple"
-        ,"--build-root=ghc-lib"
-        ] ++ extraFiles
-
+genPrerequisites root =
   withCurrentDirectory (root </> "hadrian") $ do
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
