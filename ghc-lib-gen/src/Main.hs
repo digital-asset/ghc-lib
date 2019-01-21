@@ -259,11 +259,9 @@ genCabal root = do
       dat' = map (\x -> "  " ++ x ++ "\n") dataFiles
       ext' = map (\x -> "  " ++ x ++ "\n")
                 -- Tiny bit of monkey business here where we separate
-                -- data files from genuine source files and add
-                -- libHeapPrim.a as a source file.
-                ("ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits/libHeapPrim.a" :
+                -- data files from genuine source files.
                 (let fs = map (\f -> dataDir </> f) dataFiles in
-                            foldl (\acc f -> delete f acc) extraSrcFiles fs))
+                            foldl (\acc f -> delete f acc) extraSrcFiles fs)
   let contents =
        (unlines [
 
@@ -298,12 +296,6 @@ genCabal root = do
         , "source-repository head"
         , "    type: git"
         , "    location: git://git.haskell.org/ghc.git"
-        , "Flag with-heap-prim"
-        , "    Description: Link with HeapPrim.a."
-        , "    Default: False"
-        , "Flag build-exe"
-        , "    Description: Build the executable."
-        , "    Default: True"
 
         -- library
 
@@ -327,9 +319,6 @@ genCabal root = do
         , "      , base == 4.*, containers, bytestring, binary"
         , "      , filepath, directory, array, deepseq"
         , "      , pretty, time, transformers, process, haskeline, hpc"
-        , "    if flag(with-heap-prim)"
-        , "        extra-lib-dirs: ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits"
-        , "        extra-libraries: HeapPrim"
         , "    build-tools: alex >= 3.1 , happy >= 1.19.4"
         ])
        ++ "    other-extensions:\n"   ++ (concat oxt')
@@ -353,8 +342,6 @@ genCabal root = do
         , "        base == 4.*, array, bytestring, directory, process, filepath,"
         , "        containers, deepseq, ghc-prim, haskeline, time, transformers,"
         , "        ghc-lib"
-        , "    if !flag(build-exe)"
-        , "        buildable: False"
         , "    hs-source-dirs: ghc"
         , "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "    cc-options: -DTHREADED_RTS"
@@ -383,13 +370,8 @@ genPrerequisites root = do
         ["hadrian" </> "build.cabal." ++ (if isWindows then "bat" else "sh")
         ,"--configure"
         ,"--integer-simple"
-        ,"--build-root=ghc-lib"] ++
-          -- 'extraSrcFiles' intentionally doesn't contain
-          -- 'libHeapPrim.a'. It is produced in the follow up step below
-          -- (see also 'main' where it's added in to the "extra-sources"
-          -- as an addendum).
-        extraSrcFiles ++
-        ["ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits/HeapPrim.o"]
+        ,"--build-root=ghc-lib"
+        ] ++ extraSrcFiles
 
   withCurrentDirectory (root </> "hadrian") $ do
     system_ "stack build --no-library-profiling"
@@ -398,15 +380,8 @@ genPrerequisites root = do
       ,"--directory=.."
       ,"--configure"
       ,"--integer-simple"
-      ,"--build-root=ghc-lib"] ++
-       -- 'extraSrcFiles' intentionally doesn't contain
-       -- 'libHeapPrim.a'. It is produced in the follow up step below
-       -- (see also 'main' where it's added in to the "extra-sources"
-       -- as an addendum).
-      extraSrcFiles ++
-      ["ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits/HeapPrim.o"]
-  withCurrentDirectory (root </> "ghc-lib/stage0/libraries/ghc-heap/build/cmm/cbits") $
-    system_ "ar -cr libHeapPrim.a HeapPrim.o"
+      ,"--build-root=ghc-lib"
+      ] ++ extraSrcFiles
 
 -- Driver.
 
