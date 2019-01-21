@@ -78,27 +78,16 @@ dataFiles =
 -- |'appPatchHeapClosures' stubs out a couple of definitions on a
 -- particular file in the ghc-heap library.
 appPatchHeapClosures :: FilePath -> IO ()
-appPatchHeapClosures root =
-  do
-    s <- readFile' src
-    writeFile src $ fromMaybe s ((fixaToWord >=> fixReallyUnsafePtrEqualityUpToTag) s)
-  where
-      src = root </> "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
-      aToWord ="foreign import prim \"aToWordzh\" aToWord# :: Any -> Word#"
-      reallyUnsafePtrEqualityUpToTag="foreign import prim \"reallyUnsafePtrEqualityUpToTag\"\n    reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#"
-
-      fixaToWord s =
-        case stripInfix aToWord s of
-          Nothing -> Nothing
-          Just (b, rest) ->
-            Just (b ++ "aToWord# :: Any -> Word#\naToWord# _ = 0##\n" ++ rest)
-
-      fixReallyUnsafePtrEqualityUpToTag s =
-        case stripInfix reallyUnsafePtrEqualityUpToTag s of
-          Nothing -> Nothing
-          Just (b, rest) ->
-            Just (b
-                  ++ "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n" ++ rest)
+appPatchHeapClosures root = do
+    let file = root </> "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
+    writeFile file .
+        replace
+            "foreign import prim \"aToWordzh\" aToWord# :: Any -> Word#"
+            "aToWord# :: Any -> Word#\naToWord# _ = 0##\n" .
+        replace
+            "foreign import prim \"reallyUnsafePtrEqualityUpToTag\"\n    reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#"
+            "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
+        =<< readFile' file
 
 -- Functions for generating files.
 
