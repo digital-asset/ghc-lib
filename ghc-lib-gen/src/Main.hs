@@ -345,12 +345,6 @@ genCabal root = do
         ]
   writeFile (root </> "ghc-lib.cabal") contents
 
--- |'genStackYaml' produces a file @stack.Yaml@ in the @root@ directory.
-genStackYaml :: String -> IO ()
-genStackYaml root =
-  writeFile (root </> "stack.yaml") $
-      unlines ["resolver: lts-12.6", "packages:", "- ."]
-
 genPrerequisites :: String -> IO ()
 genPrerequisites root = do
   -- FIXME: We want to use Cabal, but it has issues with Alex we have difficulty with
@@ -380,6 +374,5 @@ main :: IO ()
 main = do
   [root] <- getArgs
   appPatchHeapClosures root
-  genStackYaml root
   genPrerequisites root
   genCabal root
