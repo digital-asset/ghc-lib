@@ -119,35 +119,20 @@ harvest tag s =
 
 -- |'withCabals' folds a function over the set of cabal files.
 withCabals :: (String -> String -> [String]) -> String -> IO [String]
-withCabals f root = fmap (concat . reverse) $ forM cabalFileLibraries $ \file -> do
+withCabals f root = fmap (nubOrd . concat . reverse) $ forM cabalFileLibraries $ \file -> do
   src <- readFile' $ root </> file
   return $ f (root </> file) src
 
 -- |'modules' extracts a list of modules (e.g. "exposed-modules") from
 -- the set of cabal files.
-modules :: String -> String -> String -> IO [String]
-modules prim alt =
-  withCabals (\_ s -> nubOrd $ harvest prim s ++ harvest alt s)
+modules :: String -> String -> IO [String]
+modules prim = withCabals $ \_ s -> parseCabal s prim
 
 
 -- |'otherExtensions' extracts a list of "other-extensions" from the
 -- set of cabal files (playing a bit fast and loose here to be honest).
 otherExtensions :: String -> IO [String]
-otherExtensions root = foldM fun [] (map (root </>)
-      -- This particular file has ',' and its extensions are
-      -- covered elsewhere.
-      (delete "libraries/ghc-boot/ghc-boot.cabal" cabalFileLibraries))
-    where
-        fun acc c = do
-                 s <- readFile' c
-                 return (nubOrd (f c s ++ acc))
-
-        f file s =
-          filter
-            (\l -> not (null l || "--" `isPrefixOf` l
-                              || "if flag" `isPrefixOf` l ))
-              (harvest "other-extensions:" s ++
-              harvest "Other-Extensions:" s)
+otherExtensions = withCabals $ \_ s -> parseCabal s "other-extensions:"
 
 
 -- |'cSrcs' extracts a list of C source files (i.e. "c-sources") from
@@ -216,8 +201,8 @@ exeOtherModules root = do
 -- libraries.
 genCabal root = do
     src <- hsSourceDirs root
-    ems <- modules "exposed-modules:" "Exposed-Modules:" root
-    oms <- modules "other-modules:" "Other-Modules:" root
+    ems <- modules "exposed-modules:" root
+    oms <- modules "other-modules:" root
     csf <- cSrcs root
     cmm <- cmmSrcs root
     oxt <- otherExtensions root
