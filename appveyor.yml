@@ -14,6 +14,5 @@ test_script:
 - set PATH=C:\project;%PATH%
 
 - stack setup > nul
-- stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm
 - stack --no-terminal build ghc-lib-gen
 - stack exec runhaskell CI.hs

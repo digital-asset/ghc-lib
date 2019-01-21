@@ -1,3 +1,5 @@
+import Control.Monad
+import System.Info.Extra
 import System.Process.Extra
 import System.Time.Extra
 
@@ -8,6 +10,8 @@ main = do
             (t, _) <- duration $ system_ x
             putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
 
+    when isWindows $
+        cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
     cmd "git clone git://git.haskell.org/ghc.git --recursive" -- --recurse-submodules=libraries/Cabal"
     cmd "stack exec -- ghc-lib-gen ghc"
 
