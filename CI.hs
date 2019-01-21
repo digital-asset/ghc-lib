@@ -1,4 +1,5 @@
 import Control.Monad
+import System.IO
 import System.Info.Extra
 import System.Process.Extra
 import System.Time.Extra
@@ -7,8 +8,10 @@ main :: IO ()
 main = do
     let cmd x = do
             putStrLn $ "\n\n# Running: " ++ x
+            hFlush stdout
             (t, _) <- duration $ system_ x
             putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
+            hFlush stdout
 
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
