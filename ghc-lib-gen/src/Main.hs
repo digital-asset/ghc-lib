@@ -251,7 +251,7 @@ genCabal root = do
       ext' = map (\x -> "  " ++ x ++ "\n")
                 -- Tiny bit of monkey business here where we separate
                 -- data files from genuine source files.
-                (let fs = map (\f -> dataDir </> f) dataFiles in
+                (let fs = map (dataDir </>) dataFiles in
                             foldl (flip delete) extraFiles fs)
   let contents =
        unlines [
