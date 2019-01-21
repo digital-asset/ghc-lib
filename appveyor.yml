@@ -15,4 +15,4 @@ test_script:
 
 - stack setup > nul
 - stack --no-terminal build ghc-lib-gen
-- stack exec runhaskell CI.hs
+- stack runhaskell CI.hs
