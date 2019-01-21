@@ -1,3 +1,6 @@
+
+-- CI script, invoked by both Travis and Appveyor
+
 import Control.Monad
 import System.IO
 import System.Info.Extra
