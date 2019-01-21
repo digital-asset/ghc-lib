@@ -4,7 +4,7 @@
 
 `ghc-lib` contains that part of a GHC distribution implementing the compiler pipeline. The compiler version used for building may differ from the version of the GHC sources involved. For example, you might build HEAD sources using 8.6.3.
 
-`ghc-lib` is useful when you require the services of a Haskell compiler at runtime. Some example applications:
+`ghc-lib` is useful when you require the services of a Haskell compiler at runtime. Some example applications are:
   - quick feedback loops using `ghci` when hacking on GHC itself;
   - Haskell IDEs;
   - static analysis tools (like [HLint](https://github.com/ndmitchell/hlint) for example).
@@ -18,4 +18,4 @@ To build and install `ghc-lib` you'll need clones of this repository and the [GH
   cd <path-to-ghc>
   cabal configure && cabal build && cabal install
 ```
-where `<path-to-ghc-lib>` is the clone of the `ghc-lib` repository and `<path-to-ghc>` is the clone of the `ghc` repository.
+where `<path-to-ghc-lib>` and `<path-to-ghc>` are paths to the `ghc-lib` and `ghc` clones respectively.
