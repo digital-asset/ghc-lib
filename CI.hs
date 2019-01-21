@@ -6,7 +6,7 @@ main = do
     system_ "stack exec -- ghc-lib-gen ghc"
 
     -- stack init doesn't work because of https://github.com/commercialhaskell/stack/issues/4508
-    appendFile "stac.yaml" $ unlines ["- ghc","- examples/mini-hlint"]
+    appendFile "stack.yaml" $ unlines ["- ghc","- examples/mini-hlint"]
     system_ "stack build --no-terminal --interleaved-output"
     system_ "stack exec --no-terminal -- ghc-lib --version"
     system_ "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
