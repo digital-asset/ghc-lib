@@ -17,17 +17,5 @@ test_script:
 - stack init ghc-lib-gen --resolver=lts-12.10
 - stack setup > nul
 - stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm
-# Build ghc-lib-gen
 - stack --no-terminal build ghc-lib-gen
-# Clone ghc
-- git clone git://git.haskell.org/ghc.git --recursive
-#  Exec ghc-lib-gen on ghc
-- stack exec -- ghc-lib-gen ghc
-# stack init doesn't work because of https://github.com/commercialhaskell/stack/issues/4508
-# Set up stack configs for ghc -lib and mini-hlint
-- echo - examples/mini-hlint >> stack.yaml
-- echo - ghc >> stack.yaml
-# Build ghc-lib and exec tests
-- stack build --no-terminal --interleaved-output
-- stack exec --no-terminal -- ghc-lib --version
-- stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs
+- stack exec runhaskell CI.hs
