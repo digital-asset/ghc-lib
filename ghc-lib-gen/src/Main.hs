@@ -93,17 +93,17 @@ appPatchHeapClosures root = do
 
 -- |'harvest' finds all entries for a given section in the text of a
 -- cabal file.
-harvest :: String -> [String] -> String -> [String]
-harvest tag acc s =
+harvest :: String -> String -> [String]
+harvest tag s =
   let reallyHarvest s =
         let ls = lines s in
           let ms =
                 map
                 (dropWhile isSpace)
                 (takeWhile (':' `notElem`) ls) in
-            harvest tag (acc ++ ms) s in
+            ms ++ harvest tag s in
     case stripInfix tag s of
-      Nothing -> acc
+      Nothing -> []
       Just (_, '\n' : after) -> reallyHarvest after
       Just (_, after) -> reallyHarvest after
 
@@ -119,7 +119,7 @@ withCabals f root =
 -- the set of cabal files.
 modules :: String -> String -> String -> IO [String]
 modules prim alt =
-  withCabals (\_ s -> nubOrd (harvest prim (harvest alt [] s) s))
+  withCabals (\_ s -> nubOrd $ harvest prim s ++ harvest alt s)
 
 
 -- |'otherExtensions' extracts a list of "other-extensions" from the
@@ -138,8 +138,8 @@ otherExtensions root = foldM fun [] (map (root </>)
           filter
             (\l -> not (null l || "--" `isPrefixOf` l
                               || "if flag" `isPrefixOf` l ))
-              (harvest "other-extensions:"
-              (harvest "Other-Extensions:" [] s) s)
+              (harvest "other-extensions:" s ++
+              harvest "Other-Extensions:" s)
 
 
 -- |'cSrcs' extracts a list of C source files (i.e. "c-sources") from
@@ -154,8 +154,8 @@ cSrcs root = withCabals f root
                       ) fs
             where fs = filter
                     (\l -> not (null l || "--" `isPrefixOf` l))
-                    (nubOrd (harvest "c-sources:"
-                                (harvest "C-Sources:" [] s) s))
+                    (nubOrd (harvest "c-sources:" s ++
+                                harvest "C-Sources:" s))
 
 -- |'cmmSrcs' extracts a list of C-- source files (i.e. "cmm-sources")
 -- from the set of cabal files.
@@ -168,8 +168,8 @@ cmmSrcs root =
                  ) fs
         where fs = filter
                 (\l -> not (null l || "--" `isPrefixOf` l))
-                (nubOrd (harvest "cmm-sources:"
-                             (harvest "Cmm-Sources:" [] s) s))
+                (nubOrd (harvest "cmm-sources:" s ++
+                             harvest "Cmm-Sources:" s))
   in withCabals f root
 
 -- |'hsSourceDirs' extracts a list of source directories from the set
@@ -184,8 +184,8 @@ hsSourceDirs root =
                            ) fs
         where fs = filter
                 (\l -> not (null l || "--" `isPrefixOf` l))
-                (nubOrd (harvest "hs-source-dirs:"
-                             (harvest "Hs-Source-Dirs:" [] s) s))
+                (nubOrd (harvest "hs-source-dirs:" s ++
+                             harvest "Hs-Source-Dirs:" s))
   in do
        files <- withCabals f root
        return $ "ghc-lib/stage1/compiler/build" : files
@@ -199,8 +199,8 @@ exeOtherExtensions root = do
   return $ filter
              (\l -> not (null l || "--" `isPrefixOf` l
                                 || "if flag" `isPrefixOf` l ))
-             (nubOrd (harvest "other-extensions:"
-                 (harvest "Other-Extensions:" [] s) s))
+             (nubOrd (harvest "other-extensions:" s ++
+                 harvest "Other-Extensions:" s))
 
 -- |'exeOtherModules' extracts a list of "other-modules" from the GHC
 -- as an exe cabal file.
@@ -208,8 +208,7 @@ exeOtherModules root = do
   s <- readFile' $ root </> cabalFileBinary
   return $ filter
              (\l -> not (null l || "--" `isPrefixOf` l))
-             (nubOrd (harvest "other-modules:"
-             (harvest "Other-Modules:" [] s) s))
+             (nubOrd $ harvest "other-modules:" s ++ harvest "Other-Modules:" s)
 
 -- |'genCabal' produces a cabal file for ghc with supporting
 -- libraries.
@@ -222,7 +221,7 @@ genCabal root = do
     oxt <- otherExtensions root
     eoe <- exeOtherExtensions root
     eom <- exeOtherModules root
-    writeFile (root </> "ghc-lib.cabal") $ unlines $
+    writeFile (root </> "ghc-lib.cabal") $ unlines $ map trimEnd $
         -- header
         ["cabal-version: 2.1" -- or cabal check complains about cmm-sources
         ,"build-type: Simple"
