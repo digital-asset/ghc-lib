@@ -8,7 +8,7 @@
 
 # Building
 
-To build `ghc-lib` you'll need clones of (this repository)[git@github.com:digital-asset/ghc-lib.git] and a (GHC repository)[git://git.haskell.org/ghc.git]:
+To build `ghc-lib` you'll need clones of [this repository](git@github.com:digital-asset/ghc-lib.git) and a [GHC repository](git://git.haskell.org/ghc.git):
 ```
   cd <path-to-ghc-lib>/ghc-lib-gen
   cabal run <path-to-ghc>
