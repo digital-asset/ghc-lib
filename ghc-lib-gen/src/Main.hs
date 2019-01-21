@@ -91,10 +91,11 @@ appPatchHeapClosures root = do
 
 -- Functions for generating files.
 
--- | Given a file, produce the key/value pairs
+-- | Given a file, produce the key/value pairs it contains
 parseCabal :: String -> (String -> [String])
 parseCabal src = \x -> concatMap snd $ filter ((==) x . fst) fields
     where
+        -- generate all the fields initially
         fields = repeatedly f $ wordsBy (\x -> isSpace x || x == ',') $ unlines $ filter (not . isIf) . map trimComment $ lines src
         isIf x = "if " `isPrefixOf` trim x
         trimComment x = maybe x fst $ stripInfix "--" x
