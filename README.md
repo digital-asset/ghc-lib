@@ -1,5 +1,18 @@
 # ghc-lib [![Linux Build Status](https://img.shields.io/travis/digital-asset/ghc-lib/master.svg?label=Linux%20%26%20Mac%20builds)](https://travis-ci.org/digital-asset/ghc-lib)  [![Windows Build Status](https://img.shields.io/appveyor/ci/shayne-fletcher-da/ghc-lib/master.svg?label=Windows%20build)](https://ci.appveyor.com/project/shayne-fletcher-da/ghc-lib)
 
-`ghc-lib` enables use of GHC, as a library. The compiler as a library can be of a different version from the compiler used to build the library. For example, you can build GHC HEAD as a library with GHC 8.6.3.
+`ghc-lib` enables embedding GHC, as a library in your own programs. It contains that subset of a complete GHC source distribution that implements the compiler pipeline. The compiler version used to build `ghc-lib` may differ from the version of the sources. For example, you might build HEAD sources using version 8.6.3.
 
-This [Digital Asset](https://www.digitalasset.com) project is a work in progress and not quite ready for public consumption. Check back soon!
+`ghc-lib` is useful when you require the services of a Haskell compiler at runtime. Some example applications:
+  - quick feedback loops using `ghci` when hacking on GHC;
+  - static analysis tools (like (HLint)[https://github.com/ndmitchell/hlint] for example).
+
+# Building
+
+To build `ghc-lib` you'll need clones of (this repository)[git@github.com:digital-asset/ghc-lib.git] and a (GHC repository)[git://git.haskell.org/ghc.git]:
+```
+  cd <path-to-ghc-lib>/ghc-lib-gen
+  cabal run <path-to-ghc>
+  cd <path-to-ghc>
+  cabal configure && cabal build && cabal install
+```
+where `<path-to-ghc-lib>` is the clone of the `ghc-lib` repository and `<path-to-ghc>` is the clone of the `ghc` repository.
