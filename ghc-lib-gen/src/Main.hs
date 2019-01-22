@@ -104,7 +104,7 @@ parseCabal src = \x -> concatMap snd $ filter ((==) x . fst) fields
 
 -- |'withCabals' folds a function over the set of cabal files.
 withCabals :: (String -> String -> [String]) -> String -> IO [String]
-withCabals f root = fmap (nubOrd . concat . reverse) $ forM cabalFileLibraries $ \file -> do
+withCabals f root = fmap (nubSort . concat) $ forM cabalFileLibraries $ \file -> do
   src <- readFile' $ root </> file
   return $ f (takeDirectory file) src
 
