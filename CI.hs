@@ -2,7 +2,9 @@
 -- CI script, invoked by both Travis and Appveyor
 
 import Control.Monad
-import System.IO
+import System.Directory
+import System.FilePath
+import System.IO.Extra
 import System.Info.Extra
 import System.Process.Extra
 import System.Time.Extra
@@ -23,8 +25,16 @@ main = do
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc"
 
-    -- Add the new projects to the stack.yaml, so we compile/test them
-    appendFile "stack.yaml" $ unlines ["- ghc","- examples/mini-hlint"]
+    -- Generate an sdist and extract it to ensure it works
+    stackYaml <- readFile' "stack.yaml"
+    writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
+    cmd "stack sdist ghc --tar-dir=."
+    [tarball] <- filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
+    cmd $ "tar -xf " ++ tarball
+    renameDirectory (dropExtension $ dropExtension tarball) "ghc-lib"
+
+    -- Test the new projects
+    writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc-lib","- examples/mini-hlint"]
     cmd "stack build --no-terminal --interleaved-output"
     cmd "stack exec --no-terminal -- ghc-lib --version"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
