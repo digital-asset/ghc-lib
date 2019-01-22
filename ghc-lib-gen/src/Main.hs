@@ -91,15 +91,18 @@ appPatchHeapClosures root = do
 
 -- Functions for generating files.
 
+type Cabal = [(String, [String])]
+
 -- | Given a file, produce the key/value pairs it contains
-parseCabal :: String -> (String -> [String])
-parseCabal src = \x -> concatMap snd $ filter ((==) x . fst) fields
+parseCabal :: String -> Cabal
+parseCabal = repeatedly f . wordsBy (\x -> isSpace x || x == ',') . unlines . filter (not . isIf) . map trimComment . lines
     where
-        -- generate all the fields initially
-        fields = repeatedly f $ wordsBy (\x -> isSpace x || x == ',') $ unlines $ filter (not . isIf) . map trimComment $ lines src
         isIf x = "if " `isPrefixOf` trim x
         trimComment x = maybe x fst $ stripInfix "--" x
         f (x:xs) = let (a,b) = break (":" `isSuffixOf`) xs in ((lower x,a),b)
+
+askCabal :: Cabal -> String -> [String]
+askCabal fields x = concatMap snd $ filter ((==) x . fst) fields
 
 
 -- |'withCabals' folds a function over the set of cabal files.
@@ -111,29 +114,29 @@ withCabals f root = fmap (nubSort . concat) $ forM cabalFileLibraries $ \file ->
 -- |'modules' extracts a list of modules (e.g. "exposed-modules") from
 -- the set of cabal files.
 modules :: String -> String -> IO [String]
-modules prim = withCabals $ \_ s -> parseCabal s prim
+modules prim = withCabals $ \_ s -> askCabal (parseCabal s) prim
 
 
 -- |'otherExtensions' extracts a list of "other-extensions" from the
 -- set of cabal files (playing a bit fast and loose here to be honest).
 otherExtensions :: String -> IO [String]
-otherExtensions = withCabals $ \_ s -> parseCabal s "other-extensions:"
+otherExtensions = withCabals $ \_ s -> askCabal (parseCabal s) "other-extensions:"
 
 
 -- |'cSrcs' extracts a list of C source files (i.e. "c-sources") from
 -- the set of cabal files.
 cSrcs :: String -> IO [String]
-cSrcs = withCabals $ \dir s -> map (dir </>) $ parseCabal s "c-sources:"
+cSrcs = withCabals $ \dir s -> map (dir </>) $ askCabal (parseCabal s) "c-sources:"
 
 -- |'cmmSrcs' extracts a list of C-- source files (i.e. "cmm-sources")
 -- from the set of cabal files.
 cmmSrcs :: String -> IO [String]
-cmmSrcs = withCabals $ \dir s -> map (dir </>) $ parseCabal s "cmm-sources:"
+cmmSrcs = withCabals $ \dir s -> map (dir </>) $ askCabal (parseCabal s) "cmm-sources:"
 
 -- |'hsSourceDirs' extracts a list of source directories from the set
 -- of cabal files.
 hsSourceDirs :: String -> IO [String]
-hsSourceDirs = withCabals $ \dir s -> dir : map (dir </>) (parseCabal s "hs-source-dirs:")
+hsSourceDirs = withCabals $ \dir s -> dir : map (dir </>) (askCabal (parseCabal s) "hs-source-dirs:")
 
 
 -- |'exeOtherExtensions' extracts a list of "other-extensions" from the GHC
@@ -141,13 +144,13 @@ hsSourceDirs = withCabals $ \dir s -> dir : map (dir </>) (parseCabal s "hs-sour
 exeOtherExtensions :: String -> IO [String]
 exeOtherExtensions root = do
   s <- readFile' $ root </> cabalFileBinary
-  return $ parseCabal s "other-extensions:"
+  return $ askCabal (parseCabal s) "other-extensions:"
 
 -- |'exeOtherModules' extracts a list of "other-modules" from the GHC
 -- as an exe cabal file.
 exeOtherModules root = do
   s <- readFile' $ root </> cabalFileBinary
-  return $ parseCabal s "other-modules:"
+  return $ askCabal (parseCabal s) "other-modules:"
 
 -- |'genCabal' produces a cabal file for ghc with supporting
 -- libraries.
