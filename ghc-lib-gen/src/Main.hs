@@ -107,11 +107,11 @@ readCabalFile file = do
         trimComment x = maybe x fst $ stripInfix "--" x
         f (x:xs) = let (a,b) = break (":" `isSuffixOf`) xs in ((lower x,a),b)
 
-askCabal :: Cabal -> String -> [String]
-askCabal cbl x = concatMap snd $ filter ((==) x . fst) $ cabalFields cbl
+askCabalField :: Cabal -> String -> [String]
+askCabalField cbl x = concatMap snd $ filter ((==) x . fst) $ cabalFields cbl
 
 askCabalFiles :: Cabal -> String -> [String]
-askCabalFiles cbl x = map (cabalDir cbl </>) $ askCabal cbl x
+askCabalFiles cbl x = map (cabalDir cbl </>) $ askCabalField cbl x
 
 
 -- |'withCabals' folds a function over the set of cabal files.
@@ -122,13 +122,13 @@ withCabals f = fmap (nubSort . concat) $ forM cabalFileLibraries $ \file -> do
 -- |'modules' extracts a list of modules (e.g. "exposed-modules") from
 -- the set of cabal files.
 modules :: String -> IO [String]
-modules prim = withCabals $ \cbl -> askCabal cbl prim
+modules prim = withCabals $ \cbl -> askCabalField cbl prim
 
 
 -- |'otherExtensions' extracts a list of "other-extensions" from the
 -- set of cabal files (playing a bit fast and loose here to be honest).
 otherExtensions :: IO [String]
-otherExtensions = withCabals $ \cbl -> askCabal cbl "other-extensions:"
+otherExtensions = withCabals $ \cbl -> askCabalField cbl "other-extensions:"
 
 
 -- |'cSrcs' extracts a list of C source files (i.e. "c-sources") from
@@ -152,13 +152,13 @@ hsSourceDirs = withCabals $ \cbl -> cabalDir cbl : askCabalFiles cbl "hs-source-
 exeOtherExtensions :: IO [String]
 exeOtherExtensions = do
   cbl <- readCabalFile cabalFileBinary
-  return $ askCabal cbl "other-extensions:"
+  return $ askCabalField cbl "other-extensions:"
 
 -- |'exeOtherModules' extracts a list of "other-modules" from the GHC
 -- as an exe cabal file.
 exeOtherModules = do
   cbl <- readCabalFile cabalFileBinary
-  return $ askCabal cbl "other-modules:"
+  return $ askCabalField cbl "other-modules:"
 
 -- |'genCabal' produces a cabal file for ghc with supporting
 -- libraries.
