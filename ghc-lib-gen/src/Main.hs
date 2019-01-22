@@ -169,13 +169,12 @@ genCabal root = do
         ,"license: BSD-3-Clause"
         ,"license-file: LICENSE"
         ,"category: Development"
-        ,"author: XXX"
-        ,"maintainer: XXX"
-        ,"copyright: XXX"
-        ,"synopsis: GHC as a library"
-        ,"description: GHC as a library that can be loaded into GHCi."
-        ,"homepage: XXX"
-        ,"bug-reports: XXX"
+        ,"author: The GHC Team and Digital Asset"
+        ,"maintainer: Digital Asset"
+        ,"synopsis: The GHC API, not tied to GHC versions"
+        ,"description: A package equivalent to the @ghc@ package, but which can be loaded on many compiler versions."
+        ,"homepage: https://github.com/digital-asset/ghc-lib"
+        ,"bug-reports: https://github.com/digital-asset/ghc-lib/issues"
         ,"data-dir: " ++ dataDir
         ,"data-files:"] ++
         map ("  " ++) dataFiles ++
