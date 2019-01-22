@@ -116,21 +116,13 @@ askCabalFiles cbl x = map (cabalDir cbl </>) $ askCabalField cbl x
 
 -- |'genCabal' produces a cabal file for ghc with supporting
 -- libraries.
+generateCabal :: IO ()
 generateCabal = do
     lib <- mapM readCabalFile cabalFileLibraries
     bin <- (:[]) <$> readCabalFile cabalFileBinary
     let askField from x = nubSort $ concatMap (`askCabalField` x) from
     let askFiles from x = nubSort $ concatMap (`askCabalFiles` x) from
 
-
-    let src = nubSort $ map takeDirectory cabalFileLibraries ++ askFiles lib "hs-source-dirs:"
-    let ems = askField lib "exposed-modules:"
-    let oms = askField lib "other-modules:"
-    let csf = askFiles lib "c-sources:"
-    let cmm = askFiles lib "cmm-sources:"
-    let oxt = askField lib "other-extensions:"
-    let eoe = askField bin "other-extensions:"
-    let eom = askField bin "other-modules:"
     let indent = map ("    "++)
     let indent2 = indent . indent
     writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
@@ -188,18 +180,20 @@ generateCabal = do
         ,"        pretty, time, transformers, process, haskeline, hpc"
         ,"    build-tools: alex >= 3.1, happy >= 1.19.4"
         ,"    other-extensions:"] ++
-        indent2 oxt ++
+        indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
-        indent2 csf ++
+        indent2 (askFiles lib "c-sources:") ++
         ["    cmm-sources:"] ++
-        indent2 cmm ++
-        ["    hs-source-dirs:"
-        ,"        ghc-lib/stage1/compiler/build"] ++
-        indent2 src ++
+        indent2 (askFiles lib "cmm-sources:") ++
+        ["    hs-source-dirs:"] ++
+        indent2 (nubSort $
+            "ghc-lib/stage1/compiler/build" :
+            map takeDirectory cabalFileLibraries ++
+            askFiles lib "hs-source-dirs:") ++
         ["    exposed-modules:"] ++
-        indent2 ems ++
+        indent2 (askField lib "exposed-modules:") ++
         ["    other-modules:"] ++
-        indent2 oms ++
+        indent2 (askField lib "other-modules:") ++
         [""
         ,"executable ghc-lib"
         ,"    default-language:   Haskell2010"
@@ -216,9 +210,9 @@ generateCabal = do
         ,"    cc-options: -DTHREADED_RTS"
         ,"    cpp-options: -DGHCI -DTHREADED_RTS -DGHC_LOADED_INTO_GHCI"
         ,"    other-modules:"] ++
-        indent2 eom ++
+        indent2 (askField bin "other-modules:") ++
         ["    other-extensions:"] ++
-        indent2 eoe ++
+        indent2 (askField bin "other-extensions:") ++
         ["    default-extensions: NoImplicitPrelude"
         ,"    main-is: Main.hs"
         ]
