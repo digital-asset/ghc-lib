@@ -8,7 +8,6 @@ import System.FilePath hiding ((</>))
 import System.FilePath.Posix((</>)) -- make sure we generate / on all platforms
 import System.Directory
 import System.IO.Extra
-import Control.Monad
 import Data.List.Extra
 import Data.Char
 
@@ -114,63 +113,24 @@ askCabalFiles :: Cabal -> String -> [String]
 askCabalFiles cbl x = map (cabalDir cbl </>) $ askCabalField cbl x
 
 
--- |'withCabals' folds a function over the set of cabal files.
-withCabals :: (Cabal -> [String]) -> IO [String]
-withCabals f = fmap (nubSort . concat) $ forM cabalFileLibraries $ \file -> do
-    f <$> readCabalFile file
-
--- |'modules' extracts a list of modules (e.g. "exposed-modules") from
--- the set of cabal files.
-modules :: String -> IO [String]
-modules prim = withCabals $ \cbl -> askCabalField cbl prim
-
-
--- |'otherExtensions' extracts a list of "other-extensions" from the
--- set of cabal files (playing a bit fast and loose here to be honest).
-otherExtensions :: IO [String]
-otherExtensions = withCabals $ \cbl -> askCabalField cbl "other-extensions:"
-
-
--- |'cSrcs' extracts a list of C source files (i.e. "c-sources") from
--- the set of cabal files.
-cSrcs :: IO [String]
-cSrcs = withCabals $ \cbl -> askCabalFiles cbl "c-sources:"
-
--- |'cmmSrcs' extracts a list of C-- source files (i.e. "cmm-sources")
--- from the set of cabal files.
-cmmSrcs :: IO [String]
-cmmSrcs = withCabals $ \cbl -> askCabalFiles cbl "cmm-sources:"
-
--- |'hsSourceDirs' extracts a list of source directories from the set
--- of cabal files.
-hsSourceDirs :: IO [String]
-hsSourceDirs = withCabals $ \cbl -> cabalDir cbl : askCabalFiles cbl "hs-source-dirs:"
-
-
--- |'exeOtherExtensions' extracts a list of "other-extensions" from the GHC
--- as an exe cabal file.
-exeOtherExtensions :: IO [String]
-exeOtherExtensions = do
-  cbl <- readCabalFile cabalFileBinary
-  return $ askCabalField cbl "other-extensions:"
-
--- |'exeOtherModules' extracts a list of "other-modules" from the GHC
--- as an exe cabal file.
-exeOtherModules = do
-  cbl <- readCabalFile cabalFileBinary
-  return $ askCabalField cbl "other-modules:"
 
 -- |'genCabal' produces a cabal file for ghc with supporting
 -- libraries.
 generateCabal = do
-    src <- hsSourceDirs
-    ems <- modules "exposed-modules:"
-    oms <- modules "other-modules:"
-    csf <- cSrcs
-    cmm <- cmmSrcs
-    oxt <- otherExtensions
-    eoe <- exeOtherExtensions
-    eom <- exeOtherModules
+    lib <- mapM readCabalFile cabalFileLibraries
+    bin <- (:[]) <$> readCabalFile cabalFileBinary
+    let askField from x = nubSort $ concatMap (`askCabalField` x) from
+    let askFiles from x = nubSort $ concatMap (`askCabalFiles` x) from
+
+
+    let src = nubSort $ map takeDirectory cabalFileLibraries ++ askFiles lib "hs-source-dirs:"
+    let ems = askField lib "exposed-modules:"
+    let oms = askField lib "other-modules:"
+    let csf = askFiles lib "c-sources:"
+    let cmm = askFiles lib "cmm-sources:"
+    let oxt = askField lib "other-extensions:"
+    let eoe = askField bin "other-extensions:"
+    let eom = askField bin "other-modules:"
     let indent = map ("    "++)
     let indent2 = indent . indent
     writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
