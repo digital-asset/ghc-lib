@@ -1,6 +1,6 @@
--- -*- truncate-lines: t; -*-
 
-{- Prep. for building GHC as a library. -}
+-- | Generate a ghc-lib.cabal package given a GHC directory
+module Main(main) where
 
 import System.Environment
 import System.Process.Extra
@@ -8,9 +8,19 @@ import System.FilePath hiding ((</>))
 import System.FilePath.Posix((</>)) -- make sure we generate / on all platforms
 import System.Directory
 import System.IO.Extra
-import Control.Monad
 import Data.List.Extra
 import Data.Char
+
+
+main :: IO ()
+main = do
+    xs <- getArgs
+    case xs of
+        [root] -> withCurrentDirectory root $ do
+            applyPatchHeapClosures
+            generatePrerequisites
+            generateCabal
+        _ -> fail "You must pass exactly 1 argument, the directory containing the ghc source code."
 
 -- Constants.
 
@@ -75,11 +85,11 @@ dataFiles =
     ,"platformConstants"
     ]
 
--- |'appPatchHeapClosures' stubs out a couple of definitions on a
--- particular file in the ghc-heap library.
-appPatchHeapClosures :: FilePath -> IO ()
-appPatchHeapClosures root = do
-    let file = root </> "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
+-- | Stub out a couple of definitions in the ghc-heap library that require CMM features,
+--   since Cabal doesn't work well with CMM files.
+applyPatchHeapClosures :: IO ()
+applyPatchHeapClosures = do
+    let file = "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
     writeFile file .
         replace
             "foreign import prim \"aToWordzh\" aToWord# :: Any -> Word#"
@@ -89,78 +99,45 @@ appPatchHeapClosures root = do
             "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
         =<< readFile' file
 
--- Functions for generating files.
 
--- | Given a file, produce the key/value pairs it contains
-parseCabal :: String -> (String -> [String])
-parseCabal src = \x -> concatMap snd $ filter ((==) x . fst) fields
+-- | Data type representing an approximately parsed Cabal file
+data Cabal = Cabal
+    {cabalDir :: FilePath -- the directory this file exists in
+    ,cabalFields :: [(String, [String])] -- the key/value pairs it contains
+    }
+
+-- | Given a file, produce the key/value pairs it contains (approximate but good enough)
+readCabalFile :: FilePath -> IO Cabal
+readCabalFile file = do
+    src <- readFile' file
+    let fields = repeatedly f $ wordsBy (\x -> isSpace x || x == ',') $ unlines $ filter (not . isIf) $ map trimComment $ lines src
+    return $ Cabal (takeDirectory file) fields
     where
-        -- generate all the fields initially
-        fields = repeatedly f $ wordsBy (\x -> isSpace x || x == ',') $ unlines $ filter (not . isIf) . map trimComment $ lines src
         isIf x = "if " `isPrefixOf` trim x
         trimComment x = maybe x fst $ stripInfix "--" x
         f (x:xs) = let (a,b) = break (":" `isSuffixOf`) xs in ((lower x,a),b)
 
+-- | Ask a Cabal file for a field.
+askCabalField :: Cabal -> String -> [String]
+askCabalField cbl x = concatMap snd $ filter ((==) x . fst) $ cabalFields cbl
 
--- |'withCabals' folds a function over the set of cabal files.
-withCabals :: (String -> String -> [String]) -> String -> IO [String]
-withCabals f root = fmap (nubOrd . concat . reverse) $ forM cabalFileLibraries $ \file -> do
-  src <- readFile' $ root </> file
-  return $ f (takeDirectory file) src
-
--- |'modules' extracts a list of modules (e.g. "exposed-modules") from
--- the set of cabal files.
-modules :: String -> String -> IO [String]
-modules prim = withCabals $ \_ s -> parseCabal s prim
+-- | Ask a Cabal file for a file, which is relative to the underlying Cabal file.
+askCabalFiles :: Cabal -> String -> [String]
+askCabalFiles cbl x = map (cabalDir cbl </>) $ askCabalField cbl x
 
 
--- |'otherExtensions' extracts a list of "other-extensions" from the
--- set of cabal files (playing a bit fast and loose here to be honest).
-otherExtensions :: String -> IO [String]
-otherExtensions = withCabals $ \_ s -> parseCabal s "other-extensions:"
 
+-- | Produces the Cabal file.
+generateCabal :: IO ()
+generateCabal = do
+    lib <- mapM readCabalFile cabalFileLibraries
+    bin <- (:[]) <$> readCabalFile cabalFileBinary
+    let askField from x = nubSort $ concatMap (`askCabalField` x) from
+    let askFiles from x = nubSort $ concatMap (`askCabalFiles` x) from
 
--- |'cSrcs' extracts a list of C source files (i.e. "c-sources") from
--- the set of cabal files.
-cSrcs :: String -> IO [String]
-cSrcs = withCabals $ \dir s -> map (dir </>) $ parseCabal s "c-sources:"
-
--- |'cmmSrcs' extracts a list of C-- source files (i.e. "cmm-sources")
--- from the set of cabal files.
-cmmSrcs :: String -> IO [String]
-cmmSrcs = withCabals $ \dir s -> map (dir </>) $ parseCabal s "cmm-sources:"
-
--- |'hsSourceDirs' extracts a list of source directories from the set
--- of cabal files.
-hsSourceDirs :: String -> IO [String]
-hsSourceDirs = withCabals $ \dir s -> dir : map (dir </>) (parseCabal s "hs-source-dirs:")
-
-
--- |'exeOtherExtensions' extracts a list of "other-extensions" from the GHC
--- as an exe cabal file.
-exeOtherExtensions :: String -> IO [String]
-exeOtherExtensions root = do
-  s <- readFile' $ root </> cabalFileBinary
-  return $ parseCabal s "other-extensions:"
-
--- |'exeOtherModules' extracts a list of "other-modules" from the GHC
--- as an exe cabal file.
-exeOtherModules root = do
-  s <- readFile' $ root </> cabalFileBinary
-  return $ parseCabal s "other-modules:"
-
--- |'genCabal' produces a cabal file for ghc with supporting
--- libraries.
-genCabal root = do
-    src <- hsSourceDirs root
-    ems <- modules "exposed-modules:" root
-    oms <- modules "other-modules:" root
-    csf <- cSrcs root
-    cmm <- cmmSrcs root
-    oxt <- otherExtensions root
-    eoe <- exeOtherExtensions root
-    eom <- exeOtherModules root
-    writeFile (root </> "ghc-lib.cabal") $ unlines $ map trimEnd $
+    let indent = map ("    "++)
+    let indent2 = indent . indent
+    writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
         -- header
         ["cabal-version: 2.1" -- or cabal check complains about cmm-sources
         ,"build-type: Simple"
@@ -169,26 +146,25 @@ genCabal root = do
         ,"license: BSD-3-Clause"
         ,"license-file: LICENSE"
         ,"category: Development"
-        ,"author: XXX"
-        ,"maintainer: XXX"
-        ,"copyright: XXX"
-        ,"synopsis: GHC as a library"
-        ,"description: GHC as a library that can be loaded into GHCi."
-        ,"homepage: XXX"
-        ,"bug-reports: XXX"
+        ,"author: The GHC Team and Digital Asset"
+        ,"maintainer: Digital Asset"
+        ,"synopsis: The GHC API, decoupled from GHC versions"
+        ,"description: A package equivalent to the @ghc@ package, but which can be loaded on many compiler versions."
+        ,"homepage: https://github.com/digital-asset/ghc-lib"
+        ,"bug-reports: https://github.com/digital-asset/ghc-lib/issues"
         ,"data-dir: " ++ dataDir
         ,"data-files:"] ++
-        map ("  " ++) dataFiles ++
+        indent dataFiles ++
         ["extra-source-files:"] ++
-        map ("  " ++) extraFiles ++
-        ["  includes/*.h"
-        ,"  includes/CodeGen.Platform.hs"
-        ,"  includes/rts/*.h"
-        ,"  includes/rts/storage/*.h"
-        ,"  includes/rts/prof/*.h"
-        ,"  compiler/nativeGen/*.h"
-        ,"  compiler/utils/*.h"
-        ,"  compiler/*.h"
+        indent extraFiles ++
+        ["    includes/*.h"
+        ,"    includes/CodeGen.Platform.hs"
+        ,"    includes/rts/*.h"
+        ,"    includes/rts/storage/*.h"
+        ,"    includes/rts/prof/*.h"
+        ,"    compiler/nativeGen/*.h"
+        ,"    compiler/utils/*.h"
+        ,"    compiler/*.h"
         ,"tested-with:GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
@@ -198,10 +174,10 @@ genCabal root = do
         ,"    default-language:   Haskell2010"
         ,"    default-extensions: NoImplicitPrelude"
         ,"    include-dirs:"
-        ,"      ghc-lib/generated"
-        ,"      ghc-lib/stage1/compiler/build"
-        ,"      compiler"
-        ,"      compiler/utils"
+        ,"        ghc-lib/generated"
+        ,"        ghc-lib/stage1/compiler/build"
+        ,"        compiler"
+        ,"        compiler/utils"
         ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
         ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
@@ -210,24 +186,26 @@ genCabal root = do
         ,"    else"
         ,"        build-depends: Win32"
         ,"    build-depends:"
-        ,"      ghc-prim"
-        ,"      , base == 4.*, containers, bytestring, binary"
-        ,"      , filepath, directory, array, deepseq"
-        ,"      , pretty, time, transformers, process, haskeline, hpc"
-        ,"    build-tools: alex >= 3.1 , happy >= 1.19.4"
+        ,"        ghc-prim,"
+        ,"        base == 4.*, containers, bytestring, binary,"
+        ,"        filepath, directory, array, deepseq,"
+        ,"        pretty, time, transformers, process, haskeline, hpc"
+        ,"    build-tools: alex >= 3.1, happy >= 1.19.4"
         ,"    other-extensions:"] ++
-        map ("      " ++) oxt ++
+        indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
-        map ("      " ++) csf ++
+        indent2 (askFiles lib "c-sources:") ++
         ["    cmm-sources:"] ++
-        map ("      " ++) cmm ++
-        ["    hs-source-dirs:"
-        ,"      ghc-lib/stage1/compiler/build"] ++
-        map ("      " ++) src ++
+        indent2 (askFiles lib "cmm-sources:") ++
+        ["    hs-source-dirs:"] ++
+        indent2 (nubSort $
+            "ghc-lib/stage1/compiler/build" :
+            map takeDirectory cabalFileLibraries ++
+            askFiles lib "hs-source-dirs:") ++
         ["    exposed-modules:"] ++
-        map ("      " ++) ems ++
+        indent2 (askField lib "exposed-modules:") ++
         ["    other-modules:"] ++
-        map ("      " ++) oms ++
+        indent2 (askField lib "other-modules:") ++
         [""
         ,"executable ghc-lib"
         ,"    default-language:   Haskell2010"
@@ -244,32 +222,22 @@ genCabal root = do
         ,"    cc-options: -DTHREADED_RTS"
         ,"    cpp-options: -DGHCI -DTHREADED_RTS -DGHC_LOADED_INTO_GHCI"
         ,"    other-modules:"] ++
-        map ("      " ++) eom ++
+        indent2 (askField bin "other-modules:") ++
         ["    other-extensions:"] ++
-        map ("      " ++) eoe ++
+        indent2 (askField bin "other-extensions:") ++
         ["    default-extensions: NoImplicitPrelude"
         ,"    main-is: Main.hs"
         ]
 
-genPrerequisites :: String -> IO ()
-genPrerequisites root =
-  withCurrentDirectory (root </> "hadrian") $ do
+-- | Run Hadrian to build the things that the Cabal file needs
+generatePrerequisites :: IO ()
+generatePrerequisites = withCurrentDirectory "hadrian" $ do
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
-      ["stack exec hadrian --"
-      ,"--directory=.."
-      ,"--configure"
-      ,"--integer-simple"
-      ,"--build-root=ghc-lib"
-      ] ++ extraFiles ++
-      map (dataDir </>) dataFiles
-
--- Driver.
-
--- | 'main' expects a single argument, the root of a GHC source tree.
-main :: IO ()
-main = do
-  [root] <- getArgs
-  appPatchHeapClosures root
-  genPrerequisites root
-  genCabal root
+        ["stack exec hadrian --"
+        ,"--directory=.."
+        ,"--configure"
+        ,"--integer-simple"
+        ,"--build-root=ghc-lib"
+        ] ++ extraFiles ++
+        map (dataDir </>) dataFiles
