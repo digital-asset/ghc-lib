@@ -160,6 +160,8 @@ genCabal root = do
     oxt <- otherExtensions root
     eoe <- exeOtherExtensions root
     eom <- exeOtherModules root
+    let indent = map ("    "++)
+    let indent2 = indent . indent
     writeFile (root </> "ghc-lib.cabal") $ unlines $ map trimEnd $
         -- header
         ["cabal-version: 2.1" -- or cabal check complains about cmm-sources
@@ -177,17 +179,17 @@ genCabal root = do
         ,"bug-reports: https://github.com/digital-asset/ghc-lib/issues"
         ,"data-dir: " ++ dataDir
         ,"data-files:"] ++
-        map ("  " ++) dataFiles ++
+        indent dataFiles ++
         ["extra-source-files:"] ++
-        map ("  " ++) extraFiles ++
-        ["  includes/*.h"
-        ,"  includes/CodeGen.Platform.hs"
-        ,"  includes/rts/*.h"
-        ,"  includes/rts/storage/*.h"
-        ,"  includes/rts/prof/*.h"
-        ,"  compiler/nativeGen/*.h"
-        ,"  compiler/utils/*.h"
-        ,"  compiler/*.h"
+        indent extraFiles ++
+        ["    includes/*.h"
+        ,"    includes/CodeGen.Platform.hs"
+        ,"    includes/rts/*.h"
+        ,"    includes/rts/storage/*.h"
+        ,"    includes/rts/prof/*.h"
+        ,"    compiler/nativeGen/*.h"
+        ,"    compiler/utils/*.h"
+        ,"    compiler/*.h"
         ,"tested-with:GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
@@ -197,10 +199,10 @@ genCabal root = do
         ,"    default-language:   Haskell2010"
         ,"    default-extensions: NoImplicitPrelude"
         ,"    include-dirs:"
-        ,"      ghc-lib/generated"
-        ,"      ghc-lib/stage1/compiler/build"
-        ,"      compiler"
-        ,"      compiler/utils"
+        ,"        ghc-lib/generated"
+        ,"        ghc-lib/stage1/compiler/build"
+        ,"        compiler"
+        ,"        compiler/utils"
         ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
         ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
@@ -209,24 +211,24 @@ genCabal root = do
         ,"    else"
         ,"        build-depends: Win32"
         ,"    build-depends:"
-        ,"      ghc-prim"
-        ,"      , base == 4.*, containers, bytestring, binary"
-        ,"      , filepath, directory, array, deepseq"
-        ,"      , pretty, time, transformers, process, haskeline, hpc"
-        ,"    build-tools: alex >= 3.1 , happy >= 1.19.4"
+        ,"        ghc-prim,"
+        ,"        base == 4.*, containers, bytestring, binary,"
+        ,"        filepath, directory, array, deepseq,"
+        ,"        pretty, time, transformers, process, haskeline, hpc"
+        ,"    build-tools: alex >= 3.1, happy >= 1.19.4"
         ,"    other-extensions:"] ++
-        map ("      " ++) oxt ++
+        indent2 oxt ++
         ["    c-sources:"] ++
-        map ("      " ++) csf ++
+        indent2 csf ++
         ["    cmm-sources:"] ++
-        map ("      " ++) cmm ++
+        indent2 cmm ++
         ["    hs-source-dirs:"
-        ,"      ghc-lib/stage1/compiler/build"] ++
-        map ("      " ++) src ++
+        ,"        ghc-lib/stage1/compiler/build"] ++
+        indent2 src ++
         ["    exposed-modules:"] ++
-        map ("      " ++) ems ++
+        indent2 ems ++
         ["    other-modules:"] ++
-        map ("      " ++) oms ++
+        indent2 oms ++
         [""
         ,"executable ghc-lib"
         ,"    default-language:   Haskell2010"
@@ -243,9 +245,9 @@ genCabal root = do
         ,"    cc-options: -DTHREADED_RTS"
         ,"    cpp-options: -DGHCI -DTHREADED_RTS -DGHC_LOADED_INTO_GHCI"
         ,"    other-modules:"] ++
-        map ("      " ++) eom ++
+        indent2 eom ++
         ["    other-extensions:"] ++
-        map ("      " ++) eoe ++
+        indent2 eoe ++
         ["    default-extensions: NoImplicitPrelude"
         ,"    main-is: Main.hs"
         ]
