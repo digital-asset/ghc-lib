@@ -1,6 +1,6 @@
--- -*- truncate-lines: t; -*-
 
-{- Prep. for building GHC as a library. -}
+-- | Generate a ghc-lib.cabal package given a GHC directory
+module Main(main) where
 
 import System.Environment
 import System.Process.Extra
@@ -10,6 +10,17 @@ import System.Directory
 import System.IO.Extra
 import Data.List.Extra
 import Data.Char
+
+
+main :: IO ()
+main = do
+    xs <- getArgs
+    case xs of
+        [root] -> withCurrentDirectory root $ do
+            applyPatchHeapClosures
+            generatePrerequisites
+            generateCabal
+        _ -> fail "You must pass exactly 1 argument, the directory containing the ghc source code."
 
 -- Constants.
 
@@ -74,8 +85,8 @@ dataFiles =
     ,"platformConstants"
     ]
 
--- |'appPatchHeapClosures' stubs out a couple of definitions on a
--- particular file in the ghc-heap library.
+-- | Stub out a couple of definitions in the ghc-heap library that require CMM features,
+--   since Cabal doesn't work well with CMM files.
 applyPatchHeapClosures :: IO ()
 applyPatchHeapClosures = do
     let file = "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
@@ -88,14 +99,14 @@ applyPatchHeapClosures = do
             "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
         =<< readFile' file
 
--- Functions for generating files.
 
+-- | Data type representing an approximately parsed Cabal file
 data Cabal = Cabal
     {cabalDir :: FilePath -- the directory this file exists in
     ,cabalFields :: [(String, [String])] -- the key/value pairs it contains
     }
 
--- | Given a file, produce the key/value pairs it contains
+-- | Given a file, produce the key/value pairs it contains (approximate but good enough)
 readCabalFile :: FilePath -> IO Cabal
 readCabalFile file = do
     src <- readFile' file
@@ -106,16 +117,17 @@ readCabalFile file = do
         trimComment x = maybe x fst $ stripInfix "--" x
         f (x:xs) = let (a,b) = break (":" `isSuffixOf`) xs in ((lower x,a),b)
 
+-- | Ask a Cabal file for a field.
 askCabalField :: Cabal -> String -> [String]
 askCabalField cbl x = concatMap snd $ filter ((==) x . fst) $ cabalFields cbl
 
+-- | Ask a Cabal file for a file, which is relative to the underlying Cabal file.
 askCabalFiles :: Cabal -> String -> [String]
 askCabalFiles cbl x = map (cabalDir cbl </>) $ askCabalField cbl x
 
 
 
--- |'genCabal' produces a cabal file for ghc with supporting
--- libraries.
+-- | Produces the Cabal file.
 generateCabal :: IO ()
 generateCabal = do
     lib <- mapM readCabalFile cabalFileLibraries
@@ -136,7 +148,7 @@ generateCabal = do
         ,"category: Development"
         ,"author: The GHC Team and Digital Asset"
         ,"maintainer: Digital Asset"
-        ,"synopsis: The GHC API, not tied to GHC versions"
+        ,"synopsis: The GHC API, decoupled from GHC versions"
         ,"description: A package equivalent to the @ghc@ package, but which can be loaded on many compiler versions."
         ,"homepage: https://github.com/digital-asset/ghc-lib"
         ,"bug-reports: https://github.com/digital-asset/ghc-lib/issues"
@@ -217,6 +229,7 @@ generateCabal = do
         ,"    main-is: Main.hs"
         ]
 
+-- | Run Hadrian to build the things that the Cabal file needs
 generatePrerequisites :: IO ()
 generatePrerequisites = withCurrentDirectory "hadrian" $ do
     system_ "stack build --no-library-profiling"
@@ -228,14 +241,3 @@ generatePrerequisites = withCurrentDirectory "hadrian" $ do
         ,"--build-root=ghc-lib"
         ] ++ extraFiles ++
         map (dataDir </>) dataFiles
-
--- Driver.
-
--- | 'main' expects a single argument, the root of a GHC source tree.
-main :: IO ()
-main = do
-    [root] <- getArgs
-    withCurrentDirectory root $ do
-        applyPatchHeapClosures
-        generatePrerequisites
-        generateCabal
