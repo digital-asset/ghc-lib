@@ -19,3 +19,5 @@ To build and install `ghc-lib` you'll need clones of this repository and the [GH
   cabal install
 ```
 where `<path-to-ghc-lib>` and `<path-to-ghc>` are paths to the `ghc-lib` and `ghc` clones respectively.
+
+*Note : Cabal distributions obtained via `cabal sdist` on Linux/MacOS are known to build on Windows but not vice-versa.*
