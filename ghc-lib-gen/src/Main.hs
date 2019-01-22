@@ -202,7 +202,8 @@ generateCabal = do
             "ghc-lib/stage1/compiler/build" :
             map takeDirectory cabalFileLibraries ++
             askFiles lib "hs-source-dirs:") ++
-        ["    exposed-modules:"] ++
+        ["    exposed-modules:"
+        ,"        Paths_ghc_lib"] ++
         indent2 (askField lib "exposed-modules:") ++
         ["    other-modules:"] ++
         indent2 (askField lib "other-modules:") ++

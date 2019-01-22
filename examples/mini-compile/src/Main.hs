@@ -4,6 +4,7 @@
 module Main (main) where
 
 import "ghc-lib" GHC
+import "ghc-lib" Paths_ghc_lib
 import "ghc-lib" BasicTypes
 import "ghc-lib" DriverPhases
 import "ghc-lib" GHC.LanguageExtensions.Type
@@ -64,6 +65,12 @@ parse filename flags str =
     buffer = stringToStringBuffer str
     parseState = mkPState flags buffer location
 
+parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
+parsePragmasIntoDynFlags fp contents dflags0 = do
+    let opts = getOptions dflags0 (stringToStringBuffer contents) fp
+    (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
+    return dflags
+
 mkModSummary
   :: String  -- file name
   -> UTCTime -- file modification time
@@ -105,11 +112,21 @@ mkModSummary filename filetime flags str (L loc rdr_module) = do
 epochToUTC :: EpochTime -> UTCTime
 epochToUTC = posixSecondsToUTCTime . realToFrac
 
+setThisInstalledUnitId :: UnitId -> DynFlags -> DynFlags
+setThisInstalledUnitId unitId dflags =
+  dflags {thisInstalledUnitId = toInstalledUnitId unitId}
+
 main :: IO ()
 main = do
   [filename] <- getArgs
   s <- readFile' filename
-  let flags = defaultDynFlags fakeSettings fakeLlvmConfig
+  flags <- parsePragmasIntoDynFlags
+             filename
+             s
+             (setThisInstalledUnitId
+               (stringToUnitId "ghc-prim")
+               (defaultDynFlags fakeSettings fakeLlvmConfig)
+             )
   case parse filename flags s of
     PFailed _ loc err ->
       putStrLn (showSDoc flags (pprLocErrMsg (mkPlainErrMsg flags loc err)))
@@ -128,6 +145,6 @@ main = do
               , pm_extra_src_files=[] -- src imports not allowed
               , pm_annotations = hpm_annotations
               }
-        -- tcm <- runGhc (Just "/Users/shaynefletcher/.cabal//share/x86_64-osx-ghc-8.4.3/ghc-lib-0.1.0/") (typecheckModule pm >>= \tcm -> return tcm)
-        tcm <- runGhc (Just libdir) (typecheckModule pm >>= \tcm -> return tcm)
+        dataDir <- getDataDir
+        tcm <- runGhc (Just dataDir) (typecheckModule pm >>= \tcm -> return tcm)
         return ()
