@@ -77,9 +77,9 @@ dataFiles =
 
 -- |'appPatchHeapClosures' stubs out a couple of definitions on a
 -- particular file in the ghc-heap library.
-appPatchHeapClosures :: FilePath -> IO ()
-appPatchHeapClosures root = do
-    let file = root </> "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
+appPatchHeapClosures :: IO ()
+appPatchHeapClosures = do
+    let file = "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
     writeFile file .
         replace
             "foreign import prim \"aToWordzh\" aToWord# :: Any -> Word#"
@@ -91,81 +91,89 @@ appPatchHeapClosures root = do
 
 -- Functions for generating files.
 
-type Cabal = [(String, [String])]
+data Cabal = Cabal
+    {cabalDir :: FilePath -- the directory this file exists in
+    ,cabalFields :: [(String, [String])] -- the key/value pairs it contains
+    }
 
 -- | Given a file, produce the key/value pairs it contains
-parseCabal :: String -> Cabal
-parseCabal = repeatedly f . wordsBy (\x -> isSpace x || x == ',') . unlines . filter (not . isIf) . map trimComment . lines
+readCabalFile :: FilePath -> IO Cabal
+readCabalFile file = do
+    src <- readFile' file
+    let fields = repeatedly f $ wordsBy (\x -> isSpace x || x == ',') $ unlines $ filter (not . isIf) $ map trimComment $ lines src
+    return $ Cabal (takeDirectory file) fields
     where
         isIf x = "if " `isPrefixOf` trim x
         trimComment x = maybe x fst $ stripInfix "--" x
         f (x:xs) = let (a,b) = break (":" `isSuffixOf`) xs in ((lower x,a),b)
 
 askCabal :: Cabal -> String -> [String]
-askCabal fields x = concatMap snd $ filter ((==) x . fst) fields
+askCabal cbl x = concatMap snd $ filter ((==) x . fst) $ cabalFields cbl
+
+askCabalFiles :: Cabal -> String -> [String]
+askCabalFiles cbl x = map (cabalDir cbl </>) $ askCabal cbl x
 
 
 -- |'withCabals' folds a function over the set of cabal files.
-withCabals :: (String -> String -> [String]) -> String -> IO [String]
-withCabals f root = fmap (nubSort . concat) $ forM cabalFileLibraries $ \file -> do
-  src <- readFile' $ root </> file
-  return $ f (takeDirectory file) src
+withCabals :: (Cabal -> [String]) -> IO [String]
+withCabals f = fmap (nubSort . concat) $ forM cabalFileLibraries $ \file -> do
+    f <$> readCabalFile file
 
 -- |'modules' extracts a list of modules (e.g. "exposed-modules") from
 -- the set of cabal files.
-modules :: String -> String -> IO [String]
-modules prim = withCabals $ \_ s -> askCabal (parseCabal s) prim
+modules :: String -> IO [String]
+modules prim = withCabals $ \cbl -> askCabal cbl prim
 
 
 -- |'otherExtensions' extracts a list of "other-extensions" from the
 -- set of cabal files (playing a bit fast and loose here to be honest).
-otherExtensions :: String -> IO [String]
-otherExtensions = withCabals $ \_ s -> askCabal (parseCabal s) "other-extensions:"
+otherExtensions :: IO [String]
+otherExtensions = withCabals $ \cbl -> askCabal cbl "other-extensions:"
 
 
 -- |'cSrcs' extracts a list of C source files (i.e. "c-sources") from
 -- the set of cabal files.
-cSrcs :: String -> IO [String]
-cSrcs = withCabals $ \dir s -> map (dir </>) $ askCabal (parseCabal s) "c-sources:"
+cSrcs :: IO [String]
+cSrcs = withCabals $ \cbl -> askCabalFiles cbl "c-sources:"
 
 -- |'cmmSrcs' extracts a list of C-- source files (i.e. "cmm-sources")
 -- from the set of cabal files.
-cmmSrcs :: String -> IO [String]
-cmmSrcs = withCabals $ \dir s -> map (dir </>) $ askCabal (parseCabal s) "cmm-sources:"
+cmmSrcs :: IO [String]
+cmmSrcs = withCabals $ \cbl -> askCabalFiles cbl "cmm-sources:"
 
 -- |'hsSourceDirs' extracts a list of source directories from the set
 -- of cabal files.
-hsSourceDirs :: String -> IO [String]
-hsSourceDirs = withCabals $ \dir s -> dir : map (dir </>) (askCabal (parseCabal s) "hs-source-dirs:")
+hsSourceDirs :: IO [String]
+hsSourceDirs = withCabals $ \cbl -> cabalDir cbl : askCabalFiles cbl "hs-source-dirs:"
 
 
 -- |'exeOtherExtensions' extracts a list of "other-extensions" from the GHC
 -- as an exe cabal file.
-exeOtherExtensions :: String -> IO [String]
-exeOtherExtensions root = do
-  s <- readFile' $ root </> cabalFileBinary
-  return $ askCabal (parseCabal s) "other-extensions:"
+exeOtherExtensions :: IO [String]
+exeOtherExtensions = do
+  cbl <- readCabalFile cabalFileBinary
+  return $ askCabal cbl "other-extensions:"
 
 -- |'exeOtherModules' extracts a list of "other-modules" from the GHC
 -- as an exe cabal file.
-exeOtherModules root = do
-  s <- readFile' $ root </> cabalFileBinary
-  return $ askCabal (parseCabal s) "other-modules:"
+exeOtherModules = do
+  cbl <- readCabalFile cabalFileBinary
+  return $ askCabal cbl "other-modules:"
 
 -- |'genCabal' produces a cabal file for ghc with supporting
 -- libraries.
-genCabal root = do
-    src <- hsSourceDirs root
-    ems <- modules "exposed-modules:" root
-    oms <- modules "other-modules:" root
-    csf <- cSrcs root
-    cmm <- cmmSrcs root
-    oxt <- otherExtensions root
-    eoe <- exeOtherExtensions root
-    eom <- exeOtherModules root
+genCabal = do
+    src <- hsSourceDirs
+    ems <- modules "exposed-modules:"
+    oms <- modules "other-modules:"
+    csf <- cSrcs
+    cmm <- cmmSrcs
+    oxt <- otherExtensions
+    eoe <- exeOtherExtensions
+    eom <- exeOtherModules
     let indent = map ("    "++)
     let indent2 = indent . indent
-    writeFile (root </> "ghc-lib.cabal") $ unlines $ map trimEnd $
+    writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
         -- header
         ["cabal-version: 2.1" -- or cabal check complains about cmm-sources
         ,"build-type: Simple"
@@ -255,9 +263,9 @@ genCabal root = do
         ,"    main-is: Main.hs"
         ]
 
-genPrerequisites :: String -> IO ()
-genPrerequisites root =
-  withCurrentDirectory (root </> "hadrian") $ do
+genPrerequisites :: IO ()
+genPrerequisites =
+  withCurrentDirectory "hadrian" $ do
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
       ["stack exec hadrian --"
@@ -274,6 +282,7 @@ genPrerequisites root =
 main :: IO ()
 main = do
   [root] <- getArgs
-  appPatchHeapClosures root
-  genPrerequisites root
-  genCabal root
+  withCurrentDirectory root $ do
+    appPatchHeapClosures
+    genPrerequisites
+    genCabal
