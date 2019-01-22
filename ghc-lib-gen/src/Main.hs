@@ -77,8 +77,8 @@ dataFiles =
 
 -- |'appPatchHeapClosures' stubs out a couple of definitions on a
 -- particular file in the ghc-heap library.
-appPatchHeapClosures :: IO ()
-appPatchHeapClosures = do
+applyPatchHeapClosures :: IO ()
+applyPatchHeapClosures = do
     let file = "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
     writeFile file .
         replace
@@ -162,7 +162,7 @@ exeOtherModules = do
 
 -- |'genCabal' produces a cabal file for ghc with supporting
 -- libraries.
-genCabal = do
+generateCabal = do
     src <- hsSourceDirs
     ems <- modules "exposed-modules:"
     oms <- modules "other-modules:"
@@ -263,26 +263,25 @@ genCabal = do
         ,"    main-is: Main.hs"
         ]
 
-genPrerequisites :: IO ()
-genPrerequisites =
-  withCurrentDirectory "hadrian" $ do
+generatePrerequisites :: IO ()
+generatePrerequisites = withCurrentDirectory "hadrian" $ do
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
-      ["stack exec hadrian --"
-      ,"--directory=.."
-      ,"--configure"
-      ,"--integer-simple"
-      ,"--build-root=ghc-lib"
-      ] ++ extraFiles ++
-      map (dataDir </>) dataFiles
+        ["stack exec hadrian --"
+        ,"--directory=.."
+        ,"--configure"
+        ,"--integer-simple"
+        ,"--build-root=ghc-lib"
+        ] ++ extraFiles ++
+        map (dataDir </>) dataFiles
 
 -- Driver.
 
 -- | 'main' expects a single argument, the root of a GHC source tree.
 main :: IO ()
 main = do
-  [root] <- getArgs
-  withCurrentDirectory root $ do
-    appPatchHeapClosures
-    genPrerequisites
-    genCabal
+    [root] <- getArgs
+    withCurrentDirectory root $ do
+        applyPatchHeapClosures
+        generatePrerequisites
+        generateCabal
