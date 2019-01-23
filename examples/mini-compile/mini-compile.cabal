@@ -13,6 +13,7 @@ executable mini-compile
   main-is:             Main.hs
   build-depends:       base >=4.11
                      , containers
+                     , directory
                      , extra
                      , ghc-lib
                      , ghc-paths

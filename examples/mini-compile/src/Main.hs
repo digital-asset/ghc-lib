@@ -15,6 +15,7 @@ import "ghc-lib" Fingerprint
 
 import Outputable
 import System.Environment
+import System.Directory
 import System.IO.Extra
 import qualified Data.Map.Strict as Map
 import Data.IORef
@@ -27,9 +28,10 @@ main = do
       s <- readFile' file
       flags <- mkDynFlags file s
       dataDir <- getDataDir
-      cm <- runGhc (Just dataDir)
-              (setSessionDynFlags flags
-               >> return file >>= compileToCoreSimplified)
+      createDirectoryIfMissing True (dataDir ++ "/../mingw")
+      cm <- runGhc (Just dataDir) $ do
+              setSessionDynFlags flags
+              compileToCoreSimplified file
       putStrLn (showSDoc flags (ppr (cm)))
     _ -> fail "Exactly one file argument required"
 
