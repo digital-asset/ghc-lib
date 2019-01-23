@@ -2,3 +2,4 @@ dist/
 ghc/
 ghc-master/
 .stack-work/
+*.hi

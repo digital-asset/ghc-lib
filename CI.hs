@@ -34,7 +34,13 @@ main = do
     renameDirectory (dropExtension $ dropExtension tarball) "ghc-lib"
 
     -- Test the new projects
-    writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc-lib","- examples/mini-hlint"]
+    writeFile "stack.yaml" $
+      stackYaml ++
+      unlines [ "- ghc-lib"
+              , "- examples/mini-hlint"
+              , "- examples/mini-compile"
+              ]
     cmd "stack build --no-terminal --interleaved-output"
     cmd "stack exec --no-terminal -- ghc-lib --version"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
+    cmd "stack exec --no-terminal -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"

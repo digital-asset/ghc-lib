@@ -7,8 +7,6 @@ import "ghc-lib" GHC
 import "ghc-lib" Config
 import "ghc-lib" DynFlags
 import "ghc-lib" Platform
-import "ghc-lib" HsSyn
-import "ghc-lib" HsExtension
 import "ghc-lib" StringBuffer
 import "ghc-lib" Fingerprint
 import "ghc-lib" Lexer
@@ -95,11 +93,14 @@ analyzeDecl _ _ = return ()
 
 main :: IO ()
 main = do
-  [filename] <- getArgs
-  s <- readFile' filename
-  let flags = defaultDynFlags fakeSettings fakeLlvmConfig
-  case parse filename flags s of
-    POk _ (L _ (HsModule {hsmodDecls=decls})) ->
-      forM_ decls (analyzeDecl flags)
-    PFailed _ loc err ->
-      putStrLn (showSDoc flags (pprLocErrMsg (mkPlainErrMsg flags loc err)))
+  args <- getArgs
+  case args of
+    [file] -> do
+      s <- readFile' file
+      let flags = defaultDynFlags fakeSettings fakeLlvmConfig
+      case parse file flags s of
+        POk _ (L _ (HsModule {hsmodDecls=decls})) ->
+          forM_ decls (analyzeDecl flags)
+        PFailed _ loc err ->
+          putStrLn (showSDoc flags (pprLocErrMsg (mkPlainErrMsg flags loc err)))
+    _ -> fail "Exactly one file argument required"
