@@ -1,0 +1,3 @@
+:set -fwarn-unused-binds -fwarn-unused-imports -fwarn-orphans
+:set "ghc-lib"
+:load src/Main.hs

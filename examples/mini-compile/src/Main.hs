@@ -13,29 +13,21 @@ import "ghc-lib" Module
 import "ghc-lib" Config
 import "ghc-lib" DynFlags
 import "ghc-lib" Platform
-import "ghc-lib" HsSyn
-import "ghc-lib" HsExtension
 import "ghc-lib" StringBuffer
 import "ghc-lib" Fingerprint
-import "ghc-lib" RdrName
 import "ghc-lib" ErrUtils
 import "ghc-lib" Lexer
 import qualified "ghc-lib" Parser
-
-import GHC.Paths
 import FastString
 import Outputable
 import SrcLoc
 import System.Environment
 import System.IO.Extra
-import Control.Monad
 import qualified Data.Map.Strict as Map
-import System.Directory
 import Data.Time.Clock
 import Data.Time.Clock.POSIX(posixSecondsToUTCTime)
 import System.FilePath.Posix
 import System.Posix.Types(EpochTime)
-import System.Posix.Time
 import System.Posix.Files
 
 fakeSettings :: Settings
