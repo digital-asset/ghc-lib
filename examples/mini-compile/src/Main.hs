@@ -30,7 +30,7 @@ main = do
       cm <- runGhc (Just dataDir)
               (setSessionDynFlags flags
                >> return file >>= compileToCoreSimplified)
-      putStrLn (showSDocUnsafe (ppr (cm)))
+      putStrLn (showSDoc flags (ppr (cm)))
     _ -> fail "Exactly one file argument required"
 
 mkDynFlags :: String -> String -> IO DynFlags
