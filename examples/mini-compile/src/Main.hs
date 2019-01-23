@@ -28,30 +28,33 @@ main = do
       s <- readFile' file
       flags <- mkDynFlags file s
       dataDir <- getDataDir
+      -- On mingw we avoid a "could not detect toolchain mingw"
+      -- runtime error. The error originates from `findToolDir`
+      -- indirectly invoked by `initGhcMonad` from `runGhc`). This
+      -- line tricks `findToolDir`.
       createDirectoryIfMissing True (dataDir ++ "/../mingw")
       cm <- runGhc (Just dataDir) $ do
               setSessionDynFlags flags
               compileToCoreSimplified file
-      putStrLn (showSDoc flags (ppr (cm)))
+      putStrLn (showSDoc flags (ppr cm))
     _ -> fail "Exactly one file argument required"
 
 mkDynFlags :: String -> String -> IO DynFlags
-mkDynFlags filename s = do {
-  ; dirs_to_clean <- newIORef Map.empty
-  ; files_to_clean <- newIORef emptyFilesToClean
-  ; next_temp_suffix <- newIORef 0
-  ; let baseFlags =
-          (defaultDynFlags fakeSettings fakeLlvmConfig) {
-            ghcLink = NoLink
-          , hscTarget = HscNothing
-          , pkgDatabase = Just []
-          , dirsToClean = dirs_to_clean
-          , filesToClean = files_to_clean
-          , nextTempSuffix = next_temp_suffix
-          , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "ghc-prim")
-          }
-  ; parsePragmasIntoDynFlags filename s baseFlags
-  }
+mkDynFlags filename s = do
+  dirs_to_clean <- newIORef Map.empty
+  files_to_clean <- newIORef emptyFilesToClean
+  next_temp_suffix <- newIORef 0
+  let baseFlags =
+        (defaultDynFlags fakeSettings fakeLlvmConfig) {
+          ghcLink = NoLink
+        , hscTarget = HscNothing
+        , pkgDatabase = Just []
+        , dirsToClean = dirs_to_clean
+        , filesToClean = files_to_clean
+        , nextTempSuffix = next_temp_suffix
+        , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "ghc-prim")
+        }
+  parsePragmasIntoDynFlags filename s baseFlags
   where
     parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
     parsePragmasIntoDynFlags fp contents dflags0 = do

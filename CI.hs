@@ -36,8 +36,8 @@ main = do
     -- Test the new projects
     writeFile "stack.yaml" $
       stackYaml ++
-      unlines ["- ghc-lib"
-              ,"- examples/mini-hlint"
+      unlines [ "- ghc-lib"
+              , "- examples/mini-hlint"
               , "- examples/mini-compile"
               ]
     cmd "stack build --no-terminal --interleaved-output"
