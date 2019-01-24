@@ -27,4 +27,4 @@ cabal run ghc
 cd ghc
 cabal install
 ```
-*Warning : `ghc-lib` is known to work on all of MacOS, Linux and Windows. A distribution produced with `cabal sdist` on Linux/MacOS will build on Windows note though, a `cabal sdist` produced on Windows is known not to build on MacOS/Linux.*
+*Warning : `ghc-lib` is known to work on all of MacOS, Linux and Windows. A distribution produced with `cabal sdist` on Linux/MacOS builds on Windows, but a `cabal sdist` produced on Windows does not build on MacOS/Linux.*
