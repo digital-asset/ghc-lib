@@ -8,5 +8,5 @@ os:
 script:
 - curl -sSL https://get.haskellstack.org/ | sh
 - stack setup > nul
-- stack --no-terminal build ghc-lib-gen
+- stack --no-terminal build
 - stack runhaskell CI.hs
