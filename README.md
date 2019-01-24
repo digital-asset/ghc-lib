@@ -19,11 +19,11 @@ The package `ghc-lib` will be released on [Hackage](https://hackage.haskell.org/
 
 # Creating `ghc-lib`
 
-To build `ghc-lib` you'll need clones of this repository and the [GHC repository](https://git.haskell.org). In a bash shell, building can be achieved with the following instructions.
+To build `ghc-lib` you'll need clones of this repository and the [GHC repository](https://git.haskell.org). In a bash shell, build with the following commands.
 ```bash
-  git@github.com:digital-asset/ghc-lib.git
+  git clone git@github.com:digital-asset/ghc-lib.git
   cd ghc-lib
-  git://git.haskell.org/ghc.git --recursive
+  git clone git://git.haskell.org/ghc.git --recursive
   cabal run ghc
   cd ghc
   cabal install
