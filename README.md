@@ -18,12 +18,13 @@ The package `ghc-lib` will be released on [Hackage](https://hackage.haskell.org/
 # Creating `ghc-lib`
 
 To build `ghc-lib` you'll need clones of this repository and the [GHC repository](https://git.haskell.org). In a bash shell, build with the following commands.
+
 ```bash
-  git clone git@github.com:digital-asset/ghc-lib.git
-  cd ghc-lib
-  git clone git://git.haskell.org/ghc.git --recursive
-  cabal run ghc
-  cd ghc
-  cabal install
+git clone git@github.com:digital-asset/ghc-lib.git
+cd ghc-lib
+git clone git://git.haskell.org/ghc.git --recursive
+cabal run ghc
+cd ghc
+cabal install
 ```
 *Warning : `ghc-lib` is known to work on all of MacOS, Linux and Windows. A distribution produced with `cabal sdist` on Linux/MacOS will build on Windows note though, a `cabal sdist` produced on Windows is known not to build on MacOS/Linux.*
