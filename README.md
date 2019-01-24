@@ -1,5 +1,5 @@
 # ghc-lib [![Linux Build Status](https://img.shields.io/travis/digital-asset/ghc-lib/master.svg?label=Linux%20%26%20Mac%20builds)](https://travis-ci.org/digital-asset/ghc-lib)  [![Windows Build Status](https://img.shields.io/appveyor/ci/shayne-fletcher-da/ghc-lib/master.svg?label=Windows%20build)](https://ci.appveyor.com/project/shayne-fletcher-da/ghc-lib)
-Copyright Digital Asset 2018-2019.
+Copyright [Digital Asset](https://www.digitalasset.com/) 2018-2019.
 
 The [GHC API](https://hackage.haskell.org/package/ghc) allows you use the [GHC compiler](https://www.haskell.org/ghc/) as a library, so you can parse, analyse and compile Haskell code. The GHC API comes pre-installed with GHC, and is tied to that GHC version - if you are using GHC 8.6.3, you get version 8.6.3 of the API, and can't change it. The `ghc-lib` package solves that problem, letting you mix and match versions of the GHC compiler and GHC API. Why might you want that?
 
@@ -14,6 +14,8 @@ While `ghc-lib` provides the full GHC API, it doesn't contain a runtime system, 
 # Using `ghc-lib`
 
 The package `ghc-lib` will be released on [Hackage](https://hackage.haskell.org/), and can be used like any normal package, e.g. `cabal install ghc-lib`. Since it conflicts perfectly with the GHC API, you may wish to enable the language extension `PackageImports` so that you can for example, `import "ghc-lib" GHC`.
+
+The `ghc-lib` Hackage package is licensed under the [BSD-3-Clause license](https://www.haskell.org/ghc/license.html), just like GHC itself. This repo, including the [examples](https://github.com/digital-asset/ghc-lib/tree/master/examples) and the [script that generates `ghc-lib`](https://github.com/digital-asset/ghc-lib/tree/master/ghc-lib-gen), are licensed under the [BSD-3-Clause OR Apache-2.0 licence](https://github.com/digital-asset/ghc-lib/blob/master/LICENSE).
 
 # Creating `ghc-lib`
 
