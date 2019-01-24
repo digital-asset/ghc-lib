@@ -5,10 +5,10 @@ The [GHC API](https://hackage.haskell.org/package/ghc) allows you use the [GHC c
 * Imagine you are writing a tool to work with several versions of the GHC compiler. The GHC API changes significantly between each version, so would require a lot of CPP to support. An alternative is to use one version of `ghc-lib` which works across multiple versions of GHC.
 * Imagine you are modifying the GHC API or want features from GHC HEAD. With `ghc-lib` you can depend on the revised GHC API, without upgrading the compiler used to build everything, speeding up iteration.
 
-While `ghc-lib` provides the full GHC API, it doesn't contain a runtime system, nor does it create a package database for `ghc-lib`. That means you can't run code produced by `ghc-lib` (no runtime), and compiling off-the-shelf code is very hard (no package database containing the `base` library). What you can do:
+While `ghc-lib` provides the full GHC API, it doesn't contain a runtime system, nor does it create a package database. That means you can't run code produced by `ghc-lib` (no runtime), and compiling off-the-shelf code is very hard (no package database containing the `base` library). What you can do:
 
 * Parsing Haskell code, as a potential replacement for [`haskell-src-exts`](https://hackage.haskell.org/package/haskell-src-exts). See the demo [`mini-hlint`](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-hlint/src/Main.hs) in this repo.
-* Compiling Haskell code as far as Core, which includes renaming and type checking. Doing so requires careful orchestration of any imports. See the demo [`mini-compile`](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-compile/src/Main.hs) in this repo.
+* Compiling Haskell code as far as Core, which includes renaming and type checking. See the demo [`mini-compile`](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-compile/src/Main.hs) in this repo, and the carefully tailored [file it compiles](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-compile/test/MiniCompileTest.hs).
 
 # Build and Install
 
