@@ -10,9 +10,13 @@ While `ghc-lib` provides the full GHC API, it doesn't contain a runtime system, 
 * Parsing Haskell code, as a potential replacement for [`haskell-src-exts`](https://hackage.haskell.org/package/haskell-src-exts). See the demo [`mini-hlint`](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-hlint/src/Main.hs) in this repo.
 * Compiling Haskell code as far as Core, which includes renaming and type checking. See the demo [`mini-compile`](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-compile/src/Main.hs) in this repo, and the carefully tailored [file it compiles](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-compile/test/MiniCompileTest.hs).
 
-# Build and Install
+# Using `ghc-lib`
 
-To build and install `ghc-lib` you'll need clones of this repository and the [GHC repository](https://git.haskell.org/ghc.git)(with the git option `--recursive`). Then,
+The package `ghc-lib` will be released on [Hackage](https://hackage.haskell.org/), and can be used like any normal package, e.g. `cabal install ghc-lib`. Since it conflicts perfectly with the GHC API, you may wish to use `PackageImports`, e.g. `import "ghc-lib" GHC`.
+
+# Creating `ghc-lib`
+
+To build `ghc-lib` you'll need clones of this repository and the [GHC repository](https://git.haskell.org/ghc.git)(with the git option `--recursive`). Then,
 ```
   cd <path-to-ghc-lib>/ghc-lib-gen
   cabal run <path-to-ghc>
@@ -21,4 +25,4 @@ To build and install `ghc-lib` you'll need clones of this repository and the [GH
 ```
 where `<path-to-ghc-lib>` and `<path-to-ghc>` are paths to the `ghc-lib` and `ghc` clones respectively.
 
-*Note : Cabal distributions obtained via `cabal sdist` on Linux/MacOS are known to build on Windows but not vice-versa.*
+*Warning : Cabal distributions obtained via `cabal sdist` on Linux/MacOS are known to build on Windows but not vice-versa.*
