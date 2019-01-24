@@ -14,5 +14,5 @@ test_script:
 - set PATH=C:\project;%PATH%
 
 - stack setup > nul
-- stack --no-terminal build ghc-lib-gen
+- stack --no-terminal build
 - stack runhaskell CI.hs

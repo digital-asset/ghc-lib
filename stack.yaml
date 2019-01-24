@@ -7,4 +7,4 @@ ghc-options:
 
 # Packages MUST go at the end, since we append to it during the CI.hs script
 packages:
-- ghc-lib-gen
+- .
