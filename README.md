@@ -13,9 +13,9 @@ While `ghc-lib` provides the full GHC API, it doesn't contain a runtime system, 
 
 # Using `ghc-lib`
 
-You are free to use `ghc-lib` under the terms of the BSD-3-Clause OR Apache-2.0 licence. See the (LICENSE)[https://github.com/digital-asset/ghc-lib/blob/master/ghc-lib-gen/LICENSE] file for details.
+You are free to use `ghc-lib` under the terms of the BSD-3-Clause OR Apache-2.0 licence. See the [LICENSE](https://github.com/digital-asset/ghc-lib/blob/master/ghc-lib-gen/LICENSE) file for details.
 
-The package `ghc-lib` will be released on [Hackage](https://hackage.haskell.org/), and can be used like any normal package, e.g. `cabal install ghc-lib`. Since it conflicts perfectly with the GHC API, you may wish to use `PackageImports`, e.g. `import "ghc-lib" GHC`.
+The package `ghc-lib` will be released on [Hackage](https://hackage.haskell.org/), and can be used like any normal package, e.g. `cabal install ghc-lib`. Since it conflicts perfectly with the GHC API, you may wish to enable the language extension `PackageImports` so that you can for example, `import "ghc-lib" GHC`.
 
 # Creating `ghc-lib`
 
