@@ -3,7 +3,7 @@ Copyright Digital Asset 2018-2019.
 
 The [GHC API](https://hackage.haskell.org/package/ghc) allows you use the [GHC compiler](https://www.haskell.org/ghc/) as a library, so you can parse, analyse and compile Haskell code. The GHC API comes pre-installed with GHC, and is tied to that GHC version - if you are using GHC 8.6.3, you get version 8.6.3 of the API, and can't change it. The `ghc-lib` package solves that problem, letting you mix and match versions of the GHC compiler and GHC API. Why might you want that?
 
-* Imagine you are writing a tool to work with several versions of the GHC compiler. The GHC API changes significantly between each version, so would require a lot of CPP to support. An alternative is to use one version of `ghc-lib` which works across multiple versions of GHC.
+* Imagine you are writing a tool to work with several versions of the GHC compiler. The GHC API changes significantly between each version, so doing this would require writing much C preprocessor code to support it. An alternative is to use one version of `ghc-lib` which works across multiple versions of GHC.
 * Imagine you are modifying the GHC API or want features from GHC HEAD. With `ghc-lib` you can depend on the revised GHC API, without upgrading the compiler used to build everything, speeding up iteration.
 
 While `ghc-lib` provides the full GHC API, it doesn't contain a runtime system, nor does it create a package database. That means you can't run code produced by `ghc-lib` (no runtime), and compiling off-the-shelf code is very hard (no package database containing the `base` library). What you can do:
