@@ -13,10 +13,10 @@ import "ghc-lib" Lexer
 import "ghc-lib" RdrName
 import "ghc-lib" ErrUtils
 import qualified "ghc-lib" Parser
+import "ghc-lib" FastString
+import "ghc-lib" Outputable
+import "ghc-lib" SrcLoc
 
-import FastString
-import Outputable
-import SrcLoc
 import System.Environment
 import System.IO.Extra
 import Control.Monad
