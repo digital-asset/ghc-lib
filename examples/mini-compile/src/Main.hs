@@ -12,8 +12,8 @@ import "ghc-lib" DynFlags
 import "ghc-lib" Platform
 import "ghc-lib" StringBuffer
 import "ghc-lib" Fingerprint
+import "ghc-lib" Outputable
 
-import Outputable
 import System.Environment
 import System.Directory
 import System.IO.Extra
