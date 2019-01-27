@@ -32,13 +32,15 @@ main = do
       -- runtime error. The error originates from `findToolDir`
       -- indirectly invoked by `initGhcMonad` from `runGhc`). This
       -- line tricks `findToolDir`.
-      createDirectoryIfMissing True (dataDir ++ "/../mingw")
+      createDirectoryIfMissing True $ dataDir ++ "/../mingw"
       cm <- runGhc (Just dataDir) $ do
               setSessionDynFlags flags
               compileToCoreSimplified file
-      putStrLn (showSDoc flags (ppr cm))
+      putStrLn $ showSDoc flags $ ppr cm
     _ -> fail "Exactly one file argument required"
 
+
+-- | Create a DynFlags which is sufficiently filled in to work, but not complete
 mkDynFlags :: String -> String -> IO DynFlags
 mkDynFlags filename s = do
   dirs_to_clean <- newIORef Map.empty
