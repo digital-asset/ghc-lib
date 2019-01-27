@@ -59,18 +59,19 @@ isNegated _ = False
 analyzeExpr :: DynFlags -> Located (HsExpr GhcPs) -> IO ()
 analyzeExpr flags (L loc expr) =
   case expr of
+    HsApp _ (L _ (HsVar _ (L _ id))) (L _ e)
+        | id == idNot, isNegated e ->
+            putStrLn (showSDoc flags (ppr loc)
+                      ++ " : lint : double negation "
+                      ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
+    HsApp _ x y -> do
+        analyzeExpr flags x
+        analyzeExpr flags y
     HsPar _ x -> analyzeExpr flags x
     HsIf _ _ c t f -> do
         analyzeExpr flags c
         analyzeExpr flags t
         analyzeExpr flags f
-    HsApp _ (L _ (HsVar _ (L _ id))) x@(L _ e) ->
-        if id == idNot && isNegated e then
-          putStrLn (showSDoc flags (ppr loc)
-                    ++ " : lint : double negation "
-                    ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
-        else
-          analyzeExpr flags x
     OpApp _ x y z -> do
         analyzeExpr flags x
         analyzeExpr flags y
