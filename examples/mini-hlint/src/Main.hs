@@ -52,29 +52,29 @@ idNot :: RdrName
 idNot = mkVarUnqual (fsLit "not")
 
 isNegated :: HsExpr GhcPs -> Bool
-isNegated (HsApp _ ((L _ (HsVar _ (L _ id)))) _) = id == idNot
+isNegated (HsApp _ (L _ (HsVar _ (L _ id))) _) = id == idNot
 isNegated (HsPar _ (L _ e)) = isNegated e
 isNegated _ = False
 
 analyzeExpr :: DynFlags -> Located (HsExpr GhcPs) -> IO ()
-analyzeExpr flags (L loc expr) = do
+analyzeExpr flags (L loc expr) =
   case expr of
     HsPar _ x -> analyzeExpr flags x
-    HsIf _ _ c t f -> do {
+    HsIf _ _ c t f -> do
         analyzeExpr flags c
-      ; analyzeExpr flags t
-      ; analyzeExpr flags f }
-    HsApp _ ((L _ (HsVar _ (L _ id)))) (x@(L _ e)) -> do
-        if (id == idNot && isNegated e) then
+        analyzeExpr flags t
+        analyzeExpr flags f
+    HsApp _ (L _ (HsVar _ (L _ id))) x@(L _ e) ->
+        if id == idNot && isNegated e then
           putStrLn (showSDoc flags (ppr loc)
                     ++ " : lint : double negation "
                     ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
         else
           analyzeExpr flags x
-    OpApp _ x y z -> do {
-          analyzeExpr flags x
-        ; analyzeExpr flags y
-        ; analyzeExpr flags z }
+    OpApp _ x y z -> do
+        analyzeExpr flags x
+        analyzeExpr flags y
+        analyzeExpr flags z
     _ -> return ()
 
 analyzeGrhs :: DynFlags -> Located (GRHS GhcPs (LHsExpr GhcPs)) -> IO ()
@@ -82,13 +82,13 @@ analyzeGrhs flags (L _ (GRHS _ _ expr)) = analyzeExpr flags expr
 analyzeGrhs _ _ = return ()
 
 analyzeMatch :: DynFlags -> Located (Match GhcPs (LHsExpr GhcPs)) -> IO ()
-analyzeMatch flags (L _ (Match {m_grhss=(GRHSs {grhssGRHSs=grhss})})) = do
-  forM_ grhss (analyzeGrhs flags)
+analyzeMatch flags (L _ Match {m_grhss=GRHSs {grhssGRHSs=grhss}}) =
+  forM_ grhss $ analyzeGrhs flags
 analyzeMatch _ _ = return ()
 
 analyzeDecl :: DynFlags -> Located (HsDecl GhcPs) -> IO ()
-analyzeDecl flags (L _ (ValD _ (FunBind {fun_matches=(MG {mg_alts=(L _ matches)})} ))) = do
-  forM_ matches (analyzeMatch flags)
+analyzeDecl flags (L _ (ValD _ FunBind{fun_matches=MG {mg_alts=(L _ matches)}})) =
+  forM_ matches $ analyzeMatch flags
 analyzeDecl _ _ = return ()
 
 main :: IO ()
@@ -99,7 +99,7 @@ main = do
       s <- readFile' file
       let flags = defaultDynFlags fakeSettings fakeLlvmConfig
       case parse file flags s of
-        POk _ (L _ (HsModule {hsmodDecls=decls})) ->
+        POk _ (L _ HsModule {hsmodDecls=decls}) ->
           forM_ decls (analyzeDecl flags)
         PFailed _ loc err ->
           putStrLn (showSDoc flags (pprLocErrMsg (mkPlainErrMsg flags loc err)))

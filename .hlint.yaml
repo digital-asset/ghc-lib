@@ -1,0 +1,10 @@
+# HLint configuration file
+# https://github.com/ndmitchell/hlint
+##########################
+
+# Triggered by examples/mini-compile/test/MiniCompileTest.hs
+# Can't be fixed since haskell-src-exts can't parse the file
+- ignore: {name: "Parse error"}
+
+# A sample that deliberately has lots of HLint style errors
+- ignore: {within: "MiniHlintTest"}
