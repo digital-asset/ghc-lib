@@ -19,7 +19,7 @@ import "ghc-lib" SrcLoc
 
 import System.Environment
 import System.IO.Extra
-import Control.Monad
+
 
 fakeSettings :: Settings
 fakeSettings = Settings
@@ -77,19 +77,14 @@ analyzeExpr flags (L loc expr) =
         analyzeExpr flags z
     _ -> return ()
 
-analyzeGrhs :: DynFlags -> Located (GRHS GhcPs (LHsExpr GhcPs)) -> IO ()
-analyzeGrhs flags (L _ (GRHS _ _ expr)) = analyzeExpr flags expr
-analyzeGrhs _ _ = return ()
-
-analyzeMatch :: DynFlags -> Located (Match GhcPs (LHsExpr GhcPs)) -> IO ()
-analyzeMatch flags (L _ Match {m_grhss=GRHSs {grhssGRHSs=grhss}}) =
-  forM_ grhss $ analyzeGrhs flags
-analyzeMatch _ _ = return ()
-
-analyzeDecl :: DynFlags -> Located (HsDecl GhcPs) -> IO ()
-analyzeDecl flags (L _ (ValD _ FunBind{fun_matches=MG {mg_alts=(L _ matches)}})) =
-  forM_ matches $ analyzeMatch flags
-analyzeDecl _ _ = return ()
+analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> IO ()
+analyzeModule flags modu = sequence_
+  [ analyzeExpr flags expr
+  | L _ HsModule {hsmodDecls=decls} <- [modu]
+  , L _ (ValD _ FunBind{fun_matches=MG {mg_alts=(L _ matches)}}) <- decls
+  , L _ Match {m_grhss=GRHSs {grhssGRHSs=rhss}} <- matches
+  , L _ (GRHS _ _ expr) <- rhss
+  ]
 
 main :: IO ()
 main = do
@@ -99,8 +94,7 @@ main = do
       s <- readFile' file
       let flags = defaultDynFlags fakeSettings fakeLlvmConfig
       case parse file flags s of
-        POk _ (L _ HsModule {hsmodDecls=decls}) ->
-          forM_ decls (analyzeDecl flags)
+        POk _ m -> analyzeModule flags m
         PFailed _ loc err ->
-          putStrLn (showSDoc flags (pprLocErrMsg (mkPlainErrMsg flags loc err)))
+          putStrLn $ showSDoc flags $ pprLocErrMsg $ mkPlainErrMsg flags loc err
     _ -> fail "Exactly one file argument required"
