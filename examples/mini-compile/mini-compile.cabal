@@ -1,7 +1,7 @@
 name:                mini-compile
 version:             0.1.0.0
 license:             BSD3
-x-license:           BSD-3-Clause OR Apache-2.0
+x-license:           BSD3-Clause OR Apache-2.0
 license-file:        ../../LICENSE
 author:              Shayne Fletcher (shayne.fletcher@digitalasset.com)
 maintainer:          Shayne Fletcher (shayne.fletcher@digitalasset.com)
