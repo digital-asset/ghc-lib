@@ -143,7 +143,7 @@ generateCabal = do
         ,"build-type: Simple"
         ,"name: ghc-lib"
         ,"version: 0.1.0"
-        ,"license: BSD-3-Clause"
+        ,"license: BSD"
         ,"license-file: LICENSE"
         ,"category: Development"
         ,"author: The GHC Team and Digital Asset"
