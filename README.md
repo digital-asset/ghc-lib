@@ -19,7 +19,7 @@ The package `ghc-lib` is available on [Hackage](https://hackage.haskell.org/), a
 * Version 8.8.1 is the version of `ghc-lib` produced against the released GHC 8.8.1.
 * Version 0.20190127 is the version of `ghc-lib` using GHC HEAD on the date 2019-01-27.
 
-The `ghc-lib` Hackage package is licensed under the [BSD3-Clause license](https://www.haskell.org/ghc/license.html), just like GHC itself. This repo, including the [examples](https://github.com/digital-asset/ghc-lib/tree/master/examples) and the [script that generates `ghc-lib`](https://github.com/digital-asset/ghc-lib/tree/master/ghc-lib-gen), are licensed under the [BSD3-Clause OR Apache-2.0 license](https://github.com/digital-asset/ghc-lib/blob/master/LICENSE).
+The `ghc-lib` Hackage package is licensed under the [BSD-3-Clause license](https://www.haskell.org/ghc/license.html), just like GHC itself. This repo, including the [examples](https://github.com/digital-asset/ghc-lib/tree/master/examples) and the [script that generates `ghc-lib`](https://github.com/digital-asset/ghc-lib/tree/master/ghc-lib-gen), are licensed under the [BSD-3-Clause OR Apache-2.0 license](https://github.com/digital-asset/ghc-lib/blob/master/LICENSE).
 
 ## Creating `ghc-lib`
 
