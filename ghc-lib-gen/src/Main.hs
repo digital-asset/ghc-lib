@@ -205,6 +205,8 @@ generateCabal = do
         indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
         indent2 (askFiles lib "c-sources:") ++
+        -- ["    cmm-sources:"] ++
+        -- indent2 (askFiles lib "cmm-sources:") ++
         ["    hs-source-dirs:"] ++
         indent2 (nubSort $
             "ghc-lib/stage1/compiler/build" :
