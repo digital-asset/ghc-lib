@@ -196,7 +196,7 @@ generateCabal = do
         ,"        array >= 0.1 && < 0.6,"
         ,"        deepseq >= 1.4 && < 1.5,"
         ,"        pretty == 1.1.*,"
-        ,"        time >= 1.4 && < 1.10,
+        ,"        time >= 1.4 && < 1.10
         ,"        transformers == 0.5.*,"
         ,"        process >= 1 && < 1.7,"
         ,"        hpc == 0.6.*"
