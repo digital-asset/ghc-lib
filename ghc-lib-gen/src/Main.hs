@@ -139,7 +139,7 @@ generateCabal = do
     let indent2 = indent . indent
     writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
         -- header
-        ["cabal-version: 2.2" -- or cabal check complains about cmm-sources
+        ["cabal-version: 1.12"
         ,"build-type: Simple"
         ,"name: ghc-lib"
         ,"version: 0.1.0"
@@ -205,8 +205,8 @@ generateCabal = do
         indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
         indent2 (askFiles lib "c-sources:") ++
-        ["    cmm-sources:"] ++
-        indent2 (askFiles lib "cmm-sources:") ++
+        -- ["    cmm-sources:"] ++
+        -- indent2 (askFiles lib "cmm-sources:") ++
         ["    hs-source-dirs:"] ++
         indent2 (nubSort $
             "ghc-lib/stage1/compiler/build" :
