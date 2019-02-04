@@ -187,7 +187,7 @@ generateCabal = do
         ,"        build-depends: Win32"
         ,"    build-depends:"
         ,"        ghc-prim > 0.2 && < 0.6,"
-        ,"        base == 4.11 && < 4.14,"
+        ,"        base >= 4.11 && < 4.14,"
         ,"        containers >= 0.5 && < 0.7,"
         ,"        bytestring >= 0.9 && < 0.11,"
         ,"        binary == 0.8.*,"
