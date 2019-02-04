@@ -3,3 +3,5 @@ ghc/
 ghc-master/
 .stack-work/
 *.hi
+.DS_Store
+*.tar.gz
