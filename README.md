@@ -14,7 +14,7 @@ While `ghc-lib` provides the full GHC API, it doesn't contain a runtime system, 
 
 ## Using `ghc-lib`
 
-The package `ghc-lib` is available on [Hackage](https://hackage.haskell.org/), and can be used like any normal package, e.g. `cabal install ghc-lib`. Since `ghc-lib` conflicts perfectly with the GHC API and [`template-haskell`](https://hackage.haskell.org/package/template-haskell), you may wish to [`ghc-pkg hide ghc-lib`](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/packages.html#using-packages) and use the language extension `PackageImports` to do `import "ghc-lib" GHC`. There are two release streams within the `ghc-lib` name:
+The package `ghc-lib` is available on [Hackage](https://hackage.haskell.org/), and can be used like any normal package, e.g. `cabal install ghc-lib`. Since `ghc-lib` conflicts perfectly with the GHC API and [`template-haskell`](https://hackage.haskell.org/package/template-haskell), the package is [hidden by default](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/packages.html#using-packages) : use the language extension `PackageImports` to do `import "ghc-lib" GHC`. There are two release streams within the `ghc-lib` name:
 
 * Version 8.8.1 will be the version of `ghc-lib` produced against the released GHC 8.8.1, once it comes out.
 * Version [0.20190204](http://hackage.haskell.org/package/ghc-lib-0.20190204) is the version of `ghc-lib` using GHC HEAD on the date 2019-02-04.
