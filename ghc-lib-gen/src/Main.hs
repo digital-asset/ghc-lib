@@ -152,6 +152,7 @@ generateCabal = do
         ,"description: A package equivalent to the @ghc@ package, but which can be loaded on many compiler versions."
         ,"homepage: https://github.com/digital-asset/ghc-lib"
         ,"bug-reports: https://github.com/digital-asset/ghc-lib/issues"
+        ,"exposed: False" -- automatically hide `ghc-lib` (thanks Ed Kmett!)
         ,"data-dir: " ++ dataDir
         ,"data-files:"] ++
         indent dataFiles ++
