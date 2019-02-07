@@ -35,3 +35,20 @@ cabal install
 ```
 
 *Warning : `ghc-lib` is known to work on all of MacOS, Linux and Windows. A distribution produced with `cabal sdist` on Linux/MacOS builds on Windows, but a `cabal sdist` produced on Windows does not build on MacOS/Linux.*
+
+## Releasing `ghc-lib` (notes for maintainers)
+
+First prepare by
+```bash
+cd ghc-lib
+git clone git://git.haskell.org/ghc.git --recursive
+cabal run ghc
+cd ghc
+```
+then edit `ghc-lib.cabal` to fix the version number (e.g. 0.20190204)
+before executing
+```bash
+cabal sdist
+```
+and uploading `dist/ghc-lib-xxx.tar.gz` to
+[Hackage](https://hackage.haskell.org/upload).
