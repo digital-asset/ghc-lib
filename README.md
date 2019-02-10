@@ -12,6 +12,12 @@ While `ghc-lib` provides the full GHC API, it doesn't contain a runtime system, 
 * Parse Haskell code, making `ghc-lib` a potential replacement for [`haskell-src-exts`](https://hackage.haskell.org/package/haskell-src-exts). See the demo [`mini-hlint`](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-hlint/src/Main.hs) in this repo;
 * Compile Haskell code as far as GHC's [Core language](https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CoreSynType), which includes renaming and type checking. See the demo [`mini-compile`](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-compile/src/Main.hs) in this repo, and the carefully tailored [file it compiles](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-compile/test/MiniCompileTest.hs).
 
+There are some downsites to `ghc-lib`:
+
+* The lack of runtime means you can't run code, which includes running code at compile time, e.g. `TemplateHaskell`.
+* While `ghc-lib` isn't tied to any specific GHC versions, it can only read package databases and `.hi` files for one particular version of GHC. That means your existing package database probably can't be consumed by `ghc-lib` (unless you happen to perfectly match the GHC version, in which case you could just have used the GHC API), and it doesn't ship with a package database so you'd have to painfully build your own.
+* Compilation times for `ghc-lib` are not small, taking approx 5 min on our CI machines.
+
 ## Using `ghc-lib`
 
 The package `ghc-lib` is available on [Hackage](https://hackage.haskell.org/), and can be used like any normal package, e.g. `cabal install ghc-lib`. Since `ghc-lib` conflicts perfectly with the GHC API and [`template-haskell`](https://hackage.haskell.org/package/template-haskell), the package is [hidden by default](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/packages.html#using-packages) : use the language extension `PackageImports` to do `import "ghc-lib" GHC`. There are two release streams within the `ghc-lib` name:
@@ -22,6 +28,8 @@ The package `ghc-lib` is available on [Hackage](https://hackage.haskell.org/), a
 The `ghc-lib` Hackage package is licensed under the [BSD-3-Clause license](https://www.haskell.org/ghc/license.html), just like GHC itself. This repo, including the [examples](https://github.com/digital-asset/ghc-lib/tree/master/examples) and the [script that generates `ghc-lib`](https://github.com/digital-asset/ghc-lib/tree/master/ghc-lib-gen), are licensed under the [BSD-3-Clause OR Apache-2.0 license](https://github.com/digital-asset/ghc-lib/blob/master/LICENSE).
 
 ## Creating `ghc-lib`
+
+We create `ghc-lib` by taking a checkout of GHC, and combining the `ghc` package with various dependencies it is tightly tied to (e.g. `template-haskell`) in one new `ghc-lib.cabal`. That new package depends on a few generated outputs (which we build using the GHC build system) and some [Cmm files](https://ghc.haskell.org/trac/ghc/wiki/Commentary/Rts/Cmm) (which we hack around by editing the Haskell source, because Cabal support for Cmm files is highly ropey). The [`ghc-lib-gen` directory](https://github.com/digital-asset/ghc-lib/tree/master/ghc-lib-gen) contains a script that puts all the pieces together.
 
 To build `ghc-lib` you'll need clones of this repository and the [GHC repository](https://git.haskell.org). In a bash shell, build with the following commands.
 
@@ -38,17 +46,21 @@ cabal install
 
 ## Releasing `ghc-lib` (notes for maintainers)
 
-First prepare by
+First prepare with:
+
 ```bash
 cd ghc-lib
 git clone git://git.haskell.org/ghc.git --recursive
 cabal run ghc
 cd ghc
 ```
-then edit `ghc-lib.cabal` to fix the version number (e.g. 0.20190204)
-before executing
+
+Then edit `ghc-lib.cabal` to fix the version number (e.g. 0.20190204)
+before executing:
+
 ```bash
 cabal sdist
 ```
-and uploading `dist/ghc-lib-xxx.tar.gz` to
+
+Upload `dist/ghc-lib-xxx.tar.gz` to
 [Hackage](https://hackage.haskell.org/upload).
