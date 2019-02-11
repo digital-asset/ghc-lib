@@ -1,4 +1,4 @@
-# ghc-lib [![Hackage version](https://img.shields.io/hackage/v/ghc-lib.svg?label=Hackage)](https://hackage.haskell.org/package/ghc-lib) [![Linux Build Status](https://img.shields.io/travis/digital-asset/ghc-lib/master.svg?label=Linux%20%26%20Mac%20builds)](https://travis-ci.org/digital-asset/ghc-lib)  [![Windows Build Status](https://img.shields.io/appveyor/ci/shayne-fletcher-da/ghc-lib/master.svg?label=Windows%20build)](https://ci.appveyor.com/project/shayne-fletcher-da/ghc-lib)
+# ghc-lib [![Hackage version](https://img.shields.io/hackage/v/ghc-lib.svg?label=Hackage)](https://hackage.haskell.org/package/ghc-lib) [![Stackage version](https://www.stackage.org/package/ghc-lib/badge/nightly?label=Stackage)](https://www.stackage.org/package/ghc-lib) [![Linux Build Status](https://img.shields.io/travis/digital-asset/ghc-lib/master.svg?label=Linux%20%26%20Mac%20builds)](https://travis-ci.org/digital-asset/ghc-lib)  [![Windows Build Status](https://img.shields.io/appveyor/ci/shayne-fletcher-da/ghc-lib/master.svg?label=Windows%20build)](https://ci.appveyor.com/project/shayne-fletcher-da/ghc-lib)
 
 Copyright [Digital Asset](https://www.digitalasset.com/) 2018-2019.
 
