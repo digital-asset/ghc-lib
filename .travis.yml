@@ -7,6 +7,6 @@ os:
 script:
 - curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s .
 - curl -sSL https://get.haskellstack.org/ | sh
-- stack setup > nul
+- stack setup > /dev/null
 - stack --no-terminal build
 - stack runhaskell CI.hs
