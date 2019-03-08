@@ -262,5 +262,5 @@ generatePrerequisites = do
         map (dataDir </>) dataFiles
   -- We use the hadrian generated Lexer and Parser so get these out
   -- of the way.
-  system_ $ "rm compiler/parser/Lexer.x"
-  system_ $ "rm compiler/parser/Parser.y"
+  removeFile "compiler/parser/Lexer.x"
+  removeFile "compiler/parser/Parser.y"
