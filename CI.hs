@@ -1,4 +1,3 @@
-
 -- CI script, invoked by both Travis and Appveyor
 
 import Control.Monad
@@ -17,15 +16,26 @@ main = do
             (t, _) <- duration $ system_ x
             putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
             hFlush stdout
-
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
-    cmd "git clone git://git.haskell.org/ghc.git --recursive" -- --recurse-submodules=libraries/Cabal
-    -- not essential, but make the cache work between Hadrian and ghc-lib and build Hadrian quicker
+    when (isWindows || isMac) $
+        cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
+             -- ^ The `git clone` is handled in .travis.yml for linux
+             -- (workaround travis bug).
+
+    -- See note [Why we git clone on linux here] in .travis.yml.
+    when (not (isWindows || isMac)) $ do
+      cmd "sudo chown -R travis:travis ghc"
+      -- ^ Because 'root' owns ghc and we can't read/write.
+
+    -- This is not essential, but make the cache work between Hadrian
+    -- and ghc-lib in order to build hadrian quicker.
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+
+    -- All set. Let's get to it!
     cmd "stack exec -- ghc-lib-gen ghc"
 
-    -- Generate an sdist and extract it to ensure it works
+    -- Generate an sdist and extract it to ensure it works.
     stackYaml <- readFile' "stack.yaml"
     writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
     cmd "stack sdist ghc --tar-dir=."
@@ -33,7 +43,7 @@ main = do
     cmd $ "tar -xf " ++ tarball
     renameDirectory (dropExtension $ dropExtension tarball) "ghc-lib"
 
-    -- Test the new projects
+    -- Test the new projects.
     writeFile "stack.yaml" $
       stackYaml ++
       unlines [ "- ghc-lib"

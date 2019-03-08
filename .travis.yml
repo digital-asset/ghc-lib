@@ -4,9 +4,37 @@ os:
 - linux
 - osx
 
+services:
+- docker
+
+# At this time, `git clone https://gitlab.haskell.org/ghc/ghc.git`
+# from within `CI.hs` does not work on on linux. This appears to be a
+# known Travis/ubuntu SSL verification issue. We've tried many less
+# drastic workarounds. This grand hack is the only way we've found so
+# far that can be made to work.
+before_install:
+- |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      docker pull alpine/git
+      docker run -ti --rm -v ${HOME}:/root -v $(pwd):/git alpine/git clone https://gitlab.haskell.org/ghc/ghc.git /git/ghc --recursive
+    fi
+
+# [Why we git clone on linux here]
+# At this time, `git clone https://gitlab.haskell.org/ghc/ghc.git`
+# from within `CI.hs` does not work on on linux. This appears to be a
+# known Travis/ubuntu SSL verification issue. We've tried many less
+# drastic workarounds. This grand hack is the only way we've found so
+# far that can be made to work.
+before_install:
+- |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      docker pull alpine/git
+      docker run -ti --rm -v ${HOME}:/root -v $(pwd):/git alpine/git clone https://gitlab.haskell.org/ghc/ghc.git /git/ghc --recursive
+    fi
+
+
 script:
-- curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s .
 - curl -sSL https://get.haskellstack.org/ | sh
-- stack setup > nul
+- stack setup > /dev/null
 - stack --no-terminal build
 - stack runhaskell CI.hs

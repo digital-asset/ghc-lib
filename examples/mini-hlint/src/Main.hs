@@ -96,6 +96,7 @@ main = do
       let flags = defaultDynFlags fakeSettings fakeLlvmConfig
       case parse file flags s of
         POk _ m -> analyzeModule flags m
-        PFailed _ loc err ->
-          putStrLn $ showSDoc flags $ pprLocErrMsg $ mkPlainErrMsg flags loc err
+        PFailed _ ->
+          -- putStrLn $ showSDoc flags $ pprLocErrMsg $ mkPlainErrMsg flags loc err
+          putStrLn "Fix me" -- to do; call `getErrorMessages` to replace the old code above
     _ -> fail "Exactly one file argument required"

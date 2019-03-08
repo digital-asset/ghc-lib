@@ -1,4 +1,3 @@
-
 -- | Generate a ghc-lib.cabal package given a GHC directory
 module Main(main) where
 
@@ -10,7 +9,6 @@ import System.Directory
 import System.IO.Extra
 import Data.List.Extra
 import Data.Char
-
 
 main :: IO ()
 main = do
@@ -68,6 +66,8 @@ extraFiles =
     ,"ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
     ,"ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
     ,"ghc-lib/stage1/compiler/build/Config.hs"
+    ,"ghc-lib/stage0/compiler/build/Parser.hs"
+    ,"ghc-lib/stage0/compiler/build/Lexer.hs"
     ]
 
 -- |'dataDir' is the directory cabal looks for data files to install,
@@ -176,6 +176,7 @@ generateCabal = do
         ,"    default-extensions: NoImplicitPrelude"
         ,"    include-dirs:"
         ,"        ghc-lib/generated"
+        ,"        ghc-lib/stage0/compiler/build"
         ,"        ghc-lib/stage1/compiler/build"
         ,"        compiler"
         ,"        compiler/utils"
@@ -210,13 +211,17 @@ generateCabal = do
         -- indent2 (askFiles lib "cmm-sources:") ++
         ["    hs-source-dirs:"] ++
         indent2 (nubSort $
-            "ghc-lib/stage1/compiler/build" :
+            [ "ghc-lib/stage0/compiler/build"
+            , "ghc-lib/stage1/compiler/build"] ++
             map takeDirectory cabalFileLibraries ++
             askFiles lib "hs-source-dirs:") ++
         ["    autogen-modules:"
-        ,"        Paths_ghc_lib"] ++
+        ,"        Paths_ghc_lib"
+        ,"        Lexer"
+        ,"        Parser"] ++
         ["    exposed-modules:"
-        ,"        Paths_ghc_lib"] ++
+        ,"        Paths_ghc_lib"
+        ] ++
         indent2 (askField lib "exposed-modules:") ++
         ["    other-modules:"] ++
         indent2 (askField lib "other-modules:") ++
@@ -245,7 +250,8 @@ generateCabal = do
 
 -- | Run Hadrian to build the things that the Cabal file needs
 generatePrerequisites :: IO ()
-generatePrerequisites = withCurrentDirectory "hadrian" $ do
+generatePrerequisites = do
+  withCurrentDirectory "hadrian" $ do
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
         ["stack exec hadrian --"
@@ -255,3 +261,7 @@ generatePrerequisites = withCurrentDirectory "hadrian" $ do
         ,"--build-root=ghc-lib"
         ] ++ extraFiles ++
         map (dataDir </>) dataFiles
+  -- We use the hadrian generated Lexer and Parser so get these out
+  -- of the way.
+  removeFile "compiler/parser/Lexer.x"
+  removeFile "compiler/parser/Parser.y"
