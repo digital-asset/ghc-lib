@@ -21,10 +21,11 @@ main = do
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
         cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
         -- ^ git clone is handled by .travis.yml for mac and linux
-    -- Debugging travis
-    -- cmd "echo [INFO] Invoking ghc-lib-gen `pwd`"
-    -- cmd "echo [INFO] Id is `id`"
-    -- cmd "echo [INFO] `ls -lasp .`"
+    when not isWindows $
+        cmd "sudo chown -R travis:travis ghc"
+        cmd "echo [INFO] Invoking ghc-lib-gen `pwd`"
+        cmd "echo [INFO] Id is `id`"
+        cmd "echo [INFO] `ls -lasp .`"
     cmd "stack exec -- ghc-lib-gen ghc"
 
     -- Generate an sdist and extract it to ensure it works
