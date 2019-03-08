@@ -7,6 +7,7 @@ os:
 services:
 - docker # Not supported on MacOS so don't even!
 
+
 # At this time, `git clone https://gitlab.haskell.org/ghc/ghc.git`
 # from within `CI.hs` does not work on on linux. This appears to be a
 # known Travis/ubuntu SSL verification issue. We've tried many less
