@@ -259,8 +259,6 @@ generatePrerequisites = do
         ,"--configure"
         ,"--integer-simple"
         ,"--build-root=ghc-lib"
-        ,"--flavour=quickest"
-        ,"-j"
         ] ++ extraFiles ++
         map (dataDir </>) dataFiles
   -- We use the hadrian generated Lexer and Parser so get these out
