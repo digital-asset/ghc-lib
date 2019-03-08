@@ -17,13 +17,14 @@ main = do
             (t, _) <- duration $ system_ x
             putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
             hFlush stdout
-    -- debugging
-    -- cmd "echo 'GET / HTTP/1.0' | openssl s_client -state -nbio -connect gitlab.haskell.org:443"
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
-    cmd "echo [INFO] Invoking ghc-lib-gen `pwd`"
-    cmd "echo [INFO] Id is `id`"
-    cmd "echo [INFO] `ls -lasp .`"
+        cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
+        -- ^ git clone is handled by .travis.yml for mac and linux
+    -- Debugging travis
+    -- cmd "echo [INFO] Invoking ghc-lib-gen `pwd`"
+    -- cmd "echo [INFO] Id is `id`"
+    -- cmd "echo [INFO] `ls -lasp .`"
     cmd "stack exec -- ghc-lib-gen ghc"
 
     -- Generate an sdist and extract it to ensure it works
