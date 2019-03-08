@@ -16,10 +16,6 @@ before_install:
     else
       git clone https://gitlab.haskell.org/ghc/ghc.git --recursive
     fi
-    cat >> ghc/hadrian/stack.yaml <<EOF
-    ghc-options:
-        "$everything": -O0 -j
-    EOF
 
 script:
 # - curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s .
