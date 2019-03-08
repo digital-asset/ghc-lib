@@ -22,6 +22,7 @@ main = do
         cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
              -- ^ The `git clone` is handled in .travis.yml for linux
              -- (workaround travis bug).
+
     -- when (not (isWindows || isMac)) $ do -- linux : we'll try to get rid of this.
     --     cmd "sudo chown -R travis:travis ghc"
 
