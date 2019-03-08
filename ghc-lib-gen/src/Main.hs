@@ -1,3 +1,7 @@
+-- Copyright 2019 Digital Asset (Switzerland) GmbH and/or its affiliates. All Rights Reserved.
+-- SPDX-License-Identifier: (Apache-2.0 AND BSD-3-Clause)
+
+
 -- | Generate a ghc-lib.cabal package given a GHC directory
 module Main(main) where
 
