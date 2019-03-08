@@ -98,5 +98,5 @@ main = do
         POk _ m -> analyzeModule flags m
         PFailed _ ->
           -- putStrLn $ showSDoc flags $ pprLocErrMsg $ mkPlainErrMsg flags loc err
-          putStrLn $ "Fix me" -- to do; call `getErrorMessages` to replace the old code above
+          putStrLn "Fix me" -- to do; call `getErrorMessages` to replace the old code above
     _ -> fail "Exactly one file argument required"
