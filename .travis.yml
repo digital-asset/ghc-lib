@@ -8,12 +8,13 @@ services:
 - docker
 
 before_install:
-- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-    docker pull alpine/git
-    docker run -ti --rm -v ${HOME}:/root -v $(pwd):/git alpine/git clone https://gitlab.haskell.org/ghc/ghc.git /git/ghc --recursive
-  else
-    git clone https://gitlab.haskell.org/ghc/ghc.git --recursive
-  fi
+- |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      docker pull alpine/git
+      docker run -ti --rm -v ${HOME}:/root -v $(pwd):/git alpine/git clone https://gitlab.haskell.org/ghc/ghc.git /git/ghc --recursive
+    else
+      git clone https://gitlab.haskell.org/ghc/ghc.git --recursive
+    fi
 
 script:
 # - curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s .
