@@ -23,8 +23,10 @@ main = do
              -- ^ The `git clone` is handled in .travis.yml for linux
              -- (workaround travis bug).
 
-    -- when (not (isWindows || isMac)) $ do -- linux : we'll try to get rid of this.
-    --     cmd "sudo chown -R travis:travis ghc"
+    -- See note [Why we git clone on linux here] in .travis.yml.
+    when (not (isWindows || isMac)) $ do
+      cmd "sudo chown -R travis:travis ghc"
+      -- ^ Because 'root' owns ghc and we can't read/write.
 
     -- This is not essential, but make the cache work between Hadrian
     -- and ghc-lib in order to build hadrian quicker.
