@@ -5,7 +5,8 @@ os:
 - osx
 
 services:
-- docker
+- if : os = linux
+  docker
 
 before_install:
 - |

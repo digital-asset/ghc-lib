@@ -21,7 +21,7 @@ main = do
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
         cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
         -- ^ git clone is handled by .travis.yml for mac and linux
-    when (not isWindows) $ do
+    when (not (isWindows && isMac)) $ do -- linux
         cmd "sudo chown -R travis:travis ghc"
         cmd "echo [INFO] Invoking ghc-lib-gen `pwd`"
         cmd "echo [INFO] Id is `id`"
