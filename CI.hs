@@ -54,7 +54,7 @@ main = do
       ,"EOF"
       ]
     cmd $ "git config --global http.sslCAInfo `pwd`/rootCA.pem"
-    cmd $ "echo 'GET / HTTP/1.0' | gnutls-cli --print-cert gitlab.haskell.org"
+    -- cmd $ "echo 'GET / HTTP/1.0' | gnutls-cli --print-cert gitlab.haskell.org"
     cmd "GIT_CURL_VERBOSE=1 git clone https://gitlab.haskell.org/ghc/ghc.git --recursive" -- --recurse-submodules=libraries/Cabal
     -- not essential, but make the cache work between Hadrian and ghc-lib and build Hadrian quicker
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
