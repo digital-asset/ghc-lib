@@ -202,6 +202,7 @@ generateCabal = do
         ,"        transformers == 0.5.*,"
         ,"        process >= 1 && < 1.7,"
         ,"        hpc == 0.6.*"
+        ,"    build-tools: alex >= 3.1, happy >= 1.19.4"
         ,"    other-extensions:"] ++
         indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
