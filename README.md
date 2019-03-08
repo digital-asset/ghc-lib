@@ -36,7 +36,7 @@ To build `ghc-lib` you'll need clones of this repository and the [GHC repository
 ```bash
 git clone git@github.com:digital-asset/ghc-lib.git
 cd ghc-lib
-git clone git://git.haskell.org/ghc.git --recursive
+git clone https://gitlab.haskell.org/ghc/ghc.git --recursive
 cabal run ghc
 cd ghc
 cabal install
@@ -50,7 +50,7 @@ First prepare with:
 
 ```bash
 cd ghc-lib
-git clone git://git.haskell.org/ghc.git --recursive
+git clone git clone https://gitlab.haskell.org/ghc/ghc.git --recursive
 cabal run ghc
 cd ghc
 ```
