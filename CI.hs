@@ -17,7 +17,8 @@ main = do
             (t, _) <- duration $ system_ x
             putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
             hFlush stdout
-
+    -- debugging
+    cmd "echo 'GET / HTTP/1.0' | openssl s_client -state -nbio -connect gitlab.haskell.org:443"
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
     -- We want to use gitlab but Travis has issues:
