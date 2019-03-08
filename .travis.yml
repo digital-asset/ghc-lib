@@ -4,6 +4,13 @@ os:
 - linux
 - osx
 
+services:
+- docker
+
+before_install:
+- docker pull alpine/git
+- docker run -ti --rm -v ${HOME}:/root -v $(pwd):/git alpine/git clone https://gitlab.haskell.org/ghc/ghc.git /git/ghc --recursive
+
 script:
 - curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s .
 - curl -sSL https://get.haskellstack.org/ | sh
