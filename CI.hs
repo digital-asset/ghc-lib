@@ -23,8 +23,10 @@ main = do
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
     -- We want to use gitlab but Travis has issues:
     -- "fatal: unable to access 'https://gitlab.haskell.org/ghc/ghc.git/': gnutls_handshake() failed: Handshake failed"
+    -- got the following key using this command "openssl s_client -state -connect gitlab.haskell.org:443 -showcerts"
     cmd $ unlines [
       "cat >rootCA.pem <<EOF"
+      , "-----BEGIN CERTIFICATE-----"
       , "MIIEkjCCA3qgAwIBAgIQCgFBQgAAAVOFc2oLheynCDANBgkqhkiG9w0BAQsFADA/"
       , "MSQwIgYDVQQKExtEaWdpdGFsIFNpZ25hdHVyZSBUcnVzdCBDby4xFzAVBgNVBAMT"
       , "DkRTVCBSb290IENBIFgzMB4XDTE2MDMxNzE2NDA0NloXDTIxMDMxNzE2NDA0Nlow"
