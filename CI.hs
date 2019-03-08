@@ -22,14 +22,8 @@ main = do
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
     -- We want to use gitlab but Travis has issues:
     -- "fatal: unable to access 'https://gitlab.haskell.org/ghc/ghc.git/': gnutls_handshake() failed: Handshake failed"
-    -- cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive" -- --recurse-submodules=libraries/Cabal
-    cmd $ unlines ["cat << EOF >> ~/.gitconfig"
-                  ,"[url \"git://github.com/ghc/packages-\"]"
-                  ,"insteadOf = git://github.com/ghc/packages/"
-                  ,"[url \"git@github.com:ghc/packages-\"]"
-                  ,"insteadOf = git@github.com:ghc/packages/"
-                  ,"EOF"]
-    cmd "git clone https://github.com/ghc/ghc.git --recursive"
+    cmd "git config --global http.sslverify false"
+    cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive" -- --recurse-submodules=libraries/Cabal
     -- not essential, but make the cache work between Hadrian and ghc-lib and build Hadrian quicker
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc"
