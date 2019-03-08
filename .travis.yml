@@ -5,8 +5,7 @@ os:
 - osx
 
 services:
-- docker # Not supported on MacOS so don't even!
-
+- docker
 
 # At this time, `git clone https://gitlab.haskell.org/ghc/ghc.git`
 # from within `CI.hs` does not work on on linux. This appears to be a
@@ -18,12 +17,9 @@ before_install:
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       docker pull alpine/git
       docker run -ti --rm --user travis:travis -v ${HOME}:/root -v /etc/passwd:/etc/passwd -v /etc/group:/etc/group -v $(pwd):/git alpine/git clone https://gitlab.haskell.org/ghc/ghc.git /git/ghc --recursive
-#     docker run -ti --rm -v ${HOME}:/root -v $(pwd):/git alpine/git clone https://gitlab.haskell.org/ghc/ghc.git /git/ghc --recursive
     fi
 
 script:
-# This is a nice idea but on linux, done here we end up running hlint over ghc.
-# - curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s .
 - curl -sSL https://get.haskellstack.org/ | sh
 - stack setup > /dev/null
 - stack --no-terminal build
