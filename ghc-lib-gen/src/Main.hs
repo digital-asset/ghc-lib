@@ -66,8 +66,8 @@ extraFiles =
     ,"ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
     ,"ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
     ,"ghc-lib/stage1/compiler/build/Config.hs"
-    ,"ghc-lib/stage0/compiler/build/Parser.hs"
-    ,"ghc-lib/stage0/compiler/build/Lexer.hs"
+    ,"ghc-lib/stage1/compiler/build/Parser.hs"
+    ,"ghc-lib/stage1/compiler/build/Lexer.hs"
     ]
 
 -- |'dataDir' is the directory cabal looks for data files to install,
@@ -176,7 +176,6 @@ generateCabal = do
         ,"    default-extensions: NoImplicitPrelude"
         ,"    include-dirs:"
         ,"        ghc-lib/generated"
-        ,"        ghc-lib/stage0/compiler/build"
         ,"        ghc-lib/stage1/compiler/build"
         ,"        compiler"
         ,"        compiler/utils"
@@ -211,8 +210,7 @@ generateCabal = do
         -- indent2 (askFiles lib "cmm-sources:") ++
         ["    hs-source-dirs:"] ++
         indent2 (nubSort $
-            ["ghc-lib/stage0/compiler/build"
-            ,"ghc-lib/stage1/compiler/build"] ++
+            "ghc-lib/stage1/compiler/build" :
             map takeDirectory cabalFileLibraries ++
             askFiles lib "hs-source-dirs:") ++
         ["    autogen-modules:"
