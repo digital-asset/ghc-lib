@@ -9,7 +9,7 @@ services:
 
 before_install:
 - docker pull alpine/git
-- docker run -ti --rm -v ${HOME}:/root -v $(pwd):/git alpine/git clone https://gitlab.haskell.org/ghc/ghc.git /git/ghc --recursive
+- docker run -ti --rm -v ${HOME}:/root -v /home/travis/build/digital-asset/ghc-lib:/git alpine/git clone https://gitlab.haskell.org/ghc/ghc.git /git/ghc --recursive
 
 script:
 - curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s .
