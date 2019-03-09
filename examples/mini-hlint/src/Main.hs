@@ -100,7 +100,7 @@ main = do
       case parse file flags s of
         POk _ m -> analyzeModule flags m
         PFailed s -> sequence_
-          [ putStrLn (showSDoc flags msg)
-          | msg <- pprErrMsgBagWithLoc (snd $ getMessages s flags)
+          [ putStrLn $ showSDoc flags msg
+          | msg <- pprErrMsgBagWithLoc $ snd $ getMessages s flags
           ]
     _ -> fail "Exactly one file argument required"
