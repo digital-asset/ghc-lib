@@ -2,7 +2,6 @@
 -- SPDX-License-Identifier: (Apache-2.0 OR BSD-3-Clause)
 
 {-# LANGUAGE PackageImports #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-missing-fields #-}
 
 module Main (main) where
