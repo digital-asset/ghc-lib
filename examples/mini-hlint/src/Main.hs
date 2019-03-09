@@ -2,6 +2,7 @@
 -- SPDX-License-Identifier: (Apache-2.0 OR BSD-3-Clause)
 
 {-# LANGUAGE PackageImports #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-missing-fields #-}
 
 module Main (main) where
@@ -99,7 +100,8 @@ main = do
       let flags = defaultDynFlags fakeSettings fakeLlvmConfig
       case parse file flags s of
         POk _ m -> analyzeModule flags m
-        PFailed _ ->
-          -- putStrLn $ showSDoc flags $ pprLocErrMsg $ mkPlainErrMsg flags loc err
-          putStrLn "Fix me" -- to do; call `getErrorMessages` to replace the old code above
+        PFailed s ->
+          mapM_ putStrLn $
+          fmap (showSDoc flags) $
+          pprErrMsgBagWithLoc (snd $ getMessages s flags)
     _ -> fail "Exactly one file argument required"
