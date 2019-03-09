@@ -101,6 +101,5 @@ main = do
         POk _ m -> analyzeModule flags m
         PFailed s ->
           mapM_ putStrLn $
-          fmap (showSDoc flags) $
-          pprErrMsgBagWithLoc (snd $ getMessages s flags)
+          showSDoc flags <$> pprErrMsgBagWithLoc (snd $ getMessages s flags)
     _ -> fail "Exactly one file argument required"
