@@ -5,7 +5,7 @@ module MiniHlintTest_error_handling where
 
 f :: a -> b
 
--- test/MiniHlintTest_error_handling.hs:7:1: error:
+-- test/MiniHlintTest_error_handling.hs:11:1: error:
 --    parse error on input `{'
 
 {
