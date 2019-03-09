@@ -53,6 +53,7 @@ main = do
               , "- examples/mini-hlint"
               , "- examples/mini-compile"
               ]
+    cmd "stack exec --no-terminal -- hlint examples"
     cmd "stack build --no-terminal --interleaved-output"
     cmd "stack exec --no-terminal -- ghc-lib --version"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
