@@ -21,16 +21,7 @@ main = do
             hFlush stdout
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
-    when (isWindows || isMac) $
-        cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
-             -- ^ The `git clone` is handled in .travis.yml for linux
-             -- (workaround travis bug).
-
-    -- See note [Why we git clone on linux here] in .travis.yml.
-    when (not (isWindows || isMac)) $ do
-      cmd "sudo chown -R travis:travis ghc"
-      -- ^ Because 'root' owns ghc and we can't read/write.
-
+    cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
     -- This is not essential, but make the cache work between Hadrian
     -- and ghc-lib in order to build hadrian quicker.
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
