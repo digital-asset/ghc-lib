@@ -99,7 +99,9 @@ main = do
       let flags = defaultDynFlags fakeSettings fakeLlvmConfig
       case parse file flags s of
         POk _ m -> analyzeModule flags m
-        PFailed s ->
-          mapM_ putStrLn $
-          showSDoc flags <$> pprErrMsgBagWithLoc (snd $ getMessages s flags)
+        PFailed s -> sequence_
+          [ putStrLn msg
+          | msg <- showSDoc flags <$>
+                   pprErrMsgBagWithLoc (snd $ getMessages s flags)
+          ]
     _ -> fail "Exactly one file argument required"
