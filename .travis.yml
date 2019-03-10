@@ -7,7 +7,7 @@ os:
 - osx
 
 script:
-- curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s
+- curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s .
 - curl -sSL https://get.haskellstack.org/ | sh
 - stack setup > /dev/null
 - stack --no-terminal build
