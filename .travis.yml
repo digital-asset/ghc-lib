@@ -9,7 +9,7 @@ os:
 script:
 - curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s CI.hs
 - curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/src
-- curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-cabal/src
+- curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
 - curl -sSL https://get.haskellstack.org/ | sh
 - stack setup > /dev/null
 - stack --no-terminal build
