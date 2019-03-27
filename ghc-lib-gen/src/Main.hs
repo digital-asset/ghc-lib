@@ -1,7 +1,7 @@
 -- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
 -- SPDX-License-Identifier: (Apache-2.0 OR BSD-3-Clause)
 
--- | Generate a ghc-lib.cabal package given a GHC directory
+-- | Generate a ghc-lib Cabal package given a GHC directory.
 module Main(main) where
 
 import System.Environment
@@ -20,8 +20,16 @@ main = do
         [root] -> withCurrentDirectory root $ do
             applyPatchHeapClosures
             generatePrerequisites
-            generateCabal
-        _ -> fail "You must pass exactly 1 argument, the directory containing the ghc source code."
+            generateGhcLibCabal
+        [root, "--ghc-lib"] -> withCurrentDirectory root $ do
+            applyPatchHeapClosures
+            generatePrerequisites
+            generateGhcLibCabal
+        [root, "--ghc-lib-parser"] -> withCurrentDirectory root $ do
+            applyPatchHeapClosures
+            generatePrerequisites
+            generateGhcLibParserCabal
+        _ -> fail "Usage : path [\"--ghc-lib\" | \"--ghc-lib-parser\"]."
 
 -- Constants.
 
@@ -128,11 +136,9 @@ askCabalField cbl x = concatMap snd $ filter ((==) x . fst) $ cabalFields cbl
 askCabalFiles :: Cabal -> String -> [String]
 askCabalFiles cbl x = map (cabalDir cbl </>) $ askCabalField cbl x
 
-
-
--- | Produces the Cabal file.
-generateCabal :: IO ()
-generateCabal = do
+-- | Produces a ghc-lib Cabal file.
+generateGhcLibCabal :: IO ()
+generateGhcLibCabal = do
     lib <- mapM readCabalFile cabalFileLibraries
     bin <- (:[]) <$> readCabalFile cabalFileBinary
     let askField from x = nubSort $ concatMap (`askCabalField` x) from
@@ -251,7 +257,300 @@ generateCabal = do
         ,"    main-is: Main.hs"
         ]
 
--- | Run Hadrian to build the things that the Cabal file needs
+-- | Produces a ghc-lib-parser Cabal file.
+generateGhcLibParserCabal :: IO ()
+generateGhcLibParserCabal = do
+    lib <- mapM readCabalFile cabalFileLibraries
+    bin <- (:[]) <$> readCabalFile cabalFileBinary
+    let askField from x = nubSort $ concatMap (`askCabalField` x) from
+    let askFiles from x = nubSort $ concatMap (`askCabalFiles` x) from
+
+    let indent = map ("    "++)
+    let indent2 = indent . indent
+    writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
+        -- header
+        ["cabal-version: 1.12"
+        ,"build-type: Simple"
+        ,"name: ghc-lib-parser"
+        ,"version: 0.1.0"
+        ,"license: BSD3"
+        ,"license-file: LICENSE"
+        ,"category: Development"
+        ,"author: The GHC Team and Digital Asset"
+        ,"maintainer: Digital Asset"
+        ,"synopsis: The GHC API, decoupled from GHC versions"
+        ,"description: A package equivalent to the @ghc@ package, but which can be loaded on many compiler versions."
+        ,"homepage: https://github.com/digital-asset/ghc-lib"
+        ,"bug-reports: https://github.com/digital-asset/ghc-lib/issues"
+        ,"exposed: False" -- automatically hide `ghc-lib-parser` (thanks Ed Kmett!)
+        ,"data-dir: " ++ dataDir
+        ,"data-files:"] ++
+        indent dataFiles ++
+        ["extra-source-files:"] ++
+        indent extraFiles ++
+        ["    includes/*.h"
+        ,"    includes/CodeGen.Platform.hs"
+        ,"    includes/rts/*.h"
+        ,"    includes/rts/storage/*.h"
+        ,"    includes/rts/prof/*.h"
+        ,"    compiler/nativeGen/*.h"
+        ,"    compiler/utils/*.h"
+        ,"    compiler/*.h"
+        ,"tested-with:GHC==8.4.3"
+        ,"source-repository head"
+        ,"    type: git"
+        ,"    location: git://git.haskell.org/ghc.git"
+        ,""
+        ,"library"
+        ,"    default-language:   Haskell2010"
+        ,"    default-extensions: NoImplicitPrelude"
+        ,"    include-dirs:"
+        ,"        ghc-lib/generated"
+        ,"        ghc-lib/stage0/compiler/build"
+        ,"        ghc-lib/stage1/compiler/build"
+        ,"        compiler"
+        ,"        compiler/utils"
+        ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
+        ,"    cc-options: -DTHREADED_RTS"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
+        ,"    if !os(windows)"
+        ,"        build-depends: unix"
+        ,"    else"
+        ,"        build-depends: Win32"
+        ,"    build-depends:"
+        ,"        ghc-prim > 0.2 && < 0.6,"
+        ,"        base >= 4.11 && < 4.14,"
+        ,"        containers >= 0.5 && < 0.7,"
+        ,"        bytestring >= 0.9 && < 0.11,"
+        ,"        binary == 0.8.*,"
+        ,"        filepath >= 1 && < 1.5,"
+        ,"        directory >= 1 && < 1.4,"
+        ,"        array >= 0.1 && < 0.6,"
+        ,"        deepseq >= 1.4 && < 1.5,"
+        ,"        pretty == 1.1.*,"
+        ,"        time >= 1.4 && < 1.10,"
+        ,"        transformers == 0.5.*,"
+        ,"        process >= 1 && < 1.7,"
+        ,"        hpc == 0.6.*"
+        ,"    build-tools: alex >= 3.1, happy >= 1.19.4"
+        ,"    other-extensions:"] ++
+        indent2 (askField lib "other-extensions:") ++
+        ["    c-sources:"] ++
+        indent2 (askFiles lib "c-sources:") ++
+        -- ["    cmm-sources:"] ++
+        -- indent2 (askFiles lib "cmm-sources:") ++
+        ["    hs-source-dirs:"
+        ,"        ghc-lib/stage0/compiler/build"
+        ,"        ghc-lib/stage1/compiler/build"
+        ,"        compiler/backpack"
+        ,"        compiler/basicTypes"
+        ,"        compiler/cmm"
+        ,"        compiler/coreSyn"
+        ,"        compiler/deSugar"
+        ,"        compiler/ghci"
+        ,"        compiler/hsSyn"
+        ,"        compiler/iface"
+        ,"        compiler/main"
+        ,"        compiler/parser"
+        ,"        compiler/prelude"
+        ,"        compiler/profiling"
+        ,"        compiler/simplCore"
+        ,"        compiler/simplStg"
+        ,"        compiler/specialise"
+        ,"        compiler/typecheck"
+        ,"        compiler/types"
+        ,"        compiler/utils"
+        ,"        libraries/ghc-boot"
+        ,"        libraries/ghc-boot-th"
+        ,"        libraries/ghc-heap"
+        ,"        libraries/ghci"
+        ,"        libraries/template-haskell"
+        ] ++
+        ["    autogen-modules:"
+        ,"        Lexer"
+        ,"        Parser"
+        ] ++
+        ["    exposed-modules:"
+        ,"        Fingerprint"
+        ,"        GHC.Exts.Heap"
+        ,"        GHC.Exts.Heap.ClosureTypes"
+        ,"        GHC.Exts.Heap.Closures"
+        ,"        GHC.Exts.Heap.Constants"
+        ,"        GHC.Exts.Heap.InfoTable"
+        ,"        GHC.Exts.Heap.InfoTable.Types"
+        ,"        GHC.Exts.Heap.InfoTableProf"
+        ,"        GHC.Exts.Heap.Utils"
+        ,"        GHCi.FFI"
+        ,"        Lexer"
+        ,"        Parser"
+        ,"        Annotations"
+        ,"        ApiAnnotation"
+        ,"        Avail"
+        ,"        Bag"
+        ,"        BasicTypes"
+        ,"        BinFingerprint"
+        ,"        Binary"
+        ,"        BkpSyn"
+        ,"        BooleanFormula"
+        ,"        BufWrite"
+        ,"        ByteCodeTypes"
+        ,"        Class"
+        ,"        CmdLineParser"
+        ,"        CmmType"
+        ,"        CoAxiom"
+        ,"        Coercion"
+        ,"        ConLike"
+        ,"        Config"
+        ,"        Constants"
+        ,"        CoreArity"
+        ,"        CoreFVs"
+        ,"        CoreMap"
+        ,"        CoreMonad"
+        ,"        CoreOpt"
+        ,"        CoreSeq"
+        ,"        CoreStats"
+        ,"        CoreSubst"
+        ,"        CoreSyn"
+        ,"        CoreTidy"
+        ,"        CoreUnfold"
+        ,"        CoreUtils"
+        ,"        CostCentre"
+        ,"        CostCentreState"
+        ,"        Ctype"
+        ,"        DataCon"
+        ,"        Demand"
+        ,"        Digraph"
+        ,"        DriverPhases"
+        ,"        DynFlags"
+        ,"        Encoding"
+        ,"        EnumSet"
+        ,"        ErrUtils"
+        ,"        Exception"
+        ,"        FV"
+        ,"        FamInstEnv"
+        ,"        FastFunctions"
+        ,"        FastMutInt"
+        ,"        FastString"
+        ,"        FastStringEnv"
+        ,"        FieldLabel"
+        ,"        FileCleanup"
+        ,"        FiniteMap"
+        ,"        ForeignCall"
+        ,"        GHC.ForeignSrcLang"
+        ,"        GHC.ForeignSrcLang.Type"
+        ,"        GHC.LanguageExtensions"
+        ,"        GHC.LanguageExtensions.Type"
+        ,"        GHC.Lexeme"
+        ,"        GHC.PackageDb"
+        ,"        GHC.Serialized"
+        ,"        GHCi.BreakArray"
+        ,"        GHCi.Message"
+        ,"        GHCi.RemoteTypes"
+        ,"        GHCi.TH.Binary"
+        ,"        GhcMonad"
+        ,"        HaddockUtils"
+        ,"        Hooks"
+        ,"        HsBinds"
+        ,"        HsDecls"
+        ,"        HsDoc"
+        ,"        HsExpr"
+        ,"        HsExtension"
+        ,"        HsImpExp"
+        ,"        HsInstances"
+        ,"        HsLit"
+        ,"        HsPat"
+        ,"        HsSyn"
+        ,"        HsTypes"
+        ,"        HsUtils"
+        ,"        HscTypes"
+        ,"        IOEnv"
+        ,"        Id"
+        ,"        IdInfo"
+        ,"        IfaceSyn"
+        ,"        IfaceType"
+        ,"        InstEnv"
+        ,"        InteractiveEvalTypes"
+        ,"        Json"
+        ,"        Kind"
+        ,"        KnownUniques"
+        ,"        Language.Haskell.TH"
+        ,"        Language.Haskell.TH.LanguageExtensions"
+        ,"        Language.Haskell.TH.Lib"
+        ,"        Language.Haskell.TH.Lib.Internal"
+        ,"        Language.Haskell.TH.Ppr"
+        ,"        Language.Haskell.TH.PprLib"
+        ,"        Language.Haskell.TH.Syntax"
+        ,"        Lexeme"
+        ,"        ListSetOps"
+        ,"        Literal"
+        ,"        Maybes"
+        ,"        MkCore"
+        ,"        MkId"
+        ,"        Module"
+        ,"        MonadUtils"
+        ,"        Name"
+        ,"        NameCache"
+        ,"        NameEnv"
+        ,"        NameSet"
+        ,"        OccName"
+        ,"        OccurAnal"
+        ,"        OptCoercion"
+        ,"        OrdList"
+        ,"        Outputable"
+        ,"        PackageConfig"
+        ,"        Packages"
+        ,"        Pair"
+        ,"        Panic"
+        ,"        PatSyn"
+        ,"        PipelineMonad"
+        ,"        PlaceHolder"
+        ,"        Platform"
+        ,"        PlatformConstants"
+        ,"        Plugins"
+        ,"        PmExpr"
+        ,"        PprColour"
+        ,"        PprCore"
+        ,"        PrelNames"
+        ,"        PrelRules"
+        ,"        Pretty"
+        ,"        PrimOp"
+        ,"        RdrHsSyn"
+        ,"        RdrName"
+        ,"        RepType"
+        ,"        Rules"
+        ,"        SizedSeq"
+        ,"        SrcLoc"
+        ,"        StringBuffer"
+        ,"        SysTools.BaseDir"
+        ,"        SysTools.Terminal"
+        ,"        TcEvidence"
+        ,"        TcRnTypes"
+        ,"        TcType"
+        ,"        ToIface"
+        ,"        TrieMap"
+        ,"        TyCoRep"
+        ,"        TyCon"
+        ,"        Type"
+        ,"        TysPrim"
+        ,"        TysWiredIn"
+        ,"        Unify"
+        ,"        UniqDFM"
+        ,"        UniqDSet"
+        ,"        UniqFM"
+        ,"        UniqSet"
+        ,"        UniqSupply"
+        ,"        Unique"
+        ,"        Util"
+        ,"        Var"
+        ,"        VarEnv"
+        ,"        VarSet"
+        ] ++
+        ["    other-modules:"
+        ,"        GhcPrelude"
+        ,"        Language.Haskell.TH.Lib.Map"
+        ]
+
+-- | Run Hadrian to build the things that the Cabal files need.
 generatePrerequisites :: IO ()
 generatePrerequisites = do
   withCurrentDirectory "hadrian" $ do
