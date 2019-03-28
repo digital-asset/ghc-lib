@@ -416,16 +416,12 @@ generateGhcLibCabal = do
             askFiles lib "hs-source-dirs:") ++
         ["    autogen-modules:"
         ,"        Paths_ghc_lib"
-        ,"        Lexer"
-        ,"        Parser"] ++
+        ] ++
         ["    reexposed-modules:"]++
         indent2 parserModules ++
         ["    exposed-modules:"
         ,"        Paths_ghc_lib"
         ] ++
-        indent2 nonParserModules ++
-        ["    other-modules:"] ++
-        -- indent2 (askField lib "other-modules:") ++
         [""
         ,"executable ghc-lib"
         ,"    default-language:   Haskell2010"
