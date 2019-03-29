@@ -33,10 +33,10 @@ main = do
     cmd $ "tar -xf " ++ tarball
     renameDirectory (dropExtension $ dropExtension tarball) "ghc-lib-parser"
     removeFile tarball
-    removeDirectoryRecursive "ghc"
+    removeFile "ghc/ghc-lib-parser.cabal"
 
     -- Make and extract an sdist of ghc-lib.
-    cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
+    cmd "cd ghc && git checkout . && cd .."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
     cmd "stack sdist ghc --tar-dir=."
@@ -44,7 +44,7 @@ main = do
     cmd $ "tar -xf " ++ tarball
     renameDirectory (dropExtension $ dropExtension tarball) "ghc-lib"
     removeFile tarball
-    removeDirectoryRecursive "ghc"
+    removeFile "ghc/ghc-lib.cabal"
 
     -- Test the new projects.
     writeFile "stack.yaml" $
