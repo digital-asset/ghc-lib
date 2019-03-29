@@ -21,26 +21,36 @@ main = do
             hFlush stdout
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
+
+    -- Make and extract an sdist of ghc-lib-parser.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
-    -- This is not essential, but make the cache work between Hadrian
-    -- and ghc-lib in order to build hadrian quicker.
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-
-    -- All set. Let's get to it!
-    cmd "stack exec -- ghc-lib-gen ghc"
-
-    -- Generate an sdist and extract it to ensure it works.
+    cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
     stackYaml <- readFile' "stack.yaml"
     writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
     cmd "stack sdist ghc --tar-dir=."
     [tarball] <- filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
     cmd $ "tar -xf " ++ tarball
+    renameDirectory (dropExtension $ dropExtension tarball) "ghc-lib-parser"
+    removeFile tarball
+    removeDirectoryRecursive "ghc"
+
+    -- Make and extract an sdist of ghc-lib.
+    cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
+    appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+    cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
+    cmd "stack sdist ghc --tar-dir=."
+    [tarball] <- filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
+    cmd $ "tar -xf " ++ tarball
     renameDirectory (dropExtension $ dropExtension tarball) "ghc-lib"
+    removeFile tarball
+    removeDirectoryRecursive "ghc"
 
     -- Test the new projects.
     writeFile "stack.yaml" $
       stackYaml ++
-      unlines [ "- ghc-lib"
+      unlines [ "- ghc-lib-parser"
+              , "- ghc-lib"
               , "- examples/mini-hlint"
               , "- examples/mini-compile"
               ]

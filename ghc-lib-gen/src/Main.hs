@@ -49,6 +49,21 @@ cabalFileLibraries =
 cabalFileBinary :: FilePath
 cabalFileBinary = "ghc/ghc-bin.cabal"
 
+-- |'dataDir' is the directory cabal looks for data files to install,
+-- relative to the source directory.
+dataDir :: FilePath
+dataDir = "ghc-lib/stage1/lib"
+
+-- |'dataFiles' is a list of files to be installed for run-time use by
+-- the package.
+dataFiles :: [FilePath]
+dataFiles =
+    ["settings"
+    ,"llvm-targets"
+    ,"llvm-passes"
+    ,"platformConstants"
+    ]
+
 -- | Additional source and data files for Cabal.
 --   The files in this list are all created by Hadrian.
 extraFiles :: [FilePath]
@@ -77,82 +92,18 @@ extraFiles =
     ,"ghc-lib/stage1/compiler/build/primop-vector-tys-exports.hs-incl"
     ,"ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
     ,"ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
+    -- Be careful not to add these files to a ghc-lib.cabal, just
+    -- ghc-lib-parser.cabal.
     ,"ghc-lib/stage1/compiler/build/Config.hs"
     ,"ghc-lib/stage0/compiler/build/Parser.hs"
     ,"ghc-lib/stage0/compiler/build/Lexer.hs"
     ]
 
--- |'dataDir' is the directory cabal looks for data files to install,
--- relative to the source directory.
-dataDir :: FilePath
-dataDir = "ghc-lib/stage1/lib"
-
--- |'dataFiles' is a list of files to be installed for run-time use by
--- the package.
-dataFiles :: [FilePath]
-dataFiles =
-    ["settings"
-    ,"llvm-targets"
-    ,"llvm-passes"
-    ,"platformConstants"
-    ]
-
--- | Stub out a couple of definitions in the ghc-heap library that require CMM features,
---   since Cabal doesn't work well with CMM files.
-applyPatchHeapClosures :: IO ()
-applyPatchHeapClosures = do
-    let file = "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
-    writeFile file .
-        replace
-            "foreign import prim \"aToWordzh\" aToWord# :: Any -> Word#"
-            "aToWord# :: Any -> Word#\naToWord# _ = 0##\n" .
-        replace
-            "foreign import prim \"reallyUnsafePtrEqualityUpToTag\"\n    reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#"
-            "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
-        =<< readFile' file
-
-
--- | Data type representing an approximately parsed Cabal file
-data Cabal = Cabal
-    {cabalDir :: FilePath -- the directory this file exists in
-    ,cabalFields :: [(String, [String])] -- the key/value pairs it contains
-    }
-
--- | Given a file, produce the key/value pairs it contains (approximate but good enough)
-readCabalFile :: FilePath -> IO Cabal
-readCabalFile file = do
-    src <- readFile' file
-    let fields = repeatedly f $ wordsBy (\x -> isSpace x || x == ',') $ unlines $ filter (not . isIf) $ map trimComment $ lines src
-    return $ Cabal (takeDirectory file) fields
-    where
-        isIf x = "if " `isPrefixOf` trim x
-        trimComment x = maybe x fst $ stripInfix "--" x
-        f (x:xs) = let (a,b) = break (":" `isSuffixOf`) xs in ((lower x,a),b)
-
--- | Ask a Cabal file for a field.
-askCabalField :: Cabal -> String -> [String]
-askCabalField cbl x = concatMap snd $ filter ((==) x . fst) $ cabalFields cbl
-
--- | Ask a Cabal file for a file, which is relative to the underlying Cabal file.
-askCabalFiles :: Cabal -> String -> [String]
-askCabalFiles cbl x = map (cabalDir cbl </>) $ askCabalField cbl x
-
--- | The ghc-lib-parser modules. Currently hand crafted but this can be automated.
+-- | The ghc-lib-parser modules. This list has been hand crafted but
+-- there is a procedure we can introduce for calculating it.
 parserModules :: [String]
 parserModules =
-  [ "Fingerprint"
-  , "GHC.Exts.Heap"
-  , "GHC.Exts.Heap.ClosureTypes"
-  , "GHC.Exts.Heap.Closures"
-  , "GHC.Exts.Heap.Constants"
-  , "GHC.Exts.Heap.InfoTable"
-  , "GHC.Exts.Heap.InfoTable.Types"
-  , "GHC.Exts.Heap.InfoTableProf"
-  , "GHC.Exts.Heap.Utils"
-  , "GHCi.FFI"
-  , "Lexer"
-  , "Parser"
-  , "Annotations"
+  [ "Annotations"
   , "ApiAnnotation"
   , "Avail"
   , "Bag"
@@ -203,8 +154,17 @@ parserModules =
   , "FastStringEnv"
   , "FieldLabel"
   , "FileCleanup"
+  , "Fingerprint"
   , "FiniteMap"
   , "ForeignCall"
+  , "GHC.Exts.Heap"
+  , "GHC.Exts.Heap.ClosureTypes"
+  , "GHC.Exts.Heap.Closures"
+  , "GHC.Exts.Heap.Constants"
+  , "GHC.Exts.Heap.InfoTable"
+  , "GHC.Exts.Heap.InfoTable.Types"
+  , "GHC.Exts.Heap.InfoTableProf"
+  , "GHC.Exts.Heap.Utils"
   , "GHC.ForeignSrcLang"
   , "GHC.ForeignSrcLang.Type"
   , "GHC.LanguageExtensions"
@@ -213,10 +173,12 @@ parserModules =
   , "GHC.PackageDb"
   , "GHC.Serialized"
   , "GHCi.BreakArray"
+  , "GHCi.FFI"
   , "GHCi.Message"
   , "GHCi.RemoteTypes"
   , "GHCi.TH.Binary"
   , "GhcMonad"
+  , "GhcPrelude"
   , "HaddockUtils"
   , "Hooks"
   , "HsBinds"
@@ -246,10 +208,12 @@ parserModules =
   , "Language.Haskell.TH.LanguageExtensions"
   , "Language.Haskell.TH.Lib"
   , "Language.Haskell.TH.Lib.Internal"
+  , "Language.Haskell.TH.Lib.Map"
   , "Language.Haskell.TH.Ppr"
   , "Language.Haskell.TH.PprLib"
   , "Language.Haskell.TH.Syntax"
   , "Lexeme"
+  , "Lexer"
   , "ListSetOps"
   , "Literal"
   , "Maybes"
@@ -270,6 +234,7 @@ parserModules =
   , "Packages"
   , "Pair"
   , "Panic"
+  , "Parser"
   , "PatSyn"
   , "PipelineMonad"
   , "PlaceHolder"
@@ -313,31 +278,94 @@ parserModules =
   , "Var"
   , "VarEnv"
   , "VarSet"
-  , "GhcPrelude"
-  , "Language.Haskell.TH.Lib.Map"
+  ]
+
+-- | Stub out a couple of definitions in the ghc-heap library that require CMM features,
+--   since Cabal doesn't work well with CMM files.
+applyPatchHeapClosures :: IO ()
+applyPatchHeapClosures = do
+    let file = "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
+    writeFile file .
+        replace
+            "foreign import prim \"aToWordzh\" aToWord# :: Any -> Word#"
+            "aToWord# :: Any -> Word#\naToWord# _ = 0##\n" .
+        replace
+            "foreign import prim \"reallyUnsafePtrEqualityUpToTag\"\n    reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#"
+            "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
+        =<< readFile' file
+
+
+-- | Data type representing an approximately parsed Cabal file.
+data Cabal = Cabal
+    {cabalDir :: FilePath -- the directory this file exists in
+    ,cabalFields :: [(String, [String])] -- the key/value pairs it contains
+    }
+
+-- | Given a file, produce the key/value pairs it contains (approximate but good enough).
+readCabalFile :: FilePath -> IO Cabal
+readCabalFile file = do
+    src <- readFile' file
+    let fields = repeatedly f $ wordsBy (\x -> isSpace x || x == ',') $ unlines $ filter (not . isIf) $ map trimComment $ lines src
+    return $ Cabal (takeDirectory file) fields
+    where
+        isIf x = "if " `isPrefixOf` trim x
+        trimComment x = maybe x fst $ stripInfix "--" x
+        f (x:xs) = let (a,b) = break (":" `isSuffixOf`) xs in ((lower x,a),b)
+
+-- | Ask a Cabal file for a field.
+askCabalField :: Cabal -> String -> [String]
+askCabalField cbl x = concatMap snd $ filter ((==) x . fst) $ cabalFields cbl
+
+-- | Ask a Cabal file for a file, which is relative to the underlying Cabal file.
+askCabalFiles :: Cabal -> String -> [String]
+askCabalFiles cbl x = map (cabalDir cbl </>) $ askCabalField cbl x
+
+-- | Some often used string manipulation utilities.
+indent :: [String] -> [String]
+indent = map ("    "++)
+indent2 :: [String] -> [String]
+indent2 = indent . indent
+withCommas :: [String] -> [String]
+withCommas ms =
+  let ms' = reverse ms in
+    reverse (head ms' : map (++",") (tail ms'))
+
+-- | Common build dependencies.
+commonBuildDepends =
+  [ "ghc-prim > 0.2 && < 0.6"
+  , "base >= 4.11 && < 4.14"
+  , "containers >= 0.5 && < 0.7"
+  , "bytestring >= 0.9 && < 0.11"
+  , "binary == 0.8.*"
+  , "filepath >= 1 && < 1.5"
+  , "directory >= 1 && < 1.4"
+  , "array >= 0.1 && < 0.6"
+  , "deepseq >= 1.4 && < 1.5"
+  , "pretty == 1.1.*"
+  , "time >= 1.4 && < 1.10"
+  , "transformers == 0.5.*"
+  , "process >= 1 && < 1.7"
+  , "hpc == 0.6.*"
   ]
 
 -- | Produces a ghc-lib Cabal file.
 generateGhcLibCabal :: IO ()
 generateGhcLibCabal = do
     lib <- mapM readCabalFile cabalFileLibraries
-
     bin <- (:[]) <$> readCabalFile cabalFileBinary
     let askField from x = nubSort $ concatMap (`askCabalField` x) from
     let askFiles from x = nubSort $ concatMap (`askCabalFiles` x) from
 
     -- Compute the list of modules to be compiled. The rest are parser
-    -- modules and so will be reexported.
+    -- modules re-exported from ghc-lib-parser.
     let nonParserModules =
           Set.toList (Set.difference
           (Set.fromList (askField lib "exposed-modules:" ))
           (Set.fromList parserModules))
 
-    let indent = map ("    "++)
-    let indent2 = indent . indent
     writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
         -- header
-        ["cabal-version: 1.12"
+        ["cabal-version: >=1.22"
         ,"build-type: Simple"
         ,"name: ghc-lib"
         ,"version: 0.1.0"
@@ -355,7 +383,9 @@ generateGhcLibCabal = do
         ,"data-files:"] ++
         indent dataFiles ++
         ["extra-source-files:"] ++
-        indent extraFiles ++
+        -- Remove Config.hs, Parser.hs and Lexer.hs from the list of
+        -- extra source files here.
+        indent (reverse (drop 3 $ reverse extraFiles)) ++
         ["    includes/*.h"
         ,"    includes/CodeGen.Platform.hs"
         ,"    includes/rts/*.h"
@@ -364,7 +394,7 @@ generateGhcLibCabal = do
         ,"    compiler/nativeGen/*.h"
         ,"    compiler/utils/*.h"
         ,"    compiler/*.h"
-        ,"tested-with:GHC==8.4.3"
+        ,"tested-with:GHC==8.6.3"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git://git.haskell.org/ghc.git"
@@ -385,43 +415,25 @@ generateGhcLibCabal = do
         ,"        build-depends: unix"
         ,"    else"
         ,"        build-depends: Win32"
-        ,"    build-depends:"
-        ,"        ghc-prim > 0.2 && < 0.6,"
-        ,"        base >= 4.11 && < 4.14,"
-        ,"        containers >= 0.5 && < 0.7,"
-        ,"        bytestring >= 0.9 && < 0.11,"
-        ,"        binary == 0.8.*,"
-        ,"        filepath >= 1 && < 1.5,"
-        ,"        directory >= 1 && < 1.4,"
-        ,"        array >= 0.1 && < 0.6,"
-        ,"        deepseq >= 1.4 && < 1.5,"
-        ,"        pretty == 1.1.*,"
-        ,"        time >= 1.4 && < 1.10,"
-        ,"        transformers == 0.5.*,"
-        ,"        process >= 1 && < 1.7,"
-        ,"        hpc == 0.6.*,"
-        ,"        ghc-lib-parser"
-        ,"    build-tools: alex >= 3.1, happy >= 1.19.4"
+        ,"    build-depends:"]++
+        indent2 (withCommas (commonBuildDepends ++ ["ghc-lib-parser"]))++
+        ["    build-tools: alex >= 3.1, happy >= 1.19.4"
         ,"    other-extensions:"] ++
         indent2 (askField lib "other-extensions:") ++
-        ["    c-sources:"] ++
-        indent2 (askFiles lib "c-sources:") ++
-        -- ["    cmm-sources:"] ++
-        -- indent2 (askFiles lib "cmm-sources:") ++
         ["    hs-source-dirs:"] ++
         indent2 (nubSort $
-            [ "ghc-lib/stage0/compiler/build"
-            , "ghc-lib/stage1/compiler/build"] ++
+            ["ghc-lib/stage1/compiler/build"] ++
             map takeDirectory cabalFileLibraries ++
             askFiles lib "hs-source-dirs:") ++
         ["    autogen-modules:"
         ,"        Paths_ghc_lib"
         ] ++
-        ["    reexposed-modules:"]++
-        indent2 parserModules ++
+        ["    reexported-modules:"]++
+        withCommas (indent2 $ nubSort parserModules) ++
         ["    exposed-modules:"
         ,"        Paths_ghc_lib"
         ] ++
+        indent2 (nubSort nonParserModules) ++
         [""
         ,"executable ghc-lib"
         ,"    default-language:   Haskell2010"
@@ -453,11 +465,9 @@ generateGhcLibParserCabal = do
     let askField from x = nubSort $ concatMap (`askCabalField` x) from
     let askFiles from x = nubSort $ concatMap (`askCabalFiles` x) from
 
-    let indent = map ("    "++)
-    let indent2 = indent . indent
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
         -- header
-        ["cabal-version: 1.12"
+        ["cabal-version: >=1.22"
         ,"build-type: Simple"
         ,"name: ghc-lib-parser"
         ,"version: 0.1.0"
@@ -470,7 +480,7 @@ generateGhcLibParserCabal = do
         ,"description: A package equivalent to the @ghc@ package, but which can be loaded on many compiler versions."
         ,"homepage: https://github.com/digital-asset/ghc-lib"
         ,"bug-reports: https://github.com/digital-asset/ghc-lib/issues"
-        -- ,"exposed: False" -- automatically hide `ghc-lib-parser` (thanks Ed Kmett!)
+        ,"exposed: False" -- automatically hide `ghc-lib-parser` (thanks Ed Kmett!)
         ,"data-dir: " ++ dataDir
         ,"data-files:"] ++
         indent dataFiles ++
@@ -484,7 +494,7 @@ generateGhcLibParserCabal = do
         ,"    compiler/nativeGen/*.h"
         ,"    compiler/utils/*.h"
         ,"    compiler/*.h"
-        ,"tested-with:GHC==8.4.3"
+        ,"tested-with:GHC==8.6.3"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git://git.haskell.org/ghc.git"
@@ -505,55 +515,19 @@ generateGhcLibParserCabal = do
         ,"        build-depends: unix"
         ,"    else"
         ,"        build-depends: Win32"
-        ,"    build-depends:"
-        ,"        ghc-prim > 0.2 && < 0.6,"
-        ,"        base >= 4.11 && < 4.14,"
-        ,"        containers >= 0.5 && < 0.7,"
-        ,"        bytestring >= 0.9 && < 0.11,"
-        ,"        binary == 0.8.*,"
-        ,"        filepath >= 1 && < 1.5,"
-        ,"        directory >= 1 && < 1.4,"
-        ,"        array >= 0.1 && < 0.6,"
-        ,"        deepseq >= 1.4 && < 1.5,"
-        ,"        pretty == 1.1.*,"
-        ,"        time >= 1.4 && < 1.10,"
-        ,"        transformers == 0.5.*,"
-        ,"        process >= 1 && < 1.7,"
-        ,"        hpc == 0.6.*"
-        ,"    build-tools: alex >= 3.1, happy >= 1.19.4"
+        ,"    build-depends:"]++
+        indent2 (withCommas commonBuildDepends) ++
+        ["    build-tools: alex >= 3.1, happy >= 1.19.4"
         ,"    other-extensions:"] ++
         indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
         indent2 (askFiles lib "c-sources:") ++
-        -- ["    cmm-sources:"] ++
-        -- indent2 (askFiles lib "cmm-sources:") ++
-        ["    hs-source-dirs:"
-        ,"        ghc-lib/stage0/compiler/build"
-        ,"        ghc-lib/stage1/compiler/build"
-        ,"        compiler/backpack"
-        ,"        compiler/basicTypes"
-        ,"        compiler/cmm"
-        ,"        compiler/coreSyn"
-        ,"        compiler/deSugar"
-        ,"        compiler/ghci"
-        ,"        compiler/hsSyn"
-        ,"        compiler/iface"
-        ,"        compiler/main"
-        ,"        compiler/parser"
-        ,"        compiler/prelude"
-        ,"        compiler/profiling"
-        ,"        compiler/simplCore"
-        ,"        compiler/simplStg"
-        ,"        compiler/specialise"
-        ,"        compiler/typecheck"
-        ,"        compiler/types"
-        ,"        compiler/utils"
-        ,"        libraries/ghc-boot"
-        ,"        libraries/ghc-boot-th"
-        ,"        libraries/ghc-heap"
-        ,"        libraries/ghci"
-        ,"        libraries/template-haskell"
-        ] ++
+        ["    hs-source-dirs:"] ++
+        indent2 (nubSort $
+            [ "ghc-lib/stage0/compiler/build"
+            , "ghc-lib/stage1/compiler/build"] ++
+            map takeDirectory cabalFileLibraries ++
+            askFiles lib "hs-source-dirs:") ++
         ["    autogen-modules:"
         ,"        Lexer"
         ,"        Parser"
