@@ -13,12 +13,6 @@ import System.Time.Extra
 
 main :: IO ()
 main = do
-    let cmd x = do
-            putStrLn $ "\n\n# Running: " ++ x
-            hFlush stdout
-            (t, _) <- duration $ system_ x
-            putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
-            hFlush stdout
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
@@ -28,9 +22,7 @@ main = do
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
     stackYaml <- readFile' "stack.yaml"
     writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
-    cmd "stack sdist ghc --tar-dir=."
-    [tarball] <- filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
-    cmd $ "tar -xf " ++ tarball
+    tarball <- sDistCreateExtract
     renameDirectory (dropExtension $ dropExtension tarball) "ghc-lib-parser"
     removeFile tarball
     removeFile "ghc/ghc-lib-parser.cabal"
@@ -39,9 +31,7 @@ main = do
     cmd "cd ghc && git checkout . && cd .."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
-    cmd "stack sdist ghc --tar-dir=."
-    [tarball] <- filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
-    cmd $ "tar -xf " ++ tarball
+    tarball <- sDistCreateExtract
     renameDirectory (dropExtension $ dropExtension tarball) "ghc-lib"
     removeFile tarball
     removeFile "ghc/ghc-lib.cabal"
@@ -59,3 +49,18 @@ main = do
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_error_handling.hs"
     cmd "stack exec --no-terminal -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
+    where
+      cmd :: String -> IO ()
+      cmd x = do
+            putStrLn $ "\n\n# Running: " ++ x
+            hFlush stdout
+            (t, _) <- duration $ system_ x
+            putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
+            hFlush stdout
+
+      sDistCreateExtract :: IO String
+      sDistCreateExtract = do
+        cmd "stack sdist ghc --tar-dir=."
+        [tarball] <- filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
+        cmd $ "tar -xf " ++ tarball
+        return tarball
