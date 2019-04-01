@@ -9,13 +9,13 @@ module Main (main) where
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
 import "ghc-lib" HeaderInfo
-import "ghc-lib" Module
-import "ghc-lib" Config
-import "ghc-lib" DynFlags
-import "ghc-lib" Platform
-import "ghc-lib" StringBuffer
-import "ghc-lib" Fingerprint
-import "ghc-lib" Outputable
+import "ghc-lib-parser" Module
+import "ghc-lib-parser" Config
+import "ghc-lib-parser" DynFlags
+import "ghc-lib-parser" Platform
+import "ghc-lib-parser" StringBuffer
+import "ghc-lib-parser" Fingerprint
+import "ghc-lib-parser" Outputable
 
 import System.Environment
 import System.Directory

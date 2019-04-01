@@ -7,18 +7,18 @@
 module Main (main) where
 
 import "ghc-lib" GHC
-import "ghc-lib" Config
-import "ghc-lib" DynFlags
-import "ghc-lib" Platform
-import "ghc-lib" StringBuffer
-import "ghc-lib" Fingerprint
-import "ghc-lib" Lexer
-import "ghc-lib" RdrName
-import "ghc-lib" ErrUtils
-import qualified "ghc-lib" Parser
-import "ghc-lib" FastString
-import "ghc-lib" Outputable
-import "ghc-lib" SrcLoc
+import "ghc-lib-parser" Config
+import "ghc-lib-parser" DynFlags
+import "ghc-lib-parser" Platform
+import "ghc-lib-parser" StringBuffer
+import "ghc-lib-parser" Fingerprint
+import "ghc-lib-parser" Lexer
+import "ghc-lib-parser" RdrName
+import "ghc-lib-parser" ErrUtils
+import qualified "ghc-lib-parser" Parser
+import "ghc-lib-parser" FastString
+import "ghc-lib-parser" Outputable
+import "ghc-lib-parser" SrcLoc
 
 import System.Environment
 import System.IO.Extra
