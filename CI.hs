@@ -23,16 +23,16 @@ main = do
     stackYaml <- readFile' "stack.yaml"
     writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
     tarball <- sDistCreateExtract
-    renameDirectory (dropExtension $ dropExtension tarball) "ghc-lib-parser"
+    renameDirectory (dropExtensions tarball) "ghc-lib-parser"
     removeFile tarball
     removeFile "ghc/ghc-lib-parser.cabal"
 
     -- Make and extract an sdist of ghc-lib.
-    cmd "cd ghc && git checkout . && cd .."
+    cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
     tarball <- sDistCreateExtract
-    renameDirectory (dropExtension $ dropExtension tarball) "ghc-lib"
+    renameDirectory (dropExtensions tarball) "ghc-lib"
     removeFile tarball
     removeFile "ghc/ghc-lib.cabal"
 
@@ -50,6 +50,9 @@ main = do
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_error_handling.hs"
     cmd "stack exec --no-terminal -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
     where
+      dropExtensions :: String -> String
+      dropExtensions = dropExtension . dropExtension
+
       cmd :: String -> IO ()
       cmd x = do
             putStrLn $ "\n\n# Running: " ++ x
