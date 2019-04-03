@@ -18,7 +18,7 @@ steps:
   # macOS
   - bash: |
       /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-      brew install autoconf automake python3 gmp
+      brew install autoconf automake gmp
     condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: Install brew
 
