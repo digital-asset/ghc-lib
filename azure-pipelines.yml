@@ -19,8 +19,8 @@ steps:
   - bash: |
       /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
       brew install autoconf automake python3 gmp
-      condition: eq( variables['Agent.OS'], 'Darwin' )
-      displayName: Install brew
+    condition: eq( variables['Agent.OS'], 'Darwin' )
+    displayName: Install brew
 
   - script: |
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s CI.hs
