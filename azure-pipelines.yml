@@ -1,0 +1,25 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+strategy:
+  matrix:
+    linux:   {image: "Ubuntu 16.04"}
+    windows: {image: "vs2017-win2016"}
+    mac:     {image: "macOS-10.13"}
+
+pool: {vmImage: '$(image)'}    
+
+steps:
+  - script: 
+      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s CI.hs
+      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/src
+      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
+      curl -sSL https://get.haskellstack.org/ | sh
+      stack setup > /dev/null
+      stack --no-terminal build
+      stack runhaskell CI.hs
