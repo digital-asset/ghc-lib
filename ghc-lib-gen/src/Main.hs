@@ -522,6 +522,7 @@ generateGhcLibParserCabal = do
         indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
         -- we hardcode these because the inclusion of keepCAFsForGHCi causes issues in ghci
+        -- see https://github.com/digital-asset/ghc-lib/issues/27
         indent2 ["compiler/cbits/genSym.c","compiler/parser/cutils.c"] ++
         ["    hs-source-dirs:"] ++
         indent2 (nubSort $
