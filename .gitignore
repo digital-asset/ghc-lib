@@ -1,6 +1,7 @@
 dist/
 ghc/
 ghc-master/
+.vscode/
 .stack-work/
 *.hi
 .DS_Store
