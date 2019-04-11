@@ -22,7 +22,7 @@ strategy:
     windows: {image: "vs2017-win2016"}
     mac:     {image: "macOS-10.13"}
 
-pool: {vmImage: '$(image)'}    
+pool: {vmImage: '$(image)'}
 
 steps:
   # macOS
