@@ -6,7 +6,7 @@
 
 module Main (main) where
 
-import "ghc-lib" GHC
+import "ghc-lib-parser" HsSyn
 import "ghc-lib-parser" Config
 import "ghc-lib-parser" DynFlags
 import "ghc-lib-parser" Platform
