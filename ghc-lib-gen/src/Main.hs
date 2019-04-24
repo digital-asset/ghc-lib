@@ -396,7 +396,7 @@ generateGhcLibCabal = do
         ,"    compiler/nativeGen/*.h"
         ,"    compiler/utils/*.h"
         ,"    compiler/*.h"
-        ,"tested-with: GHC==8.6.3, GHC=8.4.3"
+        ,"tested-with: GHC==8.6.3, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git@github.com:digital-asset/ghc-lib.git"
