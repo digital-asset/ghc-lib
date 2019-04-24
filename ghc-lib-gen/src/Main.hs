@@ -378,7 +378,9 @@ generateGhcLibCabal = do
         ,"description: A package equivalent to the @ghc@ package, but which can be loaded on many compiler versions."
         ,"homepage: https://github.com/digital-asset/ghc-lib"
         ,"bug-reports: https://github.com/digital-asset/ghc-lib/issues"
-        ,"exposed: False" -- automatically hide `ghc-lib` (thanks Ed Kmett!)
+        -- This is a nice idea but requires a very modern cabal which
+        -- hinders uploading to hackage.
+        -- ,"exposed: False" -- automatically hide `ghc-lib` (thanks Ed Kmett!)
         ,"data-dir: " ++ dataDir
         ,"data-files:"] ++
         indent dataFiles ++
@@ -394,7 +396,7 @@ generateGhcLibCabal = do
         ,"    compiler/nativeGen/*.h"
         ,"    compiler/utils/*.h"
         ,"    compiler/*.h"
-        ,"tested-with:GHC==8.6.3"
+        ,"tested-with: GHC==8.6.3, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git@github.com:digital-asset/ghc-lib.git"
@@ -480,7 +482,9 @@ generateGhcLibParserCabal = do
         ,"description: A package equivalent to the @ghc@ package, but which can be loaded on many compiler versions."
         ,"homepage: https://github.com/digital-asset/ghc-lib"
         ,"bug-reports: https://github.com/digital-asset/ghc-lib/issues"
-        ,"exposed: False" -- automatically hide `ghc-lib-parser` (thanks Ed Kmett!)
+        -- This is a nice idea but requires a very modern cabal which
+        -- hinders uploading to hackage.
+        -- ,"exposed: False" -- automatically hide `ghc-lib` (thanks Ed Kmett!)
         ,"data-dir: " ++ dataDir
         ,"data-files:"] ++
         indent dataFiles ++
@@ -494,7 +498,7 @@ generateGhcLibParserCabal = do
         ,"    compiler/nativeGen/*.h"
         ,"    compiler/utils/*.h"
         ,"    compiler/*.h"
-        ,"tested-with:GHC==8.6.3"
+        ,"tested-with: GHC==8.6.3, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git@github.com:digital-asset/ghc-lib.git"
