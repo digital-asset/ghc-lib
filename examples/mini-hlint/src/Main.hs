@@ -102,7 +102,7 @@ main = do
           report flags (snd (getMessages s flags))
         POk s m -> do
           let (warns, errs) = getMessages s flags
-          if (not (null errs))
+          if not (null errs)
             then report flags errs
             else do
               unless (null warns) $ report flags warns
