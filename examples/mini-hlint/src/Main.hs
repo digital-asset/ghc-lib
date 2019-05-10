@@ -99,15 +99,13 @@ main = do
       let flags = defaultDynFlags fakeSettings fakeLlvmConfig
       case parse file flags s of
         PFailed s ->
-          report flags (snd (getMessages s flags))
+          report flags $ snd (getMessages s flags)
         POk s m -> do
           let (warns, errs) = getMessages s flags
           report flags warns
           if not (null errs)
             then report flags errs
-            else do
-              report flags warns
-              analyzeModule flags m
+            else analyzeModule flags m
     _ -> fail "Exactly one file argument required"
   where
     report flags errs =
