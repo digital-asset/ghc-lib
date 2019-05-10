@@ -34,7 +34,9 @@ We create the packages by taking a checkout of GHC, and combining the `ghc` pack
 
 To build `ghc-lib-parser` and `ghc-lib` you need clones of this repository and the [GHC repository](https://git.haskell.org).
 
-### Building `ghc-lib`
+*Warning : `ghc-lib-parser` and `ghc-lib` are known to work on all of MacOS, Linux and Windows. Distributions produced with `cabal sdist` on Linux/MacOS build on Windows, but a `cabal sdist` produced on Windows does not build on MacOS/Linux.*
+
+### Building `ghc-lib` via `cabal`
 
 In a bash shell, build with the following commands.
 
@@ -61,8 +63,45 @@ cabal sdist
 tar xvf dist/ghc-lib-*.tar.gz
 cd ghc-lib-*
 cabal install
+cd ../..
+(cd examples/mini-hlint && cabal build)
+(cd examples/mini-compile && cabal build)
 ```
-*Warning : `ghc-lib-parser` and `ghc-lib` are known to work on all of MacOS, Linux and Windows. Distributions produced with `cabal sdist` on Linux/MacOS build on Windows, but a `cabal sdist` produced on Windows does not build on MacOS/Linux.*
+### Building `ghc-lib` via `stack`
+
+In a bash shell, build with the following commands.
+
+```bash
+git clone git@github.com:digital-asset/ghc-lib.git
+cd ghc-lib && git clone --recursive https://gitlab.haskell.org/ghc/ghc.git
+stack setup > /dev/null 2>&1
+stack build --no-terminal --interleaved-output
+stack exec -- ghc-lib-gen ghc --ghc-lib-parser
+cat << EOF >> stack.yaml
+- ghc
+EOF
+stack sdist ghc --tar-dir=.
+(cd ghc && git clean -xf && git checkout .)
+stack exec -- ghc-lib-gen ghc --ghc-lib
+stack sdist ghc --tar-dir=.
+tar xvf ghc-lib-parser-0.1.0.tar.gz
+tar xvf ghc-lib-0.1.0.tar.gz
+mv ghc-lib-parser-0.1.0 ghc-lib-parser
+mv ghc-lib-0.1.0 ghc-lib
+sed '$d' stack.yaml > stack.yaml.tmp&&cp stack.yaml.tmp stack.yaml
+cat << EOF >> stack.yaml
+- ghc-lib-parser
+- ghc-lib
+EOF
+stack build ghc-lib-parser --interleaved-output
+stack build ghc-lib --interleaved-output
+cat << EOF >> stack.yaml
+- examples/mini-hlint
+- examples/mini-compile
+EOF
+stack build mini-hlint
+stack build mini-compile
+```
 
 ## Releasing `ghc-lib` (notes for maintainers)
 
