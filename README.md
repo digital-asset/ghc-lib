@@ -63,6 +63,7 @@ cabal sdist
 tar xvf dist/ghc-lib-*.tar.gz
 cd ghc-lib-*
 cabal install
+# Build the tests
 cd ../..
 (cd examples/mini-hlint && cabal build)
 (cd examples/mini-compile && cabal build)
