@@ -102,10 +102,11 @@ main = do
           report flags (snd (getMessages s flags))
         POk s m -> do
           let (warns, errs) = getMessages s flags
+          report flags warns
           if not (null errs)
             then report flags errs
             else do
-              unless (null warns) $ report flags warns
+              report flags warns
               analyzeModule flags m
     _ -> fail "Exactly one file argument required"
   where
