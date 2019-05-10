@@ -20,9 +20,9 @@ import "ghc-lib-parser" FastString
 import "ghc-lib-parser" Outputable
 import "ghc-lib-parser" SrcLoc
 
+import Control.Monad
 import System.Environment
 import System.IO.Extra
-
 
 fakeSettings :: Settings
 fakeSettings = Settings
@@ -98,9 +98,19 @@ main = do
       s <- readFile' file
       let flags = defaultDynFlags fakeSettings fakeLlvmConfig
       case parse file flags s of
-        POk _ m -> analyzeModule flags m
-        PFailed s -> sequence_
-          [ putStrLn $ showSDoc flags msg
-          | msg <- pprErrMsgBagWithLoc $ snd $ getMessages s flags
-          ]
+        PFailed s ->
+          report flags (snd (getMessages s flags))
+        POk s m -> do
+          let (warns, errs) = getMessages s flags
+          if (not (null errs))
+            then report flags errs
+            else do
+              unless (null warns) $ report flags warns
+              analyzeModule flags m
     _ -> fail "Exactly one file argument required"
+  where
+    report flags errs =
+      sequence_
+        [ putStrLn $ showSDoc flags msg
+        | msg <- pprErrMsgBagWithLoc errs
+        ]
