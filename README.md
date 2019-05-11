@@ -102,6 +102,12 @@ cat << EOF >> stack.yaml
 EOF
 stack build mini-hlint
 stack build mini-compile
+
+# Execute the examples
+stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest.hs
+stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest_fatal_error.hs
+stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs
+stack exec mini-compile -- examples/mini-compile/test/MiniCompileTest.hs
 ```
 
 ## Releasing `ghc-lib` (notes for maintainers)
