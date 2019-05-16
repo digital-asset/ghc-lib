@@ -4,6 +4,7 @@
 -- | Generate a ghc-lib Cabal package given a GHC directory.
 module Main(main) where
 
+import Control.Monad
 import System.Environment
 import System.Process.Extra
 import System.FilePath hiding ((</>))
@@ -29,6 +30,7 @@ main = do
         [root, "--ghc-lib-parser"] -> withCurrentDirectory root $ do
             applyPatchHeapClosures
             generatePrerequisites
+            mangleCSymbols
             generateGhcLibParserCabal
         _ -> fail "Usage : path [\"--ghc-lib\" | \"--ghc-lib-parser\"]."
 
@@ -292,6 +294,40 @@ applyPatchHeapClosures = do
         replace
             "foreign import prim \"reallyUnsafePtrEqualityUpToTag\"\n    reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#"
             "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
+        =<< readFile' file
+
+
+-- | Mangle exported C symbols to avoid collisions between the symbols in ghc-lib-parser and ghc.
+mangleCSymbols :: IO ()
+mangleCSymbols = do
+    let ghcLibParserPrefix = "ghc_lib_parser_"
+    let prefixSymbol s = replace s (ghcLibParserPrefix <> s)
+    let prefixForeignImport s =
+            replace
+                ("foreign import ccall unsafe " <> show s)
+                ("foreign import ccall unsafe " <> show (ghcLibParserPrefix <> s))
+    let genSym = "genSym"
+    let initGenSym = "initGenSym"
+    let enableTimingStats = "enableTimingStats"
+    let setHeapSize = "setHeapSize"
+    let file = "compiler/cbits/genSym.c" in
+        writeFile file .
+        prefixSymbol genSym .
+        prefixSymbol initGenSym
+        =<< readFile' file
+    let file = "compiler/basicTypes/UniqSupply.hs" in writeFile file .
+        prefixForeignImport genSym .
+        prefixForeignImport initGenSym
+        =<< readFile' file
+    forM_ ["compiler/parser/cutils.c", "compiler/parser/cutils.h"] $ \file ->
+        writeFile file .
+        prefixSymbol enableTimingStats .
+        prefixSymbol setHeapSize
+        =<< readFile' file
+    let file = "compiler/main/DynFlags.hs" in
+        writeFile file .
+        prefixForeignImport enableTimingStats .
+        prefixForeignImport setHeapSize
         =<< readFile' file
 
 

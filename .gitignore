@@ -1,4 +1,6 @@
 dist/
+dist-newstyle/
+.ghc.environment.*
 ghc/
 ghc-master/
 .vscode/
