@@ -22,6 +22,7 @@ main = do
         [root] -> withCurrentDirectory root $ do
             applyPatchHeapClosures
             generatePrerequisites
+            applyPatchStage
             generateGhcLibCabal
         [root, "--ghc-lib"] -> withCurrentDirectory root $ do
             applyPatchHeapClosures
@@ -31,6 +32,7 @@ main = do
             applyPatchHeapClosures
             generatePrerequisites
             mangleCSymbols
+            applyPatchStage
             generateGhcLibParserCabal
         _ -> fail "Usage : path [\"--ghc-lib\" | \"--ghc-lib-parser\"]."
 
@@ -328,6 +330,21 @@ mangleCSymbols = do
         writeFile file .
         prefixForeignImport enableTimingStats .
         prefixForeignImport setHeapSize
+        =<< readFile' file
+
+
+-- Setting DSTAGE=2 will cause GHC to use getOrSetLibHSghc in FastString,
+-- DynFlags and Linker so we patch away that usage while leaving -DSTAGE=2 on
+-- since it is useful in other places, e.g., MachDeps.h.
+--
+-- See https://github.com/ndmitchell/hlint/issues/637 for an issue caused
+-- by using getOrSetLibHSghc for the FastString table.
+applyPatchStage :: IO ()
+applyPatchStage = do
+    forM_ ["compiler/ghci/Linker.hs", "compiler/utils/FastString.hs", "compiler/main/DynFlags.hs"] $ \file ->
+        writeFile file .
+        replace "STAGE >= 2" "0" .
+        replace "STAGE < 2" "1"
         =<< readFile' file
 
 
