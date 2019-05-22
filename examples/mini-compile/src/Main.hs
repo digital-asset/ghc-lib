@@ -78,6 +78,7 @@ fakeSettings = Settings
   , sProgramName="ghc"
   , sOpt_P_fingerprint=fingerprint0
   , sTmpDir="."
+  , sIntegerLibraryType=IntegerSimple
   }
   where
     platform =
