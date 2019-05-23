@@ -218,6 +218,7 @@ parserModules =
   , "Language.Haskell.TH.Syntax"
   , "Lexeme"
   , "Lexer"
+  , "LinkerTypes"
   , "ListSetOps"
   , "Literal"
   , "Maybes"
