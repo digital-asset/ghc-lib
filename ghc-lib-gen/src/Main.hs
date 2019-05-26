@@ -243,6 +243,7 @@ parserModules =
   , "PatSyn"
   , "PipelineMonad"
   , "PlaceHolder"
+  , "PlainPanic"
   , "Platform"
   , "PlatformConstants"
   , "Plugins"
