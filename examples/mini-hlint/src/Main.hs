@@ -19,6 +19,7 @@ import qualified "ghc-lib-parser" Parser
 import "ghc-lib-parser" FastString
 import "ghc-lib-parser" Outputable
 import "ghc-lib-parser" SrcLoc
+import "ghc-lib-parser" ToolSettings
 
 import Control.Monad
 import System.Environment
@@ -26,13 +27,23 @@ import System.IO.Extra
 
 fakeSettings :: Settings
 fakeSettings = Settings
-  { sTargetPlatform=platform
+  { sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
   , sPlatformConstants=platformConstants
-  , sProjectVersion=cProjectVersion
-  , sProgramName="ghc"
-  , sOpt_P_fingerprint=fingerprint0
+  , sToolSettings=toolSettings
   }
   where
+    toolSettings = ToolSettings {
+      toolSettings_opt_P_fingerprint=fingerprint0
+      }
+    fileSettings = FileSettings {}
+    platformMisc = PlatformMisc {}
+    ghcNameVersion =
+      GhcNameVersion{ghcNameVersion_programName="ghc"
+                    ,ghcNameVersion_projectVersion=cProjectVersion
+                    }
     platform =
       Platform{platformWordSize=8
               , platformOS=OSUnknown

@@ -16,6 +16,7 @@ import "ghc-lib-parser" Platform
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Outputable
+import "ghc-lib-parser" ToolSettings
 
 import System.Environment
 import System.Directory
@@ -72,32 +73,44 @@ fakeLlvmConfig = ([], [])
 
 fakeSettings :: Settings
 fakeSettings = Settings
-  { sTargetPlatform=platform
+  { sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
   , sPlatformConstants=platformConstants
-  , sProjectVersion=cProjectVersion
-  , sProgramName="ghc"
-  , sOpt_P_fingerprint=fingerprint0
-  , sTmpDir="."
-  , sIntegerLibraryType=IntegerSimple
+  , sToolSettings=toolSettings
   }
   where
+    fileSettings = FileSettings {
+        fileSettings_tmpDir="."
+      }
+    toolSettings = ToolSettings {
+        toolSettings_opt_P_fingerprint=fingerprint0
+      }
+    platformMisc = PlatformMisc {
+        platformMisc_integerLibraryType=IntegerSimple
+      }
+    ghcNameVersion =
+      GhcNameVersion{
+        ghcNameVersion_programName="ghc"
+      , ghcNameVersion_projectVersion=cProjectVersion
+      }
     platform =
       Platform{
-          platformWordSize=8
-        , platformOS=OSUnknown
-        , platformUnregisterised=True
-        }
-    -- This bit may need to be conditional on OS.
-    platformConstants =
-      PlatformConstants {
-        pc_DYNAMIC_BY_DEFAULT=False
-      , pc_WORD_SIZE=8
-      , pc_STD_HDR_SIZE=1
-      , pc_TAG_BITS=3
-      , pc_BLOCKS_PER_MBLOCK=252
-      , pc_BLOCK_SIZE=4096
-      , pc_MIN_PAYLOAD_SIZE=1
-      , pc_MAX_Real_Vanilla_REG=6
-      , pc_MAX_Vanilla_REG=10
-      , pc_MAX_Real_Long_REG=0
+        platformWordSize=8
+      , platformOS=OSUnknown
+      , platformUnregisterised=True
       }
+    platformConstants =
+       PlatformConstants {
+         pc_DYNAMIC_BY_DEFAULT=False
+       , pc_WORD_SIZE=8
+       , pc_STD_HDR_SIZE=1
+       , pc_TAG_BITS=3
+       , pc_BLOCKS_PER_MBLOCK=252
+       , pc_BLOCK_SIZE=4096
+       , pc_MIN_PAYLOAD_SIZE=1
+       , pc_MAX_Real_Vanilla_REG=6
+       , pc_MAX_Vanilla_REG=10
+       , pc_MAX_Real_Long_REG=0
+       }
