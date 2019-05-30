@@ -77,7 +77,7 @@ parsePragmasIntoDynFlags flags filepath str =
     catchErrors :: IO (Maybe DynFlags) -> IO (Maybe DynFlags)
     catchErrors act = handleGhcException reportErr
                         (handleSourceError reportErr act)
-    reportErr e = do putStrLn $ "Error : " ++ (show e); return Nothing
+    reportErr e = do putStrLn $ "error : " ++ (show e); return Nothing
 
 idNot :: RdrName
 idNot = mkVarUnqual (fsLit "not")

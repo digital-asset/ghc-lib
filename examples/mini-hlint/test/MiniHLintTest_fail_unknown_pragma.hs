@@ -4,6 +4,6 @@
 
 {-# LANGUAGE Foo #-}
 
-module MiniHlintTest_respect_dynamic_pragma where
+module MiniHlintTest_fail_unknown_pragma where
 
 -- Error : Unsupported extension: Foo
