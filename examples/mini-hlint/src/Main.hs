@@ -67,6 +67,18 @@ parse filename flags str =
     buffer = stringToStringBuffer str
     parseState = mkPState flags buffer location
 
+parsePragmasIntoDynFlags :: DynFlags -> FilePath -> String -> IO (Maybe DynFlags)
+parsePragmasIntoDynFlags flags filepath str =
+  catchErrors $ do
+    let opts = getOptions flags (stringToStringBuffer str) filepath
+    (flags, _, _) <- parseDynamicFilePragma flags opts
+    return $ Just flags
+  where
+    catchErrors :: IO (Maybe DynFlags) -> IO (Maybe DynFlags)
+    catchErrors act = handleGhcException reportErr
+                        (handleSourceError reportErr act)
+    reportErr e = do putStrLn $ "Error : " ++ (show e); return Nothing
+
 idNot :: RdrName
 idNot = mkVarUnqual (fsLit "not")
 
@@ -105,18 +117,6 @@ analyzeModule flags modu = sequence_
   , L _ Match {m_grhss=GRHSs {grhssGRHSs=rhss}} <- matches
   , L _ (GRHS _ _ expr) <- rhss
   ]
-
-parsePragmasIntoDynFlags :: DynFlags -> FilePath -> String -> IO (Maybe DynFlags)
-parsePragmasIntoDynFlags flags filepath str =
-  catchErrors $ do
-    let opts = getOptions flags (stringToStringBuffer str) filepath
-    (flags, _, _) <- parseDynamicFilePragma flags opts
-    return $ Just flags
-  where
-    catchErrors :: IO (Maybe DynFlags) -> IO (Maybe DynFlags)
-    catchErrors act = handleGhcException reportErr
-                        (handleSourceError reportErr act)
-    reportErr e = do putStrLn $ "Error : " ++ (show e); return Nothing
 
 main :: IO ()
 main = do
