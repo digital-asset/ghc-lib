@@ -9,6 +9,7 @@ copyright:           Digital Asset 2018-2019
 build-type:          Simple
 cabal-version:       >=1.10
 
+
 executable mini-hlint
   main-is:             Main.hs
   build-depends:       base >=4.11
