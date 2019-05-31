@@ -127,17 +127,15 @@ main = do
       flags <-
         parsePragmasIntoDynFlags
           (defaultDynFlags fakeSettings fakeLlvmConfig) file s
-      whenJust flags
-        (\flags ->
-           case parse file flags s of
-              PFailed s ->
-                report flags $ snd (getMessages s flags)
-              POk s m -> do
-                let (wrns, errs) = getMessages s flags
-                report flags wrns
-                report flags errs
-                when (null errs) $ analyzeModule flags m
-        )
+      whenJust flags $ \flags ->
+         case parse file flags s of
+            PFailed s ->
+              report flags $ snd (getMessages s flags)
+            POk s m -> do
+              let (wrns, errs) = getMessages s flags
+              report flags wrns
+              report flags errs
+              when (null errs) $ analyzeModule flags m
     _ -> fail "Exactly one file argument required"
   where
     report flags msgs =
