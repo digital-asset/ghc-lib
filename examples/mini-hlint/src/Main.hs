@@ -23,7 +23,7 @@ import "ghc-lib-parser" SrcLoc
 import "ghc-lib-parser" ToolSettings
 import "ghc-lib-parser" Panic
 import "ghc-lib-parser" HscTypes
-import "ghc-lib" HeaderInfo -- Look into whether this can be moved to 'ghc-lib-parser'.
+import "ghc-lib-parser" HeaderInfo
 
 import Control.Monad
 import Control.Monad.Extra
