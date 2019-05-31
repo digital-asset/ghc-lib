@@ -107,6 +107,8 @@ stack build mini-compile
 stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest.hs
 stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest_fatal_error.hs
 stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs
+stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs
+stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs
 stack exec mini-compile -- examples/mini-compile/test/MiniCompileTest.hs
 ```
 

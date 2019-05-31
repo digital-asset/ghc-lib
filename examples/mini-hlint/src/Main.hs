@@ -1,5 +1,6 @@
--- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
--- SPDX-License-Identifier: (Apache-2.0 OR BSD-3-Clause)
+-- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
+-- affiliates. All rights reserved.  SPDX-License-Identifier:
+-- (Apache-2.0 OR BSD-3-Clause)
 
 {-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -Wno-missing-fields #-}
@@ -20,8 +21,12 @@ import "ghc-lib-parser" FastString
 import "ghc-lib-parser" Outputable
 import "ghc-lib-parser" SrcLoc
 import "ghc-lib-parser" ToolSettings
+import "ghc-lib-parser" Panic
+import "ghc-lib-parser" HscTypes
+import "ghc-lib-parser" HeaderInfo
 
 import Control.Monad
+import Control.Monad.Extra
 import System.Environment
 import System.IO.Extra
 
@@ -61,6 +66,18 @@ parse filename flags str =
     location = mkRealSrcLoc (mkFastString filename) 1 1
     buffer = stringToStringBuffer str
     parseState = mkPState flags buffer location
+
+parsePragmasIntoDynFlags :: DynFlags -> FilePath -> String -> IO (Maybe DynFlags)
+parsePragmasIntoDynFlags flags filepath str =
+  catchErrors $ do
+    let opts = getOptions flags (stringToStringBuffer str) filepath
+    (flags, _, _) <- parseDynamicFilePragma flags opts
+    return $ Just flags
+  where
+    catchErrors :: IO (Maybe DynFlags) -> IO (Maybe DynFlags)
+    catchErrors act = handleGhcException reportErr
+                        (handleSourceError reportErr act)
+    reportErr e = do putStrLn $ "error : " ++ show e; return Nothing
 
 idNot :: RdrName
 idNot = mkVarUnqual (fsLit "not")
@@ -107,15 +124,18 @@ main = do
   case args of
     [file] -> do
       s <- readFile' file
-      let flags = defaultDynFlags fakeSettings fakeLlvmConfig
-      case parse file flags s of
-        PFailed s ->
-          report flags $ snd (getMessages s flags)
-        POk s m -> do
-          let (warns, errs) = getMessages s flags
-          report flags warns
-          report flags errs
-          when (null errs) $ analyzeModule flags m
+      flags <-
+        parsePragmasIntoDynFlags
+          (defaultDynFlags fakeSettings fakeLlvmConfig) file s
+      whenJust flags $ \flags ->
+         case parse file flags s of
+            PFailed s ->
+              report flags $ snd (getMessages s flags)
+            POk s m -> do
+              let (wrns, errs) = getMessages s flags
+              report flags wrns
+              report flags errs
+              when (null errs) $ analyzeModule flags m
     _ -> fail "Exactly one file argument required"
   where
     report flags msgs =

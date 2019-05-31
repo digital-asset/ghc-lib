@@ -8,7 +8,7 @@ module Main (main) where
 
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
-import "ghc-lib" HeaderInfo
+import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" Module
 import "ghc-lib-parser" Config
 import "ghc-lib-parser" DynFlags
