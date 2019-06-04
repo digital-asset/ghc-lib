@@ -140,8 +140,7 @@ cabal run -- ghc --ghc-lib
 cd ghc
 ```
 
-Then edit `ghc-lib.cabal` to fix the version number (e.g. 0.20190204)
-before executing:
+Then edit `ghc-lib.cabal` to fix the version number (e.g. 0.20190204) and constrain the `ghc-lib-parser` version in the `build-depends` section before executing:
 
 ```bash
 cabal sdist
