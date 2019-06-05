@@ -98,8 +98,8 @@ main = do
       s <- readFile' file
       let flags = defaultDynFlags fakeSettings fakeLlvmConfig
       case parse file flags s of
-        PFailed s ->
-          report flags $ snd (getMessages s flags)
+        PFailed _ loc err ->
+          putStrLn (showSDoc flags (pprLocErrMsg (mkPlainErrMsg flags loc err)))
         POk s m -> do
           let (warns, errs) = getMessages s flags
           report flags warns

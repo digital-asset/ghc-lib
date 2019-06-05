@@ -184,6 +184,7 @@ parserModules =
   , "GhcMonad"
   , "GhcPrelude"
   , "HaddockUtils"
+  , "HeaderInfo"
   , "Hooks"
   , "HsBinds"
   , "HsDecls"
