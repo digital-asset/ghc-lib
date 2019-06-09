@@ -164,6 +164,7 @@ parserModules =
   , "FiniteMap"
   , "ForeignCall"
   , "GhcNameVersion"
+  , "GHC.BaseDir"
   , "GHC.Exts.Heap"
   , "GHC.Exts.Heap.ClosureTypes"
   , "GHC.Exts.Heap.Closures"
