@@ -67,8 +67,7 @@ ghcLibParserHsSrcDirs :: [Cabal] -> [FilePath]
 ghcLibParserHsSrcDirs lib =
   nubSort $
    [ "ghc-lib/stage0/compiler/build"
-   , "ghc-lib/stage1/compiler/build"
-   , "ghc-lib/stage0/libraries/ghc-heap/build"] ++
+   , "ghc-lib/stage1/compiler/build"] ++
    map takeDirectory cabalFileLibraries ++
    askFiles lib "hs-source-dirs:"
 
@@ -326,7 +325,7 @@ parserModules =
   ]
 
 -- | Not finished but the idea here is to calculate via `ghc -M` the
--- list of modules that are required for 'ghc-lib-parser'
+-- list of modules that are required for 'ghc-lib-parser'.
 calcParserModules :: IO ()
 calcParserModules = do
   lib <- mapM readCabalFile cabalFileLibraries
@@ -339,7 +338,12 @@ calcParserModules = do
         , "-M"]
         ++ include_dirs
         ++ ["-package ghc", "-package base"]
-        ++ hs_source_dirs
+        -- I can't tell you why this additional directory is required
+        -- here. It's only needed when using `stack` to execute this
+        -- procedure and if it is made a "hs-source-dir", ambiguity
+        -- warnings arise in the build. This program relies on some
+        -- very dark magic.
+        ++ hs_source_dirs ++ ["-ighc-lib/stage0/libraries/ghc-heap/build"]
         ++ ["ghc-lib/stage0/compiler/build/Parser.hs"]
   putStrLn $ "Generating ghc/.parser-depends..."
   system_ cmd
