@@ -49,6 +49,18 @@ cabalFileLibraries =
     ,"compiler/ghc.cabal"
     ]
 
+ghcLibParserIncludeDirs :: [FilePath]
+ghcLibParserIncludeDirs =
+  ["ghc-lib/generated"
+  ,"ghc-lib/stage0/compiler/build"
+  ,"ghc-lib/stage1/compiler/build"
+  ,"compiler"
+  ,"compiler/utils"
+  ]
+
+ghcLibIncludeDirs :: [FilePath]
+ghcLibIncludeDirs = ghcLibParserIncludeDirs
+
 -- | Cabal file for the GHC binary
 cabalFileBinary :: FilePath
 cabalFileBinary = "ghc/ghc-bin.cabal"
@@ -102,6 +114,10 @@ extraFiles =
     ,"ghc-lib/stage0/compiler/build/Parser.hs"
     ,"ghc-lib/stage0/compiler/build/Lexer.hs"
     ]
+
+-- calcParserModules :: IO [String]
+-- calcParserModules = do
+--   let cmd = "stack exec -- ghc -dep-suffix '' -dep-makefile .parser-depends -M "
 
 -- | The ghc-lib-parser modules. This list has been hand crafted but
 -- there is a procedure we can introduce for calculating it.
@@ -293,8 +309,9 @@ parserModules =
   , "VarSet"
   ]
 
--- | Stub out a couple of definitions in the ghc-heap library that require CMM features,
---   since Cabal doesn't work well with CMM files.
+-- | Stub out a couple of definitions in the ghc-heap library that
+--   require CMM features, since Cabal doesn't work well with CMM
+--   files.
 applyPatchHeapClosures :: IO ()
 applyPatchHeapClosures = do
     let file = "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
@@ -308,7 +325,8 @@ applyPatchHeapClosures = do
         =<< readFile' file
 
 
--- | Mangle exported C symbols to avoid collisions between the symbols in ghc-lib-parser and ghc.
+-- | Mangle exported C symbols to avoid collisions between the symbols
+-- in ghc-lib-parser and ghc.
 mangleCSymbols :: IO ()
 mangleCSymbols = do
     let ghcLibParserPrefix = "ghc_lib_parser_"
@@ -363,7 +381,8 @@ data Cabal = Cabal
     ,cabalFields :: [(String, [String])] -- the key/value pairs it contains
     }
 
--- | Given a file, produce the key/value pairs it contains (approximate but good enough).
+-- | Given a file, produce the key/value pairs it contains
+-- (approximate but good enough).
 readCabalFile :: FilePath -> IO Cabal
 readCabalFile file = do
     src <- readFile' file
@@ -466,13 +485,9 @@ generateGhcLibCabal = do
         ,"library"
         ,"    default-language:   Haskell2010"
         ,"    default-extensions: NoImplicitPrelude"
-        ,"    include-dirs:"
-        ,"        ghc-lib/generated"
-        ,"        ghc-lib/stage0/compiler/build"
-        ,"        ghc-lib/stage1/compiler/build"
-        ,"        compiler"
-        ,"        compiler/utils"
-        ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
+        ,"    include-dirs:"] ++
+        indent2 ghcLibIncludeDirs ++
+        ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
         ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
         ,"    if !os(windows)"
@@ -568,13 +583,9 @@ generateGhcLibParserCabal = do
         ,"library"
         ,"    default-language:   Haskell2010"
         ,"    default-extensions: NoImplicitPrelude"
-        ,"    include-dirs:"
-        ,"        ghc-lib/generated"
-        ,"        ghc-lib/stage0/compiler/build"
-        ,"        ghc-lib/stage1/compiler/build"
-        ,"        compiler"
-        ,"        compiler/utils"
-        ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
+        ,"    include-dirs:"] ++
+        indent2 ghcLibParserIncludeDirs ++
+        ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
         ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
         ,"    if !os(windows)"
@@ -587,8 +598,9 @@ generateGhcLibParserCabal = do
         ,"    other-extensions:"] ++
         indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
-        -- we hardcode these because the inclusion of keepCAFsForGHCi causes issues in ghci
-        -- see https://github.com/digital-asset/ghc-lib/issues/27
+        -- We hardcode these because the inclusion of 'keepCAFsForGHCi'
+        -- causes issues in ghci see
+        -- https://github.com/digital-asset/ghc-lib/issues/27
         indent2 ["compiler/cbits/genSym.c","compiler/parser/cutils.c"] ++
         ["    hs-source-dirs:"] ++
         indent2 (nubSort $
