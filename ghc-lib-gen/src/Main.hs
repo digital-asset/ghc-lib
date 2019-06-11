@@ -1,5 +1,6 @@
--- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
--- SPDX-License-Identifier: (Apache-2.0 OR BSD-3-Clause)
+-- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
+-- affiliates. All rights reserved.  SPDX-License-Identifier:
+-- (Apache-2.0 OR BSD-3-Clause)
 
 -- | Generate a ghc-lib Cabal package given a GHC directory.
 module Main(main) where
@@ -31,6 +32,7 @@ main = do
         [root, "--ghc-lib-parser"] -> withCurrentDirectory root $ do
             applyPatchHeapClosures
             generatePrerequisites
+            calcParserModules
             mangleCSymbols
             applyPatchStage
             generateGhcLibParserCabal
@@ -49,6 +51,7 @@ cabalFileLibraries =
     ,"compiler/ghc.cabal"
     ]
 
+-- | C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: [FilePath]
 ghcLibParserIncludeDirs =
   ["ghc-lib/generated"
@@ -58,10 +61,27 @@ ghcLibParserIncludeDirs =
   ,"compiler/utils"
   ]
 
-ghcLibIncludeDirs :: [FilePath]
-ghcLibIncludeDirs = ghcLibParserIncludeDirs
+-- | The "hs-source-dirs" for 'ghc-lib-parser'. Approximation. Needs
+-- adjusting.
+ghcLibParserHsSrcDirs :: [Cabal] -> [FilePath]
+ghcLibParserHsSrcDirs lib =
+  nubSort $
+   [ "ghc-lib/stage0/compiler/build"
+   , "ghc-lib/stage1/compiler/build"
+   , "ghc-lib/stage0/libraries/ghc-heap/build"] ++
+   map takeDirectory cabalFileLibraries ++
+   askFiles lib "hs-source-dirs:"
 
--- | Cabal file for the GHC binary
+-- | The "hs-source-dirs" for 'ghc-lib-parser'. Approximation. Needs
+-- adjusting.
+ghcLibHsSrcDirs :: [Cabal] -> [FilePath]
+ghcLibHsSrcDirs = ghcLibParserHsSrcDirs
+
+-- | C-preprocessor "include dirs" for 'ghc-lib'.
+ghcLibIncludeDirs :: [FilePath]
+ghcLibIncludeDirs = ghcLibParserIncludeDirs -- Needs adjusting.
+
+-- | Cabal file for the GHC binary.
 cabalFileBinary :: FilePath
 cabalFileBinary = "ghc/ghc-bin.cabal"
 
@@ -115,12 +135,8 @@ extraFiles =
     ,"ghc-lib/stage0/compiler/build/Lexer.hs"
     ]
 
--- calcParserModules :: IO [String]
--- calcParserModules = do
---   let cmd = "stack exec -- ghc -dep-suffix '' -dep-makefile .parser-depends -M "
-
 -- | The ghc-lib-parser modules. This list has been hand crafted but
--- there is a procedure we can introduce for calculating it.
+--   I'm working on a procedure we can introduce for calclating it.
 parserModules :: [String]
 parserModules =
   [ "Annotations"
@@ -309,6 +325,25 @@ parserModules =
   , "VarSet"
   ]
 
+-- | Not finished but the idea here is to calculate via `ghc -M` the
+-- list of modules that are required for 'ghc-lib-parser'
+calcParserModules :: IO ()
+calcParserModules = do
+  lib <- mapM readCabalFile cabalFileLibraries
+  let include_dirs = map (\f -> "-I" ++ f) ghcLibParserIncludeDirs
+      hs_source_dirs = map (\d -> "-i" ++ d) $ ghcLibParserHsSrcDirs lib
+      cmd = unwords $
+        [ "stack exec -- ghc"
+        , "-dep-suffix ''"
+        , "-dep-makefile .parser-depends"
+        , "-M"]
+        ++ include_dirs
+        ++ ["-package ghc", "-package base"]
+        ++ hs_source_dirs
+        ++ ["ghc-lib/stage0/compiler/build/Parser.hs"]
+  putStrLn $ "Generating ghc/.parser-depends..."
+  system_ cmd
+
 -- | Stub out a couple of definitions in the ghc-heap library that
 --   require CMM features, since Cabal doesn't work well with CMM
 --   files.
@@ -397,9 +432,20 @@ readCabalFile file = do
 askCabalField :: Cabal -> String -> [String]
 askCabalField cbl x = concatMap snd $ filter ((==) x . fst) $ cabalFields cbl
 
--- | Ask a Cabal file for a file, which is relative to the underlying Cabal file.
+-- | Ask a Cabal file for files, relative to the underlying Cabal
+-- file.
 askCabalFiles :: Cabal -> String -> [String]
 askCabalFiles cbl x = map (cabalDir cbl </>) $ askCabalField cbl x
+
+-- | Harvest a field from a set of Cabal files (such as
+-- 'exposed-modules').
+askField :: [Cabal] -> String -> [String]
+askField from x = nubSort $ concatMap (`askCabalField` x) from
+
+-- | Harvest a set of files from a set of Cabal files (such as the
+-- 'hs-sourc-dirs').
+askFiles :: [Cabal] -> String -> [String]
+askFiles from x = nubSort $ concatMap (`askCabalFiles` x) from
 
 -- | Some often used string manipulation utilities.
 indent :: [String] -> [String]
@@ -434,8 +480,6 @@ generateGhcLibCabal :: IO ()
 generateGhcLibCabal = do
     lib <- mapM readCabalFile cabalFileLibraries
     bin <- (:[]) <$> readCabalFile cabalFileBinary
-    let askField from x = nubSort $ concatMap (`askCabalField` x) from
-    let askFiles from x = nubSort $ concatMap (`askCabalFiles` x) from
 
     -- Compute the list of modules to be compiled. The rest are parser
     -- modules re-exported from ghc-lib-parser.
@@ -500,10 +544,7 @@ generateGhcLibCabal = do
         ,"    other-extensions:"] ++
         indent2 (askField lib "other-extensions:") ++
         ["    hs-source-dirs:"] ++
-        indent2 (nubSort $
-            ["ghc-lib/stage1/compiler/build"] ++
-            map takeDirectory cabalFileLibraries ++
-            askFiles lib "hs-source-dirs:") ++
+        indent2 (ghcLibHsSrcDirs lib) ++
         ["    autogen-modules:"
         ,"        Paths_ghc_lib"
         ] ++
@@ -541,9 +582,6 @@ generateGhcLibParserCabal :: IO ()
 generateGhcLibParserCabal = do
     lib <- mapM readCabalFile cabalFileLibraries
     bin <- (:[]) <$> readCabalFile cabalFileBinary
-    let askField from x = nubSort $ concatMap (`askCabalField` x) from
-    let askFiles from x = nubSort $ concatMap (`askCabalFiles` x) from
-
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
         -- header
         ["cabal-version: >=1.22"
@@ -603,11 +641,7 @@ generateGhcLibParserCabal = do
         -- https://github.com/digital-asset/ghc-lib/issues/27
         indent2 ["compiler/cbits/genSym.c","compiler/parser/cutils.c"] ++
         ["    hs-source-dirs:"] ++
-        indent2 (nubSort $
-            [ "ghc-lib/stage0/compiler/build"
-            , "ghc-lib/stage1/compiler/build"] ++
-            map takeDirectory cabalFileLibraries ++
-            askFiles lib "hs-source-dirs:") ++
+        indent2 (ghcLibParserHsSrcDirs lib) ++
         ["    autogen-modules:"
         ,"        Lexer"
         ,"        Parser"
