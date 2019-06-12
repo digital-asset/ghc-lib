@@ -474,7 +474,7 @@ generateGhcLibCabal = do
         ,"        compiler/utils"
         ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DHAVE_INTERNAL_INTERPRETER -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
@@ -512,7 +512,7 @@ generateGhcLibCabal = do
         ,"    hs-source-dirs: ghc"
         ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DGHCI -DTHREADED_RTS -DGHC_LOADED_INTO_GHCI"
+        ,"    cpp-options: -DHAVE_INTERNAL_INTERPRETER -DTHREADED_RTS -DGHC_LOADED_INTO_GHCI"
         ,"    other-modules:"] ++
         indent2 (askField bin "other-modules:") ++
         ["    other-extensions:"] ++
@@ -576,7 +576,7 @@ generateGhcLibParserCabal = do
         ,"        compiler/utils"
         ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -HAVE_INTERNAL_INTERPRETER -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
@@ -606,12 +606,13 @@ generateGhcLibParserCabal = do
 -- | Run Hadrian to build the things that the Cabal files need.
 generatePrerequisites :: IO ()
 generatePrerequisites = do
+  system_ "./boot && ./configure"
   withCurrentDirectory "hadrian" $ do
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
         ["stack exec hadrian --"
         ,"--directory=.."
-        ,"--configure"
+        -- ,"--configure"
         ,"--integer-simple"
         ,"--build-root=ghc-lib"
         ] ++ extraFiles ++
