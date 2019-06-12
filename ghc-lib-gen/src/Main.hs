@@ -609,17 +609,14 @@ generatePrerequisites = do
   system_ $ unwords $
     ["stack --stack-yaml hadrian/stack.yaml build alex happy"]
   system_ $ unwords $
-    ["stack --stack-yaml hadrian/stack.yaml exec"
-    ,"./boot"]
+    ["stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./boot"]
   system_ $ unwords $
-    ["stack --stack-yaml hadrian/stack.yaml exec"
-    ,"./configure"]
+    ["stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./configure"]
   withCurrentDirectory "hadrian" $ do
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
         ["stack exec hadrian --"
         ,"--directory=.."
-        -- ,"--configure"
         ,"--integer-simple"
         ,"--build-root=ghc-lib"
         ] ++ extraFiles ++
