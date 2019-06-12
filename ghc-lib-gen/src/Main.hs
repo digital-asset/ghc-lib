@@ -127,6 +127,7 @@ extraFiles =
     ,"ghc-lib/stage1/compiler/build/primop-vector-tys-exports.hs-incl"
     ,"ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
     ,"ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
+    ,"ghc-lib/stage0/compiler/build/Fingerprint.hs"
     -- Be careful not to add these files to a ghc-lib.cabal, just
     -- ghc-lib-parser.cabal.
     ,"ghc-lib/stage1/compiler/build/Config.hs"
@@ -337,12 +338,6 @@ calcParserModules = do
         , "-dep-makefile .parser-depends"
         , "-M"]
         ++ include_dirs
-        ++ ["-package ghc", "-package base"]
-        -- I can't tell you why this additional directory is required
-        -- here. It's only needed when using `stack` to execute this
-        -- procedure and if it is made a "hs-source-dir", ambiguity
-        -- warnings arise in the build. This program relies on some
-        -- very dark magic.
         ++ hs_source_dirs ++ ["-ighc-lib/stage0/libraries/ghc-heap/build"]
         ++ ["ghc-lib/stage0/compiler/build/Parser.hs"]
   putStrLn $ "Generating ghc/.parser-depends..."
@@ -362,7 +357,6 @@ applyPatchHeapClosures = do
             "foreign import prim \"reallyUnsafePtrEqualityUpToTag\"\n    reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#"
             "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
         =<< readFile' file
-
 
 -- | Mangle exported C symbols to avoid collisions between the symbols
 -- in ghc-lib-parser and ghc.
@@ -398,7 +392,6 @@ mangleCSymbols = do
         prefixForeignImport setHeapSize
         =<< readFile' file
 
-
 -- Setting DSTAGE=2 will cause GHC to use getOrSetLibHSghc in FastString,
 -- DynFlags and Linker so we patch away that usage while leaving -DSTAGE=2 on
 -- since it is useful in other places, e.g., MachDeps.h.
@@ -412,7 +405,6 @@ applyPatchStage = do
         replace "STAGE >= 2" "0" .
         replace "STAGE < 2" "1"
         =<< readFile' file
-
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal

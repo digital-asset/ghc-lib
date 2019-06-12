@@ -42,10 +42,11 @@ hs_src_dirs="-ighc/ghc-lib/generated/ \
 -ighc/libraries/template-haskell"
 
 parser_file="ghc/ghc-lib/stage0/compiler/build/Parser.hs"
-packages="-package ghc -package base"
+packages="-ignore-package ghc" # "-package ghc -package base"
 
 cmd="ghc -dep-suffix '' -dep-makefile .parser-depends \
 -M $include_dirs $packages $hs_src_dirs $parser_file"
+rm -f .parser-depends
 eval "$cmd"
 
 rm -f .parser-stripped
