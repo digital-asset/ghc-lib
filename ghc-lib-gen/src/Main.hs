@@ -337,6 +337,7 @@ calcParserModules = do
         , "-dep-makefile .parser-depends"
         , "-M"]
         ++ include_dirs
+        ++ ["-package ghc", "-package base"]
         ++ hs_source_dirs ++ ["-ighc-lib/stage0/libraries/ghc-heap/build"]
         ++ ["ghc-lib/stage0/compiler/build/Parser.hs"]
   putStrLn $ "Generating ghc/.parser-depends..."
