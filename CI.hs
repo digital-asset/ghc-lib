@@ -17,7 +17,7 @@ main = do
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
     -- Make and extract an sdist of ghc-lib-parser.
-    cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
+    cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
     cmd "cd ghc"
     cmd "git checkout 9bc10993bb300d3712b0f13ec6e28621d75d4204"
     cmd "git submodule update --init --recursive"
