@@ -18,8 +18,7 @@ pr:
 
 strategy:
   matrix:
-    linux:   {image: "Ubuntu 16.04"}
-    windows: {image: "vs2017-win2016"}
+    linux:   {image: "Ubuntu 16.04"} #  windows: {image: "vs2017-win2016"}
     mac:     {image: "macOS-10.13"}
 
 pool: {vmImage: '$(image)'}
