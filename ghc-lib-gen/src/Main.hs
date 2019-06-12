@@ -607,6 +607,8 @@ generateGhcLibParserCabal = do
 generatePrerequisites :: IO ()
 generatePrerequisites = do
   system_ $ unwords $
+    ["stack --stack-yaml hadrian/stack.yaml build alex happy"]
+  system_ $ unwords $
     ["stack --stack-yaml hadrian/stack.yaml exec"
     ,"./boot"]
   system_ $ unwords $
