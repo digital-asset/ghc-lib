@@ -593,7 +593,8 @@ generateGhcLibParserCabal = do
         ["    hs-source-dirs:"] ++
         indent2 (nubSort $
             [ "ghc-lib/stage0/compiler/build"
-            , "ghc-lib/stage1/compiler/build"] ++
+            , "ghc-lib/stage1/compiler/build"
+            , "ghc-lib/stage0/libraries/ghci/build"] ++
             map takeDirectory cabalFileLibraries ++
             askFiles lib "hs-source-dirs:") ++
         ["    autogen-modules:"
@@ -611,7 +612,7 @@ generatePrerequisites = do
   system_ $ unwords $
     ["stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./boot"]
   system_ $ unwords $
-    ["stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./configure --enable-tarballs-autodownload"]
+    ["stack --stack-yaml hadrian/stack.yaml exec -- bash -c './configure --enable-tarballs-autodownload'"]
   withCurrentDirectory "hadrian" $ do
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
