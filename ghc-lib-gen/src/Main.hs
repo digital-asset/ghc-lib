@@ -587,7 +587,7 @@ generateGhcLibParserCabal = do
         ,"    other-extensions:"] ++
         indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
-        -- we hardcode these because the inclusion of keepCAFsForGHCi causes issues in ghci
+        -- we hardcode these because the inclusion of keepCAFsForGHCi Xcauses issues in ghci
         -- see https://github.com/digital-asset/ghc-lib/issues/27
         indent2 ["compiler/cbits/genSym.c","compiler/parser/cutils.c"] ++
         ["    hs-source-dirs:"] ++
@@ -603,6 +603,7 @@ generateGhcLibParserCabal = do
         ] ++
         ["    exposed-modules:"
         ]++ indent2 parserModules
+
 
 -- | Run Hadrian to build the things that the Cabal files need.
 generatePrerequisites :: IO ()
