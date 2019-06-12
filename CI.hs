@@ -18,6 +18,11 @@ main = do
 
     -- Make and extract an sdist of ghc-lib-parser.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
+    cmd "cd ghc"
+    cmd "git checkout 9bc10993bb300d3712b0f13ec6e28621d75d4204"
+    cmd "git submodule update --init --recursive"
+    cmd "cd .."
+
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
     stackYaml <- readFile' "stack.yaml"

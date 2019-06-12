@@ -612,7 +612,7 @@ generatePrerequisites = do
   system_ $ unwords $
     ["stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./boot"]
   system_ $ unwords $
-    ["stack --stack-yaml hadrian/stack.yaml exec -- bash -c './configure --enable-tarballs-autodownload'"]
+    ["stack --stack-yaml hadrian/stack.yaml exec -- bash -c \"./configure --enable-tarballs-autodownload\""]
   withCurrentDirectory "hadrian" $ do
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
