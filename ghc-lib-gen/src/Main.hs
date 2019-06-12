@@ -606,7 +606,12 @@ generateGhcLibParserCabal = do
 -- | Run Hadrian to build the things that the Cabal files need.
 generatePrerequisites :: IO ()
 generatePrerequisites = do
-  system_ "./boot && ./configure"
+  system_ $ unwords $
+    ["stack --stack-yaml hadrian/stack.yaml exec"
+    ,"./boot"]
+  system_ $ unwords $
+    ["stack --stack-yaml hadrian/stack.yaml exec"
+    ,"./configure"]
   withCurrentDirectory "hadrian" $ do
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
