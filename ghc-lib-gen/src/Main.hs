@@ -587,13 +587,14 @@ generateGhcLibParserCabal = do
         ,"    other-extensions:"] ++
         indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
-        -- we hardcode these because the inclusion of keepCAFsForGHCi causes issues in ghci
+        -- we hardcode these because the inclusion of keepCAFsForGHCi Xcauses issues in ghci
         -- see https://github.com/digital-asset/ghc-lib/issues/27
         indent2 ["compiler/cbits/genSym.c","compiler/parser/cutils.c"] ++
         ["    hs-source-dirs:"] ++
         indent2 (nubSort $
             [ "ghc-lib/stage0/compiler/build"
-            , "ghc-lib/stage1/compiler/build"] ++
+            , "ghc-lib/stage1/compiler/build"
+            , "ghc-lib/stage0/libraries/ghci/build"] ++
             map takeDirectory cabalFileLibraries ++
             askFiles lib "hs-source-dirs:") ++
         ["    autogen-modules:"
@@ -603,15 +604,21 @@ generateGhcLibParserCabal = do
         ["    exposed-modules:"
         ]++ indent2 parserModules
 
+
 -- | Run Hadrian to build the things that the Cabal files need.
 generatePrerequisites :: IO ()
 generatePrerequisites = do
+  system_ $ unwords $
+    ["stack --stack-yaml hadrian/stack.yaml build alex happy"]
+  system_ $ unwords $
+    ["stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./boot"]
+  system_ $ unwords $
+    ["stack --stack-yaml hadrian/stack.yaml exec -- bash -c \"./configure --enable-tarballs-autodownload\""]
   withCurrentDirectory "hadrian" $ do
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
         ["stack exec hadrian --"
         ,"--directory=.."
-        ,"--configure"
         ,"--integer-simple"
         ,"--build-root=ghc-lib"
         ] ++ extraFiles ++
