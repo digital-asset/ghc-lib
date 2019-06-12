@@ -576,7 +576,7 @@ generateGhcLibParserCabal = do
         ,"        compiler/utils"
         ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -HAVE_INTERNAL_INTERPRETER -DGHC_IN_GHCI"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DHAVE_INTERNAL_INTERPRETER -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
