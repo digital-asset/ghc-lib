@@ -135,8 +135,8 @@ extraFiles =
     ,"ghc-lib/stage0/compiler/build/Lexer.hs"
     ]
 
--- | Not finished but the idea here is to calculate via `ghc -M` the
--- list of modules that are required for 'ghc-lib-parser'.
+-- | The idea here is to calculate via `ghc -M` the list of modules
+-- that are required for 'ghc-lib-parser'.
 calcParserModules :: IO [String]
 calcParserModules = do
   lib <- mapM readCabalFile cabalFileLibraries
@@ -157,14 +157,38 @@ calcParserModules = do
   buf <- readFile' ".parser-depends"
   let depends = filter (not . isPrefixOf "#") (lines buf)
       depends' = filter (isSuffixOf ".hs") depends
-      srcPaths = map snd (mapMaybe (stripInfix ":") depends')
-      srcPaths' = map (replace "ghc-lib/stage0/" "") srcPaths
-      srcPaths'' = map (replace "ghc-lib/stage1/" "") srcPaths'
-      srcPaths''' = map snd (mapMaybe (stripInfix "/") srcPaths'')
-      srcPaths'''' = map snd (mapMaybe (stripInfix "/") srcPaths''')
-      srcPaths''''' = map (replace "build/GHC/" "GHC/") srcPaths''''
-      srcPaths'''''' = map (replace "/" ".") srcPaths'''''
-      srcs = map (dropSuffix ".hs") (filter (isSuffixOf ".hs") srcPaths'''''')
+      srcPaths = map (trim . snd) (mapMaybe (stripInfix ":") depends')
+      srcDirs = ghcLibParserHsSrcDirs lib
+      srcPaths' = foldl
+        (\acc p -> map (replace (p ++ "/") "") acc)
+        srcPaths
+        (srcDirs  ++ ["ghc-lib/stage0/build"
+                     ,"ghc-lib/stage1/build"
+                     ,"ghc-lib/stage0/libraries/ghc-heap/build"])
+      exts = [ "backpack"
+             , "basicTypes"
+             , "cmm"
+             , "coreSyn"
+             , "deSugar"
+             , "ghci"
+             , "hsSyn"
+             , "iface"
+             , "main"
+             , "parser"
+             , "prelude"
+             , "profiling"
+             , "simplCore"
+             , "simplStg"
+             , "specialise"
+             , "typecheck"
+             , "types"
+             , "utils"
+             ]
+      srcPaths'' = foldl
+        (\acc p -> map (replace (p ++ "/") "") acc)
+        srcPaths' exts
+      srcPaths''' = map (replace "/" ".") srcPaths''
+      srcs = map (dropSuffix ".hs") (filter (isSuffixOf ".hs") srcPaths''')
       -- 'GHCi.FFI doesn't get deduced but is needed
       -- 'HeaderInfo' because we prefer it here rather than `ghc-lib`
       srcs' = nubSort (srcs ++ ["GHCi.FFI", "HeaderInfo"])

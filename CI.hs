@@ -23,9 +23,10 @@ main = do
 
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
-    stackYaml <- readFile' "stack.yaml"
-    writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
-    tarball <- sDistCreateExtract
+    -- stackYaml <- readFile' "stack.yaml"
+    -- writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
+    -- tarball <- sDistCreateExtract
+    tarball <- mkTarball
     renameDirectory (dropExtensions tarball) "ghc-lib-parser"
     removeFile tarball
     removeFile "ghc/ghc-lib-parser.cabal"
@@ -35,15 +36,17 @@ main = do
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
-    stackYaml <- readFile' "stack.yaml"
-    writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
-    tarball <- sDistCreateExtract
+    -- stackYaml <- readFile' "stack.yaml"
+    -- writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
+    -- tarball <- sDistCreateExtract
+    tarball <- mkTarball
     renameDirectory (dropExtensions tarball) "ghc-lib"
     removeFile tarball
     removeFile "ghc/ghc-lib.cabal"
     cmd "git checkout stack.yaml"
 
     -- Test the new projects.
+    stackYaml <- readFile' "stack.yaml"
     writeFile "stack.yaml" $
       stackYaml ++
       unlines [ "- ghc-lib-parser"
@@ -60,7 +63,8 @@ main = do
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
     cmd "stack exec --no-terminal -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
 
-    -- Test everything loads in GHCi, see https://github.com/digital-asset/ghc-lib/issues/27
+    -- Test everything loads in GHCi, see
+    -- https://github.com/digital-asset/ghc-lib/issues/27
     cmd "stack exec --no-terminal -- ghc -package=ghc-lib-parser -e \"print 1\""
     cmd "stack exec --no-terminal -- ghc -package=ghc-lib -e \"print 1\""
     where
@@ -69,11 +73,17 @@ main = do
 
       cmd :: String -> IO ()
       cmd x = do
-            putStrLn $ "\n\n# Running: " ++ x
-            hFlush stdout
-            (t, _) <- duration $ system_ x
-            putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
-            hFlush stdout
+        putStrLn $ "\n\n# Running: " ++ x
+        hFlush stdout
+        (t, _) <- duration $ system_ x
+        putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
+        hFlush stdout
+
+      mkTarball :: IO String
+      mkTarball = do
+        stackYaml <- readFile' "stack.yaml"
+        writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
+        sDistCreateExtract
 
       sDistCreateExtract :: IO String
       sDistCreateExtract = do
