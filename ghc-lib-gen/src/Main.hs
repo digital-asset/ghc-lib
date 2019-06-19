@@ -152,8 +152,7 @@ calcParserModules = do
         , "-M"]
         ++ include_dirs
         ++ [-- "-ignore-package ghc-lib-parser"
-           "-ignore-package ghc"
-           , "-ignore-package ghci"
+             "-ignore-package ghc"
            , "-package base"
            ]
         ++ hs_source_dirs
