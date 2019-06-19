@@ -130,7 +130,7 @@ extraFiles =
     ,"ghc-lib/stage0/compiler/build/Fingerprint.hs"
     -- Be careful not to add these files to a ghc-lib.cabal, just
     -- ghc-lib-parser.cabal.
-    ,"ghc-lib/stage1/compiler/build/Config.hs"
+   ,"ghc-lib/stage1/compiler/build/Config.hs"
     ,"ghc-lib/stage0/compiler/build/Parser.hs"
     ,"ghc-lib/stage0/compiler/build/Lexer.hs"
     ]
@@ -148,7 +148,11 @@ calcParserModules = do
         , "-dep-makefile .parser-depends"
         , "-M"]
         ++ include_dirs
-        ++ ["-ignore-package ghc-lib-parser -package ghc", "-package base"]
+        ++ ["-ignore-package ghc-lib-parser"
+           , "-ignore-package ghc"
+           -- , "-ignore-package ghci"
+           , "-package base"
+           ]
         ++ hs_source_dirs ++ ["-ighc-lib/stage0/libraries/ghc-heap/build"]
         ++ ["ghc-lib/stage0/compiler/build/Parser.hs"]
   putStrLn "# Generating 'ghc/.parser-depends'..."
@@ -158,37 +162,16 @@ calcParserModules = do
   let depends = filter (not . isPrefixOf "#") (lines buf)
       depends' = filter (isSuffixOf ".hs") depends
       srcPaths = map (trim . snd) (mapMaybe (stripInfix ":") depends')
-      srcDirs = ghcLibParserHsSrcDirs lib
+      srcDirs = sortBy
+         (\s t -> if length s > length t then LT
+                  else if length s < length t then GT else EQ)
+         ("ghc-lib/stage0/libraries/ghc-heap/build" :ghcLibParserHsSrcDirs lib)
       srcPaths' = foldl
         (\acc p -> map (replace (p ++ "/") "") acc)
         srcPaths
-        (srcDirs  ++ ["ghc-lib/stage0/build"
-                     ,"ghc-lib/stage1/build"
-                     ,"ghc-lib/stage0/libraries/ghc-heap/build"])
-      exts = [ "backpack"
-             , "basicTypes"
-             , "cmm"
-             , "coreSyn"
-             , "deSugar"
-             , "ghci"
-             , "hsSyn"
-             , "iface"
-             , "main"
-             , "parser"
-             , "prelude"
-             , "profiling"
-             , "simplCore"
-             , "simplStg"
-             , "specialise"
-             , "typecheck"
-             , "types"
-             , "utils"
-             ]
-      srcPaths'' = foldl
-        (\acc p -> map (replace (p ++ "/") "") acc)
-        srcPaths' exts
-      srcPaths''' = map (replace "/" ".") srcPaths''
-      srcs = map (dropSuffix ".hs") (filter (isSuffixOf ".hs") srcPaths''')
+        srcDirs
+      srcPaths'' = map (replace "/" ".") srcPaths'
+      srcs = map (dropSuffix ".hs") (filter (isSuffixOf ".hs") srcPaths'')
       -- 'GHCi.FFI doesn't get deduced but is needed
       -- 'HeaderInfo' because we prefer it here rather than `ghc-lib`
       srcs' = nubSort (srcs ++ ["GHCi.FFI", "HeaderInfo"])
