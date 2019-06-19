@@ -151,9 +151,9 @@ calcParserModules = do
         , "-dep-makefile .parser-depends"
         , "-M"]
         ++ include_dirs
-        ++ ["-ignore-package ghc-lib-parser"
-           , "-ignore-package ghc"
-           -- , "-ignore-package ghci"
+        ++ [-- "-ignore-package ghc-lib-parser"
+           "-ignore-package ghc"
+           , "-ignore-package ghci"
            , "-package base"
            ]
         ++ hs_source_dirs
@@ -169,14 +169,16 @@ calcParserModules = do
       depends' = filter (isSuffixOf ".hs") depends
       srcPaths = map (trim . snd) (mapMaybe (stripInfix ":") depends')
       srcDirs = ghcLibParserHsSrcDirs lib
-      srcPaths' = map (replace "/" "") (foldl
+      srcPaths' = foldl
         (\acc p -> map (replace (p ++ "/") "") acc)
         srcPaths
-        srcDirs)
-      srcs = map (dropSuffix ".hs") (filter (isSuffixOf ".hs") srcPaths')
+        srcDirs
+      srcPaths'' = map (replace "/" ".") srcPaths'
+      srcs = map (dropSuffix ".hs") (filter (isSuffixOf ".hs") srcPaths'')
       -- 'GHCi.FFI doesn't get deduced but is needed;
       -- 'HeaderInfo' because we prefer it here rather than `ghc-lib`.
       srcs' = nubSort (srcs ++ ["GHCi.FFI", "HeaderInfo"])
+  putStrLn $ unlines srcs'
   return srcs'
 
 -- | Stub out a couple of definitions in the ghc-heap library that
