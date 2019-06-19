@@ -70,7 +70,9 @@ ghcLibParserHsSrcDirs lib =
            else if length s < length t then GT else EQ)
   ([ "ghc-lib/stage0/compiler/build"
    , "ghc-lib/stage1/compiler/build"
-   , "ghc-lib/stage0/libraries/ghc-heap/build"] ++
+   , "ghc-lib/stage0/libraries/ghc-heap/build"
+   , "ghc-lib/stage0/libraries/ghci/build"
+   ] ++
     map takeDirectory cabalFileLibraries ++
     askFiles lib "hs-source-dirs:")
 
@@ -153,6 +155,7 @@ calcParserModules = do
         ++ include_dirs
         ++ [-- "-ignore-package ghc-lib-parser"
              "-ignore-package ghc"
+           , "-ignore-package ghci"
            , "-package base"
            ]
         ++ hs_source_dirs
