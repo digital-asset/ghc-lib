@@ -177,13 +177,12 @@ calcParserModules = do
         srcPaths
         srcDirs
       srcs = map
-        (\p -> replace "/" ". " (dropSuffix ".hs" p))
-        (filter (isSuffixOf ".hs") srcPaths')
+        (\p -> replace "/" "." (dropSuffix ".hs" p))
+        srcPaths'
       -- 'GHCi.FFI doesn't get deduced but is needed;
       -- 'HeaderInfo' because we prefer it here rather than `ghc-lib`.
       srcs' = nubSort (srcs ++ ["GHCi.FFI", "HeaderInfo"])
-  putStrLn $ unlines srcs'
-  return srcs'
+  return srcs
 
 -- | Stub out a couple of definitions in the ghc-heap library that
 --   require CMM features, since Cabal doesn't work well with CMM
