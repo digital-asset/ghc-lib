@@ -65,11 +65,14 @@ ghcLibParserIncludeDirs =
 -- adjusting.
 ghcLibParserHsSrcDirs :: [Cabal] -> [FilePath]
 ghcLibParserHsSrcDirs lib =
-  nubSort $
-   [ "ghc-lib/stage0/compiler/build"
-   , "ghc-lib/stage1/compiler/build"] ++
-   map takeDirectory cabalFileLibraries ++
-   askFiles lib "hs-source-dirs:"
+  -- Sort by length so the longest paths are at the front.
+  sortBy (\s t -> if length s > length t then LT
+           else if length s < length t then GT else EQ)
+  ([ "ghc-lib/stage0/compiler/build"
+   , "ghc-lib/stage1/compiler/build"
+   , "ghc-lib/stage0/libraries/ghc-heap/build"] ++
+    map takeDirectory cabalFileLibraries ++
+    askFiles lib "hs-source-dirs:")
 
 -- | The "hs-source-dirs" for 'ghc-lib-parser'. Approximation. Needs
 -- adjusting.
@@ -130,7 +133,7 @@ extraFiles =
     ,"ghc-lib/stage0/compiler/build/Fingerprint.hs"
     -- Be careful not to add these files to a ghc-lib.cabal, just
     -- ghc-lib-parser.cabal.
-   ,"ghc-lib/stage1/compiler/build/Config.hs"
+    ,"ghc-lib/stage1/compiler/build/Config.hs"
     ,"ghc-lib/stage0/compiler/build/Parser.hs"
     ,"ghc-lib/stage0/compiler/build/Lexer.hs"
     ]
@@ -153,27 +156,26 @@ calcParserModules = do
            -- , "-ignore-package ghci"
            , "-package base"
            ]
-        ++ hs_source_dirs ++ ["-ighc-lib/stage0/libraries/ghc-heap/build"]
+        ++ hs_source_dirs
         ++ ["ghc-lib/stage0/compiler/build/Parser.hs"]
   putStrLn "# Generating 'ghc/.parser-depends'..."
   system_ cmd
 
   buf <- readFile' ".parser-depends"
+  -- The idea here is to turn lines like:
+  -- 'compiler/prelude/PrelRules.o : compiler/prelude/PrelRules.hs'
+  -- into just the module name, in this case 'PrelRules'.
   let depends = filter (not . isPrefixOf "#") (lines buf)
       depends' = filter (isSuffixOf ".hs") depends
       srcPaths = map (trim . snd) (mapMaybe (stripInfix ":") depends')
-      srcDirs = sortBy
-         (\s t -> if length s > length t then LT
-                  else if length s < length t then GT else EQ)
-         ("ghc-lib/stage0/libraries/ghc-heap/build" :ghcLibParserHsSrcDirs lib)
-      srcPaths' = foldl
+      srcDirs = ghcLibParserHsSrcDirs lib
+      srcPaths' = map (replace "/" "") (foldl
         (\acc p -> map (replace (p ++ "/") "") acc)
         srcPaths
-        srcDirs
-      srcPaths'' = map (replace "/" ".") srcPaths'
-      srcs = map (dropSuffix ".hs") (filter (isSuffixOf ".hs") srcPaths'')
-      -- 'GHCi.FFI doesn't get deduced but is needed
-      -- 'HeaderInfo' because we prefer it here rather than `ghc-lib`
+        srcDirs)
+      srcs = map (dropSuffix ".hs") (filter (isSuffixOf ".hs") srcPaths')
+      -- 'GHCi.FFI doesn't get deduced but is needed;
+      -- 'HeaderInfo' because we prefer it here rather than `ghc-lib`.
       srcs' = nubSort (srcs ++ ["GHCi.FFI", "HeaderInfo"])
   return srcs'
 
