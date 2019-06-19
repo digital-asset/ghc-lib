@@ -24,8 +24,6 @@ main = do
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
     -- stackYaml <- readFile' "stack.yaml"
-    -- writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
-    -- tarball <- sDistCreateExtract
     tarball <- mkTarball
     renameDirectory (dropExtensions tarball) "ghc-lib-parser"
     removeFile tarball
@@ -36,9 +34,6 @@ main = do
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
-    -- stackYaml <- readFile' "stack.yaml"
-    -- writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
-    -- tarball <- sDistCreateExtract
     tarball <- mkTarball
     renameDirectory (dropExtensions tarball) "ghc-lib"
     removeFile tarball

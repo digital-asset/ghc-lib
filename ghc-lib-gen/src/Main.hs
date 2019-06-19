@@ -15,6 +15,7 @@ import System.IO.Extra
 import Data.List.Extra
 import Data.Char
 import Data.Maybe
+import Data.Ord
 import qualified Data.Set as Set
 
 main :: IO ()
@@ -65,16 +66,16 @@ ghcLibParserIncludeDirs =
 -- adjusting.
 ghcLibParserHsSrcDirs :: [Cabal] -> [FilePath]
 ghcLibParserHsSrcDirs lib =
-  -- Sort by length so the longest paths are at the front.
-  sortBy (\s t -> if length s > length t then LT
-           else if length s < length t then GT else EQ)
-  ([ "ghc-lib/stage0/compiler/build"
-   , "ghc-lib/stage1/compiler/build"
-   , "ghc-lib/stage0/libraries/ghc-heap/build"
-   , "ghc-lib/stage0/libraries/ghci/build"
-   ] ++
-    map takeDirectory cabalFileLibraries ++
-    askFiles lib "hs-source-dirs:")
+  -- Sort by length so the longest paths are at the front. We do this
+  -- so that in 'calcParserModules', longer substituions are performed
+  -- before shorter ones.
+  sortBy (flip (comparing length))
+    ([ "ghc-lib/stage0/compiler/build"
+     , "ghc-lib/stage1/compiler/build"
+     , "ghc-lib/stage0/libraries/ghci/build"
+     , "ghc-lib/stage0/libraries/ghc-heap/build"
+     ] ++ map takeDirectory cabalFileLibraries ++
+      askFiles lib "hs-source-dirs:")
 
 -- | The "hs-source-dirs" for 'ghc-lib-parser'. Approximation. Needs
 -- adjusting.
@@ -153,9 +154,9 @@ calcParserModules = do
         , "-dep-makefile .parser-depends"
         , "-M"]
         ++ include_dirs
-        ++ [-- "-ignore-package ghc-lib-parser"
-             "-ignore-package ghc"
+        ++ [ "-ignore-package ghc"
            , "-ignore-package ghci"
+           , "-ignore-package ghc-lib-parser"
            , "-package base"
            ]
         ++ hs_source_dirs
@@ -175,8 +176,9 @@ calcParserModules = do
         (\acc p -> map (replace (p ++ "/") "") acc)
         srcPaths
         srcDirs
-      srcPaths'' = map (replace "/" ".") srcPaths'
-      srcs = map (dropSuffix ".hs") (filter (isSuffixOf ".hs") srcPaths'')
+      srcs = map
+        (\p -> replace "/" ". " (dropSuffix ".hs" p))
+        (filter (isSuffixOf ".hs") srcPaths')
       -- 'GHCi.FFI doesn't get deduced but is needed;
       -- 'HeaderInfo' because we prefer it here rather than `ghc-lib`.
       srcs' = nubSort (srcs ++ ["GHCi.FFI", "HeaderInfo"])
