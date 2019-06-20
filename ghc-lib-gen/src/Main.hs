@@ -133,7 +133,7 @@ extraFiles =
     ,"ghc-lib/stage1/compiler/build/primop-vector-tys-exports.hs-incl"
     ,"ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
     ,"ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
-    -- ,"ghc-lib/stage0/compiler/build/Fingerprint.hs"
+    ,"ghc-lib/stage0/compiler/build/Fingerprint.hs"
     -- Be careful not to add these files to a ghc-lib.cabal, just
     -- ghc-lib-parser.cabal.
     ,"ghc-lib/stage1/compiler/build/Config.hs"
