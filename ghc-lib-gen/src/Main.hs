@@ -149,7 +149,7 @@ calcParserModules = do
   lib <- mapM readCabalFile cabalFileLibraries
   let includeDirs = map ("-I" ++ ) ghcLibParserIncludeDirs
       hsSrcDirs = ghcLibParserHsSrcDirs lib
-      hsSrcIncludes = map ("-i" ++ ) $ hsSrcDirs
+      hsSrcIncludes = map ("-i" ++ ) hsSrcDirs
       cmd = unwords $
         [ "stack exec -- ghc"
         , "-dep-suffix ''"
@@ -182,9 +182,7 @@ calcParserModules = do
         hsSrcDirs
       -- Lastly, manipulate text like 'GHC/Exts/Heap/Constants.hs'
       -- into 'GHC.Exts.Heap.Constants'.
-      modules = map
-        (\p -> replace "/" "." (dropSuffix ".hs" p))
-        strippedModulePaths
+      modules = map (replace "/" "." . dropSuffix ".hs") strippedModulePaths
   -- We put 'HeaderInfo' here because doing so means clients who
   -- just want to do parsing don't need 'ghc-lib' (this module
   -- is needed for parsing in the presence of dynamic pragmas).
