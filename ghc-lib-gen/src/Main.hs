@@ -15,6 +15,7 @@ import System.IO.Extra
 import Data.List.Extra
 import Data.Char
 import Data.Maybe
+import Data.Ord
 import qualified Data.Set as Set
 
 main :: IO ()
@@ -65,11 +66,17 @@ ghcLibParserIncludeDirs =
 -- adjusting.
 ghcLibParserHsSrcDirs :: [Cabal] -> [FilePath]
 ghcLibParserHsSrcDirs lib =
-  nubSort $
-   [ "ghc-lib/stage0/compiler/build"
-   , "ghc-lib/stage1/compiler/build"] ++
-   map takeDirectory cabalFileLibraries ++
-   askFiles lib "hs-source-dirs:"
+  -- Sort by length so the longest paths are at the front. We do this
+  -- so that in 'calcParserModules', longer substituions are performed
+  -- before shorter ones (and bad things will happen if that were
+  -- not the case).
+  sortBy (flip (comparing length))
+    ([ "ghc-lib/stage0/compiler/build"
+     , "ghc-lib/stage1/compiler/build"
+     , "ghc-lib/stage0/libraries/ghci/build"
+     , "ghc-lib/stage0/libraries/ghc-heap/build"
+     ] ++ map takeDirectory cabalFileLibraries ++
+      askFiles lib "hs-source-dirs:")
 
 -- | The "hs-source-dirs" for 'ghc-lib-parser'. Approximation. Needs
 -- adjusting.
@@ -135,40 +142,51 @@ extraFiles =
     ,"ghc-lib/stage0/compiler/build/Lexer.hs"
     ]
 
--- | Not finished but the idea here is to calculate via `ghc -M` the
--- list of modules that are required for 'ghc-lib-parser'.
+-- | Calculate via `ghc -M` the list of modules that are required for
+-- 'ghc-lib-parser'.
 calcParserModules :: IO [String]
 calcParserModules = do
   lib <- mapM readCabalFile cabalFileLibraries
-  let include_dirs = map ("-I" ++ ) ghcLibParserIncludeDirs
-      hs_source_dirs = map ("-i" ++ ) $ ghcLibParserHsSrcDirs lib
+  let includeDirs = map ("-I" ++ ) ghcLibParserIncludeDirs
+      hsSrcDirs = ghcLibParserHsSrcDirs lib
+      hsSrcIncludes = map ("-i" ++ ) hsSrcDirs
       cmd = unwords $
         [ "stack exec -- ghc"
         , "-dep-suffix ''"
         , "-dep-makefile .parser-depends"
         , "-M"]
-        ++ include_dirs
-        ++ ["-ignore-package ghc-lib-parser -package ghc", "-package base"]
-        ++ hs_source_dirs ++ ["-ighc-lib/stage0/libraries/ghc-heap/build"]
+        ++ includeDirs
+        ++ [ "-ignore-package ghc"
+           , "-ignore-package ghci"
+           , "-package base"
+           ]
+        ++ hsSrcIncludes
         ++ ["ghc-lib/stage0/compiler/build/Parser.hs"]
   putStrLn "# Generating 'ghc/.parser-depends'..."
   system_ cmd
 
   buf <- readFile' ".parser-depends"
+  -- The idea here is harvest from lines like
+  -- 'compiler/prelude/PrelRules.o : compiler/prelude/PrelRules.hs',
+  -- just the module name e.g. in this example, 'PrelRules'.
+      -- Stip comment lines.
   let depends = filter (not . isPrefixOf "#") (lines buf)
-      depends' = filter (isSuffixOf ".hs") depends
-      srcPaths = map snd (mapMaybe (stripInfix ":") depends')
-      srcPaths' = map (replace "ghc-lib/stage0/" "") srcPaths
-      srcPaths'' = map (replace "ghc-lib/stage1/" "") srcPaths'
-      srcPaths''' = map snd (mapMaybe (stripInfix "/") srcPaths'')
-      srcPaths'''' = map snd (mapMaybe (stripInfix "/") srcPaths''')
-      srcPaths''''' = map (replace "build/GHC/" "GHC/") srcPaths''''
-      srcPaths'''''' = map (replace "/" ".") srcPaths'''''
-      srcs = map (dropSuffix ".hs") (filter (isSuffixOf ".hs") srcPaths'''''')
-      -- 'GHCi.FFI doesn't get deduced but is needed
-      -- 'HeaderInfo' because we prefer it here rather than `ghc-lib`
-      srcs' = nubSort (srcs ++ ["GHCi.FFI", "HeaderInfo"])
-  return srcs'
+      -- Restric to Haskell source file lines.
+      moduleLines = filter (isSuffixOf ".hs") depends
+      -- Strip each line up-to and including ':'.
+      modulePaths = map (trim . snd) (mapMaybe (stripInfix ":") moduleLines)
+      -- Remove leading source directories from what's left.
+      strippedModulePaths = foldl
+        (\acc p -> map (replace (p ++ "/") "") acc)
+        modulePaths
+        hsSrcDirs
+      -- Lastly, manipulate text like 'GHC/Exts/Heap/Constants.hs'
+      -- into 'GHC.Exts.Heap.Constants'.
+      modules = map (replace "/" "." . dropSuffix ".hs") strippedModulePaths
+  -- We put 'HeaderInfo' here because doing so means clients who
+  -- just want to do parsing don't need 'ghc-lib' (this module
+  -- is needed for parsing in the presence of dynamic pragmas).
+  return $ nubSort (modules ++ ["HeaderInfo"])
 
 -- | Stub out a couple of definitions in the ghc-heap library that
 --   require CMM features, since Cabal doesn't work well with CMM
