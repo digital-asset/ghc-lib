@@ -171,7 +171,7 @@ calcParserModules = do
   -- just the module name e.g. in this example, 'PrelRules'.
       -- Stip comment lines.
   let depends = filter (not . isPrefixOf "#") (lines buf)
-      -- Restric to Haskell source file lines.
+      -- Restrict to Haskell source file lines.
       moduleLines = filter (isSuffixOf ".hs") depends
       -- Strip each line up-to and including ':'.
       modulePaths = map (trim . snd) (mapMaybe (stripInfix ":") moduleLines)
