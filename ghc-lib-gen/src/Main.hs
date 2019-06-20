@@ -604,7 +604,7 @@ generatePrerequisites = do
   withCurrentDirectory "hadrian" $ do
     system_ "cabal new-build exe:hadrian"
   system_ $ unwords $ do
-    ["hadrian/build.sh --integer-simple", "--build-root=$PWD/ghc-lib"]
+    ["hadrian/build.sh --integer-simple", "--build-root=ghc-lib"]
     ++ extraFiles ++ map (dataDir </>) dataFiles
   -- withCurrentDirectory "hadrian" $ do
   --   system_ "stack build --no-library-profiling"
