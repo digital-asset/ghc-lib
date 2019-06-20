@@ -133,7 +133,7 @@ extraFiles =
     ,"ghc-lib/stage1/compiler/build/primop-vector-tys-exports.hs-incl"
     ,"ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
     ,"ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
-    ,"ghc-lib/stage0/compiler/build/Fingerprint.hs"
+    -- ,"ghc-lib/stage0/compiler/build/Fingerprint.hs"
     -- Be careful not to add these files to a ghc-lib.cabal, just
     -- ghc-lib-parser.cabal.
     ,"ghc-lib/stage1/compiler/build/Config.hs"
@@ -156,7 +156,6 @@ calcParserModules = do
         ++ include_dirs
         ++ [ "-ignore-package ghc"
            , "-ignore-package ghci"
-           , "-ignore-package ghc-lib-parser"
            , "-package base"
            ]
         ++ hs_source_dirs
@@ -179,10 +178,9 @@ calcParserModules = do
       srcs = map
         (\p -> replace "/" "." (dropSuffix ".hs" p))
         srcPaths'
-      -- 'GHCi.FFI doesn't get deduced but is needed;
       -- 'HeaderInfo' because we prefer it here rather than `ghc-lib`.
-      srcs' = nubSort (srcs ++ ["GHCi.FFI", "HeaderInfo"])
-  return srcs
+      srcs' = nubSort (srcs ++ ["HeaderInfo"])
+  return srcs'
 
 -- | Stub out a couple of definitions in the ghc-heap library that
 --   require CMM features, since Cabal doesn't work well with CMM
