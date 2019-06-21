@@ -70,13 +70,12 @@ ghcLibParserHsSrcDirs lib =
   -- so that in 'calcParserModules', longer substituions are performed
   -- before shorter ones (and bad things will happen if that were
   -- not the case).
-  sortBy (flip (comparing length))
-    ([ "ghc-lib/stage0/compiler/build"
-     , "ghc-lib/stage1/compiler/build"
-     , "ghc-lib/stage0/libraries/ghci/build"
-     , "ghc-lib/stage0/libraries/ghc-heap/build"
-     ] ++ map takeDirectory cabalFileLibraries ++
-      askFiles lib "hs-source-dirs:")
+  sortBy (flip (comparing length)) $
+    [ "ghc-lib/stage0/compiler/build"
+    , "ghc-lib/stage1/compiler/build"
+    , "ghc-lib/stage0/libraries/ghci/build"
+    , "ghc-lib/stage0/libraries/ghc-heap/build"]
+    ++ map takeDirectory cabalFileLibraries ++ askFiles lib "hs-source-dirs:"
 
 -- | The "hs-source-dirs" for 'ghc-lib-parser'. Approximation. Needs
 -- adjusting.
