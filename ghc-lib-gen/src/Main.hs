@@ -74,10 +74,10 @@ ghcLibParserHsSrcDirs lib =
     [ "ghc-lib/stage0/compiler/build"
     , "ghc-lib/stage1/compiler/build"
     , "ghc-lib/stage0/libraries/ghci/build"
-    , "ghc-lib/stage0/libraries/ghc-heap/build"]
+    , "ghc-lib/stage0/libraries/ghc-heap/build" ]
     ++ map takeDirectory cabalFileLibraries ++ askFiles lib "hs-source-dirs:"
 
--- | The "hs-source-dirs" for 'ghc-lib-parser'. Approximation. Needs
+-- | The "hs-source-dirs" for 'ghc-lib'. Approximation. Needs
 -- adjusting.
 ghcLibHsSrcDirs :: [Cabal] -> [FilePath]
 ghcLibHsSrcDirs = ghcLibParserHsSrcDirs
