@@ -16,23 +16,22 @@ main = do
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
-    -- Make and extract an sdist of ghc-lib-parser.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
-    cmd "cd ghc && git checkout 0345b1b0f62c8fac72d07a7b848d14b9893e9ac9"
+    cmd "cd ghc && git checkout 58a5d728d0293110d7e80aa1f067721447b20882"
     cmd "cd ghc && git submodule update --init --recursive"
 
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+    -- Make and extract an sdist of ghc-lib-parser.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
-    -- stackYaml <- readFile' "stack.yaml"
     tarball <- mkTarball
     renameDirectory (dropExtensions tarball) "ghc-lib-parser"
     removeFile tarball
     removeFile "ghc/ghc-lib-parser.cabal"
     cmd "git checkout stack.yaml"
 
-    -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+    -- Make and extract an sdist of ghc-lib.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
     tarball <- mkTarball
     renameDirectory (dropExtensions tarball) "ghc-lib"
