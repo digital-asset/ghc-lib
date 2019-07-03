@@ -10,7 +10,7 @@ module Main (main) where
 import "ghc-lib-parser" HsSyn
 import "ghc-lib-parser" Config
 import "ghc-lib-parser" DynFlags
-import "ghc-lib-parser" Platform
+import "ghc-lib-parser" GHC.Platform
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Lexer

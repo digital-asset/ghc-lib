@@ -372,7 +372,7 @@ generateGhcLibCabal = do
         indent2 ghcLibIncludeDirs ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DHAVE_INTERPRETER -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
@@ -407,7 +407,7 @@ generateGhcLibCabal = do
         ,"    hs-source-dirs: ghc"
         ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DGHCI -DTHREADED_RTS -DGHC_LOADED_INTO_GHCI"
+        ,"    cpp-options: -DHAVE_INTERPRETER -DTHREADED_RTS -DGHC_LOADED_INTO_GHCI"
         ,"    other-modules:"] ++
         indent2 (askField bin "other-modules:") ++
         ["    other-extensions:"] ++
@@ -471,7 +471,7 @@ generateGhcLibParserCabal = do
         indent2 ghcLibParserIncludeDirs ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DHAVE_INTERPRETER -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
@@ -499,7 +499,10 @@ generateGhcLibParserCabal = do
 -- | Run Hadrian to build the things that the Cabal files need.
 generatePrerequisites :: IO ()
 generatePrerequisites = do
-  system_ "stack --stack-yaml hadrian/stack.yaml build alex happy"
+  system_ "stack build alex happy" -- In case we go to git for happy
+                                   -- on the next line. Happy, it
+                                   -- seems, is bootstrapped!
+  system_ "stack --stack-yaml hadrian/stack.yaml build --only-dependencies"
   system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./boot"
   system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c \"./configure --enable-tarballs-autodownload\""
   withCurrentDirectory "hadrian" $ do

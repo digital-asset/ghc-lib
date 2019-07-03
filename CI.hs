@@ -1,7 +1,8 @@
--- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
--- SPDX-License-Identifier: (Apache-2.0 OR BSD-3-Clause)
+-- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
+-- affiliates. All rights reserved.  SPDX-License-Identifier:
+-- (Apache-2.0 OR BSD-3-Clause)
 
--- CI script, invoked by both Travis and Appveyor
+-- CI script, compatible with all of Travis, Appveyor and Azure.
 
 import Control.Monad
 import System.Directory
@@ -17,10 +18,13 @@ main = do
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
-    cmd "cd ghc && git checkout fe7e7e4a950a77326cc16f4ade30a67d20d7cdd5"
+    cmd "cd ghc && git checkout a25f6f55eaca0d3ec36afb574d5fa9326ea09d55"
     cmd "cd ghc && git submodule update --init --recursive"
 
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+    -- Build ghc-lib-gen. Do this here rather than in the Azure script
+    -- so that it's not forgotten when testing this program locally.
+    cmd "stack --no-terminal build"
     -- Make and extract an sdist of ghc-lib-parser.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
     tarball <- mkTarball
@@ -31,6 +35,7 @@ main = do
 
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+
     -- Make and extract an sdist of ghc-lib.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
     tarball <- mkTarball
