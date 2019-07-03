@@ -2,7 +2,7 @@
 -- affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
--- CI script, compatible with all of Travis, Appveyor and Travis.
+-- CI script, compatible with all of Travis, Appveyor and Azure.
 
 import Control.Monad
 import System.Directory
@@ -18,7 +18,7 @@ main = do
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
-    cmd "cd ghc && git checkout 39f50bff3ea913a7f4b1d915660bcf77b9327e2e"
+    cmd "cd ghc && git checkout 90e0ab7d80d88463df97bc3514fc89d2ab9fcfca"
     cmd "cd ghc && git submodule update --init --recursive"
 
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
