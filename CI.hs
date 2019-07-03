@@ -18,7 +18,7 @@ main = do
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
-    cmd "cd ghc && git checkout 90e0ab7d80d88463df97bc3514fc89d2ab9fcfca"
+    cmd "cd ghc && git checkout a25f6f55eaca0d3ec36afb574d5fa9326ea09d55"
     cmd "cd ghc && git submodule update --init --recursive"
 
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
