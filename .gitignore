@@ -8,3 +8,4 @@ ghc-master/
 *.hi
 .DS_Store
 *.tar.gz
+*_flymake*
