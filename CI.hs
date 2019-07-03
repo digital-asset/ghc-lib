@@ -25,7 +25,6 @@ main = do
     -- Build ghc-lib-gen. Do this here rather than in the Azure script
     -- so that it's not forgotten when testing this program locally.
     cmd "stack --no-terminal build"
-
     -- Make and extract an sdist of ghc-lib-parser.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
     tarball <- mkTarball
