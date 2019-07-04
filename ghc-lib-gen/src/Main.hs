@@ -44,43 +44,71 @@ main = do
 -- | Cabal files from libraries inside GHC that are merged together
 cabalFileLibraries :: [FilePath]
 cabalFileLibraries =
-    ["libraries/template-haskell/template-haskell.cabal"
-    ,"libraries/ghc-heap/ghc-heap.cabal"
-    ,"libraries/ghc-boot-th/ghc-boot-th.cabal"
-    ,"libraries/ghc-boot/ghc-boot.cabal"
-    ,"libraries/ghci/ghci.cabal"
-    ,"compiler/ghc.cabal"
+    [ "libraries/template-haskell/template-haskell.cabal"
+    , "libraries/ghc-heap/ghc-heap.cabal"
+    , "libraries/ghc-boot-th/ghc-boot-th.cabal"
+    , "libraries/ghc-boot/ghc-boot.cabal"
+    , "libraries/ghci/ghci.cabal"
+    , "compiler/ghc.cabal"
     ]
 
 -- | C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: [FilePath]
 ghcLibParserIncludeDirs =
-  ["ghc-lib/generated"
-  ,"ghc-lib/stage0/compiler/build"
-  ,"ghc-lib/stage1/compiler/build"
-  ,"compiler"
-  ,"compiler/utils"
+  [ "ghc-lib/generated"
+  , "ghc-lib/stage0/compiler/build"
+  , "ghc-lib/stage1/compiler/build"
+  , "compiler"
+  , "compiler/utils"
   ]
 
--- | The "hs-source-dirs" for 'ghc-lib-parser'. Approximation. Needs
--- adjusting.
+-- Sort by length so the longest paths are at the front. We do this
+-- so that in 'calcParserModules', longer substituions are performed
+-- before shorter ones (and bad things will happen if that were
+-- not the case).
+sortDiffListByLength :: Set.Set FilePath -> Set.Set FilePath -> [FilePath]
+sortDiffListByLength all excludes =
+  sortBy (flip (comparing length)) $ Set.toList (Set.difference all excludes)
+
+-- | The "hs-source-dirs" for 'ghc-lib-parser'.
 ghcLibParserHsSrcDirs :: [Cabal] -> [FilePath]
 ghcLibParserHsSrcDirs lib =
-  -- Sort by length so the longest paths are at the front. We do this
-  -- so that in 'calcParserModules', longer substituions are performed
-  -- before shorter ones (and bad things will happen if that were
-  -- not the case).
-  sortBy (flip (comparing length)) $
-    [ "ghc-lib/stage0/compiler/build"
-    , "ghc-lib/stage1/compiler/build"
-    , "ghc-lib/stage0/libraries/ghci/build"
-    , "ghc-lib/stage0/libraries/ghc-heap/build" ]
-    ++ map takeDirectory cabalFileLibraries ++ askFiles lib "hs-source-dirs:"
+  let all = Set.fromList $
+        [ "ghc-lib/stage0/compiler/build"
+        , "ghc-lib/stage1/compiler/build"
+        , "ghc-lib/stage0/libraries/ghci/build"
+        , "ghc-lib/stage0/libraries/ghc-heap/build"
+        ]
+        ++ map takeDirectory cabalFileLibraries
+        ++ askFiles lib "hs-source-dirs:"
+      excludes = Set.fromList
+        [ "compiler/codeGen"
+        , "compiler/hieFile"
+        , "compiler/llvmGen"
+        , "compiler/rename"
+        , "compiler/stgSyn"
+        , "compiler/stranal"
+        ]
+  in sortDiffListByLength all excludes
 
--- | The "hs-source-dirs" for 'ghc-lib'. Approximation. Needs
--- adjusting.
+-- | The "hs-source-dirs" for 'ghc-lib'.
 ghcLibHsSrcDirs :: [Cabal] -> [FilePath]
-ghcLibHsSrcDirs = ghcLibParserHsSrcDirs
+ghcLibHsSrcDirs lib =
+  let all = Set.fromList $
+        [ "ghc-lib/stage0/compiler/build"
+        , "ghc-lib/stage1/compiler/build"
+        , "ghc-lib/stage0/libraries/ghci/build"
+        ]
+        ++ map takeDirectory cabalFileLibraries
+        ++ askFiles lib "hs-source-dirs:"
+      excludes = Set.fromList
+        [ "compiler/basicTypes"
+        , "compiler/parser"
+        , "compiler/types"
+        , "libraries/ghc-boot-th"
+        , "libraries/ghc-heap"
+        ]
+  in sortDiffListByLength all excludes
 
 -- | C-preprocessor "include dirs" for 'ghc-lib'.
 ghcLibIncludeDirs :: [FilePath]
@@ -99,10 +127,10 @@ dataDir = "ghc-lib/stage1/lib"
 -- the package.
 dataFiles :: [FilePath]
 dataFiles =
-    ["settings"
-    ,"llvm-targets"
-    ,"llvm-passes"
-    ,"platformConstants"
+    [ "settings"
+    , "llvm-targets"
+    , "llvm-passes"
+    , "platformConstants"
     ]
 
 -- | Additional source and data files for Cabal.
