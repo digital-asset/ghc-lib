@@ -55,7 +55,9 @@ main = do
               ]
 
     -- Separate the two library build commands so they are
-    -- independently timed.
+    -- independently timed. Disable optimizations so the builds are
+    -- quick to compile (this is about quick testing and has no
+    -- bearing on the sdists produced above of course).
     cmd "stack build --ghc-options=-O0 ghc-lib-parser --no-terminal --interleaved-output"
     cmd "stack build --ghc-options=-O0 ghc-lib --no-terminal --interleaved-output"
     cmd "stack build mini-hlint mini-compile --no-terminal --interleaved-output"
