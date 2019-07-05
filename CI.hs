@@ -44,7 +44,7 @@ main = do
     removeFile "ghc/ghc-lib.cabal"
     cmd "git checkout stack.yaml"
 
-    -- Test the new projects.
+    -- Append the libraries and examples to stack.yaml.
     stackYaml <- readFile' "stack.yaml"
     writeFile "stack.yaml" $
       stackYaml ++
@@ -53,7 +53,15 @@ main = do
               , "- examples/mini-hlint"
               , "- examples/mini-compile"
               ]
-    cmd "stack build --no-terminal --interleaved-output"
+
+    -- Separate the two library build commands so they are
+    -- independently timed. Disable optimizations so the builds are
+    -- quick to compile (this is about quick testing and has no
+    -- bearing on the sdists produced above of course).
+    cmd "stack build --ghc-options=-O0 ghc-lib-parser --no-terminal --interleaved-output"
+    cmd "stack build --ghc-options=-O0 ghc-lib --no-terminal --interleaved-output"
+    cmd "stack build mini-hlint mini-compile --no-terminal --interleaved-output"
+    -- Run tests.
     cmd "stack exec --no-terminal -- ghc-lib --version"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fatal_error.hs"
@@ -61,7 +69,6 @@ main = do
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
     cmd "stack exec --no-terminal -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
-
     -- Test everything loads in GHCi, see
     -- https://github.com/digital-asset/ghc-lib/issues/27
     cmd "stack exec --no-terminal -- ghc -package=ghc-lib-parser -e \"print 1\""

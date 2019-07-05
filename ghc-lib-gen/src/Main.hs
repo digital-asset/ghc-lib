@@ -9,7 +9,7 @@ import Control.Monad
 import System.Environment
 import System.Process.Extra
 import System.FilePath hiding ((</>))
-import System.FilePath.Posix((</>)) -- make sure we generate / on all platforms
+import System.FilePath.Posix((</>)) -- Make sure we generate / on all platforms.
 import System.Directory
 import System.IO.Extra
 import Data.List.Extra
@@ -24,15 +24,18 @@ main = do
     case xs of
         [root] -> withCurrentDirectory root $ do
             applyPatchHeapClosures
+            applyPatchDisableCompileTimeOptimizations
             generatePrerequisites
             applyPatchStage
             generateGhcLibCabal
         [root, "--ghc-lib"] -> withCurrentDirectory root $ do
             applyPatchHeapClosures
+            applyPatchDisableCompileTimeOptimizations
             generatePrerequisites
             generateGhcLibCabal
         [root, "--ghc-lib-parser"] -> withCurrentDirectory root $ do
             applyPatchHeapClosures
+            applyPatchDisableCompileTimeOptimizations
             generatePrerequisites
             mangleCSymbols
             applyPatchStage
@@ -133,8 +136,8 @@ dataFiles =
     , "platformConstants"
     ]
 
--- | Additional source and data files for Cabal.
---   The files in this list are all created by Hadrian.
+-- | Additional source and data files for Cabal. The files in this
+-- list are all created by Hadrian.
 extraFiles :: [FilePath]
 extraFiles =
     -- source files
@@ -215,9 +218,21 @@ calcParserModules = do
   -- is needed for parsing in the presence of dynamic pragmas).
   return $ nubSort (modules ++ ["HeaderInfo"])
 
+-- | Selectively disable optimizations in some particular files so as
+-- to reduce (user) compile times. The files we apply this to were
+-- those identified as bottlenecks in the 2019 GSoC Hadrian speed
+-- project.
+applyPatchDisableCompileTimeOptimizations :: IO ()
+applyPatchDisableCompileTimeOptimizations =
+    forM_ [ "compiler/main/DynFlags.hs"
+          , "compiler/hsSyn/HsInstances.hs" ] $
+    \file ->
+        writeFile file .
+        ("{-# OPTIONS_GHC -O0 #-}\n" ++)
+        =<< readFile' file
+
 -- | Stub out a couple of definitions in the ghc-heap library that
---   require CMM features, since Cabal doesn't work well with CMM
---   files.
+-- require CMM features, since Cabal doesn't work well with CMM files.
 applyPatchHeapClosures :: IO ()
 applyPatchHeapClosures = do
     let file = "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
@@ -272,7 +287,10 @@ mangleCSymbols = do
 -- by using getOrSetLibHSghc for the FastString table.
 applyPatchStage :: IO ()
 applyPatchStage =
-    forM_ ["compiler/ghci/Linker.hs", "compiler/utils/FastString.hs", "compiler/main/DynFlags.hs"] $ \file ->
+    forM_ [ "compiler/ghci/Linker.hs"
+          , "compiler/utils/FastString.hs"
+          , "compiler/main/DynFlags.hs"] $
+    \file ->
         writeFile file .
         replace "STAGE >= 2" "0" .
         replace "STAGE < 2" "1"
@@ -280,8 +298,8 @@ applyPatchStage =
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
-    {cabalDir :: FilePath -- the directory this file exists in
-    ,cabalFields :: [(String, [String])] -- the key/value pairs it contains
+    { cabalDir :: FilePath -- the directory this file exists in
+    , cabalFields :: [(String, [String])] -- the key/value pairs it contains
     }
 
 -- | Given a file, produce the key/value pairs it contains
