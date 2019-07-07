@@ -9,3 +9,6 @@ ghc-master/
 .DS_Store
 *.tar.gz
 *_flymake*
+\#*
+\.#*
+cabal.project.local
