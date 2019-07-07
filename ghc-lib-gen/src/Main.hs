@@ -4,7 +4,6 @@
 
 module Main(main) where
 
-import System.Environment
 import System.Directory
 import Ghclibgen
 import GhclibgenOpts
