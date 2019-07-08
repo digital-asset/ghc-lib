@@ -1,3 +1,4 @@
+cabal-version:       >=1.10
 name:                ghc-lib-gen
 version:             0.1.0.0
 synopsis:            Cabal file generator for GHC as a library
@@ -12,16 +13,30 @@ copyright:           Digital Asset 2018-2019
 category:            Development
 build-type:          Simple
 extra-source-files:  ChangeLog.md
-cabal-version:       >=1.10
 
-executable ghc-lib-gen
-  main-is:             Main.hs
-  build-depends:       base >=4.10
+library
+  build-depends:     base >=4.10
                      , process >=1.6
                      , filepath >=1.4
                      , containers
                      , directory
+                     , optparse-applicative
                      , extra >=1.6
-  hs-source-dirs:      ghc-lib-gen/src
-  default-language:    Haskell2010
-  ghc-options: -Wmissing-signatures
+  hs-source-dirs:    ghc-lib-gen/src
+  exposed-modules:   Ghclibgen
+                     GhclibgenOpts
+  other-modules:     Paths_ghc_lib_gen
+  autogen-modules:   Paths_ghc_lib_gen
+  default-language:  Haskell2010
+
+executable ghc-lib-gen
+  main-is:           ghc-lib-gen/src/Main.hs
+  build-depends:     base >=4.10
+                     , process >=1.6
+                     , filepath >=1.4
+                     , containers
+                     , directory
+                     , optparse-applicative
+                     , extra >=1.6
+                     , ghc-lib-gen
+  default-language:  Haskell2010
