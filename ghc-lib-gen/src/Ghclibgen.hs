@@ -63,6 +63,7 @@ ghcLibParserHsSrcDirs lib =
         , "ghc-lib/stage1/compiler/build"
         , "ghc-lib/stage0/libraries/ghci/build"
         , "ghc-lib/stage0/libraries/ghc-heap/build"
+        , "ghc-lib/stage0/libraries/ghc-boot/build"
         ]
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
@@ -122,7 +123,7 @@ dataFiles =
 -- list are all created by Hadrian.
 extraFiles :: [FilePath]
 extraFiles =
-    -- source files
+    -- See ghc/hadrian/src/Rules/Generate.hs
     ["ghc-lib/generated/ghcautoconf.h"
     ,"ghc-lib/generated/ghcplatform.h"
     ,"ghc-lib/generated/ghcversion.h"
@@ -152,6 +153,7 @@ extraFiles =
     ,"ghc-lib/stage1/compiler/build/Config.hs"
     ,"ghc-lib/stage0/compiler/build/Parser.hs"
     ,"ghc-lib/stage0/compiler/build/Lexer.hs"
+    ,"ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs"
     ]
 
 -- | Calculate via `ghc -M` the list of modules that are required for
@@ -377,9 +379,9 @@ generateGhcLibCabal = do
         ,"data-files:"] ++
         indent dataFiles ++
         ["extra-source-files:"] ++
-        -- Remove Config.hs, Parser.hs and Lexer.hs from the list of
-        -- extra source files here.
-        indent (reverse (drop 3 $ reverse extraFiles)) ++
+        -- Remove Config.hs, Version.hs, Parser.hs and Lexer.hs from
+        -- the list of extra source files here.
+        indent (reverse (drop 4 $ reverse extraFiles)) ++
         ["    includes/*.h"
         ,"    includes/CodeGen.Platform.hs"
         ,"    includes/rts/*.h"
