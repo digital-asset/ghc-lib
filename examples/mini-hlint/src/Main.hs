@@ -31,6 +31,7 @@ import Control.Monad.Extra
 import System.Environment
 import System.IO.Extra
 import qualified Data.Map as Map
+import Data.Generics
 
 fakeSettings :: Settings
 fakeSettings = Settings
@@ -97,28 +98,12 @@ analyzeExpr flags (L loc expr) =
             putStrLn (showSDoc flags (ppr loc)
                       ++ " : lint : double negation "
                       ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
-    HsApp _ x y -> do
-        analyzeExpr flags x
-        analyzeExpr flags y
-    HsPar _ x -> analyzeExpr flags x
-    HsIf _ _ c t f -> do
-        analyzeExpr flags c
-        analyzeExpr flags t
-        analyzeExpr flags f
-    OpApp _ x y z -> do
-        analyzeExpr flags x
-        analyzeExpr flags y
-        analyzeExpr flags z
     _ -> return ()
 
 analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> ApiAnns -> IO ()
-analyzeModule flags modu _anns = sequence_
-  [ analyzeExpr flags expr
-  | L _ HsModule {hsmodDecls=decls} <- [modu]
-  , L _ (ValD _ FunBind{fun_matches=MG {mg_alts=(L _ matches)}}) <- decls
-  , L _ Match {m_grhss=GRHSs {grhssGRHSs=rhss}} <- matches
-  , L _ (GRHS _ _ expr) <- rhss
-  ]
+analyzeModule flags (L _ modu) _ = sequence_
+  [analyzeExpr flags e |
+   e <- Data.Generics.listify (const True) modu :: [Located (HsExpr GhcPs)]]
 
 main :: IO ()
 main = do
