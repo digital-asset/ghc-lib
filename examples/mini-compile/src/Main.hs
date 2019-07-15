@@ -100,6 +100,7 @@ fakeSettings = Settings
         platformWordSize=8
       , platformOS=OSUnknown
       , platformUnregisterised=True
+      , platformArch=ArchUnknown
       }
     platformConstants =
        PlatformConstants {
