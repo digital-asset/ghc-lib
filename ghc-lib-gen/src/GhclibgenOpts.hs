@@ -10,6 +10,7 @@ module GhclibgenOpts(
 ) where
 
 import Options.Applicative
+import Data.Maybe
 import Data.Version (showVersion)
 import Data.Semigroup ((<>))
 import Paths_ghc_lib_gen (version)
@@ -20,7 +21,7 @@ data GhclibgenTarget = GhclibParser | Ghclib
 -- | The type of ghc-lib-gen options.
 data GhclibgenOpts = GhclibgenOpts {
     ghclibgenOpts_root :: !FilePath -- ^ Path to a GHC git repository.
-  , ghclibgenOpts_target :: !(Maybe GhclibgenTarget) -- ^ What target?
+  , ghclibgenOpts_target :: !GhclibgenTarget -- ^ What target?
  }
 
 -- | A parser of the "--ghc-lib" target.
@@ -46,11 +47,11 @@ ghclibgenVersion =
 
 -- | A parser of a ghc-lib-gen target: `target := | "--ghc-lib-parser"
 -- | "--ghc-lib" | /* nothing */`.
-ghclibgenTarget :: Parser (Maybe GhclibgenTarget)
-ghclibgenTarget = optional (ghclibParser <|> ghclib)
+ghclibgenTarget :: Parser GhclibgenTarget
+ghclibgenTarget = fmap (fromMaybe Ghclib) $ optional (ghclibParser <|> ghclib)
 
 -- | A parser of ghc-lib-gen options: `opts := STRING target`.
 ghclibgenOpts :: Parser GhclibgenOpts
 ghclibgenOpts = GhclibgenOpts
   <$> argument str (metavar "GHC_ROOT")
-  <*> optional (ghclibParser <|> ghclib)
+  <*> ghclibgenTarget
