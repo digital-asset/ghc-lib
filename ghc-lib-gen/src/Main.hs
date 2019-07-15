@@ -24,12 +24,12 @@ ghclibgen :: GhclibgenOpts -> IO ()
 ghclibgen (GhclibgenOpts root target) =
   withCurrentDirectory root $
     case target of
-      Just GhclibParser -> do
+      GhclibParser -> do
         init
         mangleCSymbols
         applyPatchStage
         generateGhcLibParserCabal
-      _ -> do
+      Ghclib -> do
         init
         generateGhcLibCabal
   where
