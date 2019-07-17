@@ -31,7 +31,8 @@ import Control.Monad.Extra
 import System.Environment
 import System.IO.Extra
 import qualified Data.Map as Map
-import Data.Generics
+import Data.Generics.Uniplate.Operations
+import Data.Generics.Uniplate.Data
 
 fakeSettings :: Settings
 fakeSettings = Settings
@@ -101,9 +102,8 @@ analyzeExpr flags (L loc expr) =
     _ -> return ()
 
 analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> ApiAnns -> IO ()
-analyzeModule flags (L _ modu) _ = sequence_
-  [analyzeExpr flags e |
-   e <- Data.Generics.listify (const True) modu :: [Located (HsExpr GhcPs)]]
+analyzeModule flags (L _ modu) _ =
+  sequence_ [analyzeExpr flags e | e <- universeBi modu]
 
 main :: IO ()
 main = do
