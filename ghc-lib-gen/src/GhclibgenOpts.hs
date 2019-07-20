@@ -9,6 +9,7 @@ module GhclibgenOpts(
   , ghclibgenOpts
 ) where
 
+import Control.Applicative
 import Options.Applicative
 import Data.Maybe
 import Data.Version (showVersion)
@@ -48,7 +49,8 @@ ghclibgenVersion =
 -- | A parser of a ghc-lib-gen target: `target := | "--ghc-lib-parser"
 -- | "--ghc-lib" | /* nothing */`.
 ghclibgenTarget :: Parser GhclibgenTarget
-ghclibgenTarget = fmap (fromMaybe Ghclib) $ optional (ghclibParser <|> ghclib)
+ghclibgenTarget =
+  fromMaybe Ghclib Control.Applicative.<$> optional (ghclibParser <|> ghclib)
 
 -- | A parser of ghc-lib-gen options: `opts := STRING target`.
 ghclibgenOpts :: Parser GhclibgenOpts
