@@ -18,7 +18,7 @@ main = do
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
-    cmd "cd ghc && git checkout 82abc479ab33183a5572ddc8cb3c4dbea8f06a0d" -- 07/19/2019
+    cmd "cd ghc && git checkout 4854a3490518760405f04826df1768b5a7b96da2" -- 07/21/2019
     cmd "cd ghc && git submodule update --init --recursive"
 
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
@@ -52,6 +52,7 @@ main = do
               , "- ghc-lib"
               , "- examples/mini-hlint"
               , "- examples/mini-compile"
+              , "- examples/strip-locs"
               ]
 
     -- Separate the two library build commands so they are
@@ -59,7 +60,7 @@ main = do
     -- are disabled in stack.yaml via `ghc-options: -O0`.
     cmd "stack build ghc-lib-parser --no-terminal --interleaved-output"
     cmd "stack build ghc-lib --no-terminal --interleaved-output"
-    cmd "stack build mini-hlint mini-compile --no-terminal --interleaved-output"
+    cmd "stack build mini-hlint mini-compile strip-locs --no-terminal --interleaved-output"
     -- Run tests.
     cmd "stack exec --no-terminal -- ghc-lib --version"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
@@ -67,6 +68,7 @@ main = do
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
+    cmd "stack exec --no-terminal -- strip-locs examples/mini-compile/test/MiniCompileTest.hs"
     cmd "stack exec --no-terminal -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
     -- Test everything loads in GHCi, see
     -- https://github.com/digital-asset/ghc-lib/issues/27
