@@ -599,23 +599,25 @@ generateGhcLibParserCabal = do
 -- | Run Hadrian to build the things that the Cabal files need.
 generatePrerequisites :: IO ()
 generatePrerequisites = do
-  system_ "./boot"
-  system_ "./configure"
+  system_ "stack build alex happy" -- If building happy from git, the
+                                   -- next line can fail without this.
+  system_ "stack --stack-yaml hadrian/stack.yaml build --only-dependencies"
+  system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./boot"
+  system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c \"./configure --enable-tarb-tarballs-autodownload\""
   withCurrentDirectory "hadrian" $ do
-    system_ "cabal new-build exe:hadrian"
-  system_ $ unwords $ do
-    ["hadrian/build.sh --integer-simple", "--build-root=ghc-lib"]
-    ++ extraFiles ++ map (dataDir </>) dataFiles
+    system_ "stack build --no-library-profiling"
+    system_ $ unwords $
+        ["stack exec hadrian --"
+        ,"--directory=.."
+        ,"--integer-simple"
+        ,"--build-root=ghc-lib"
+        ] ++ extraFiles ++
+        map (dataDir </>) dataFiles
   -- withCurrentDirectory "hadrian" $ do
-  --   system_ "stack build --no-library-profiling"
-  --   system_ $ unwords $
-  --       ["stack exec hadrian --"
-  --       ,"--directory=.."
-  --       ,"--configure"
-  --       ,"--integer-simple"
-  --       ,"--build-root=ghc-lib"
-  --       ] ++ extraFiles ++
-  --       map (dataDir </>) dataFiles
+  --   system_ "cabal new-build exe:hadrian"
+  -- system_ $ unwords $ do
+  --   ["hadrian/build.sh --integer-simple", "--build-root=ghc-lib"]
+  --   ++ extraFiles ++ map (dataDir </>) dataFiles
   -- We use the hadrian generated Lexer and Parser so get these out
   -- of the way.
   removeFile "compiler/parser/Lexer.x"

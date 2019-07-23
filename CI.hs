@@ -17,8 +17,13 @@ main = do
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
     -- Make and extract an sdist of ghc-lib-parser.
-    cmd "git clone https://gitlab.haskell.org/ghc/ghc.git --recursive"
+    cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
+    cmd "cd ghc && git checkout ghc-8.8.1-rc1"
+    cmd "cd ghc && git submodule update --init --recursive"
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+    -- Build ghc-lib-gen. Do this here rather than in the Azure script
+    -- so that it's not forgotten when testing this program locally.
+    cmd "stack --no-terminal build"
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
     stackYaml <- readFile' "stack.yaml"
     writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
