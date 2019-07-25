@@ -163,11 +163,11 @@ extraFiles =
 cHeaders :: [String]
 cHeaders =
   [ "includes/ghcconfig.h"
-  , "    includes/MachDeps.h"
-  , "    includes/CodeGen.Platform.hs"
-  , "    compiler/nativeGen/*.h"
-  , "    compiler/utils/*.h"
-  , "    compiler/*.h"
+  , "includes/MachDeps.h"
+  , "includes/CodeGen.Platform.hs"
+  , "compiler/nativeGen/*.h"
+  , "compiler/utils/*.h"
+  , "compiler/*.h"
   ]
 
 -- | Calculate via `ghc -M` the list of modules that are required for
@@ -243,7 +243,8 @@ applyPatchHeapClosures = do
             "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
         =<< readFile' file
 
--- | Fix up these rts include paths. We don't ship rts headers - we go
+-- | Fix up these rts include paths. We don't ship rts headers since
+-- we run ghc-lib using the RTS of the compiler we build with - we go
 -- to the compiler installation for those.
 applyPatchRtsIncludePaths :: IO ()
 applyPatchRtsIncludePaths =
