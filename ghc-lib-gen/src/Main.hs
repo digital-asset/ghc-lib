@@ -21,15 +21,18 @@ main = do
     case xs of
         [root] -> withCurrentDirectory root $ do
             applyPatchHeapClosures
+            applyPatchRtsIncludePaths
             generatePrerequisites
             applyPatchStage
             generateGhcLibCabal
         [root, "--ghc-lib"] -> withCurrentDirectory root $ do
             applyPatchHeapClosures
+            applyPatchRtsIncludePaths
             generatePrerequisites
             generateGhcLibCabal
         [root, "--ghc-lib-parser"] -> withCurrentDirectory root $ do
             applyPatchHeapClosures
+            applyPatchRtsIncludePaths
             generatePrerequisites
             mangleCSymbols
             applyPatchStage
@@ -102,6 +105,18 @@ extraFiles =
     ,"ghc-lib/stage0/compiler/build/Parser.hs"
     ,"ghc-lib/stage0/compiler/build/Lexer.hs"
     ]
+
+-- | The C headers shipped with ghc-lib. These globs get glommed onto
+-- the 'extraFiles' above as 'extra-source-files'.
+cHeaders :: [String]
+cHeaders =
+  [ "includes/ghcconfig.h"
+  , "    includes/MachDeps.h"
+  , "    includes/CodeGen.Platform.hs"
+  , "    compiler/nativeGen/*.h"
+  , "    compiler/utils/*.h"
+  , "    compiler/*.h"
+  ]
 
 -- | The ghc-lib-parser modules. This list has been hand crafted but
 -- there is a procedure we can introduce for calculating it.
@@ -300,6 +315,18 @@ applyPatchHeapClosures = do
             "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
         =<< readFile' file
 
+-- | Fix up these rts include paths. We don't ship rts headers - we go
+-- to the compiler installation for those.
+applyPatchRtsIncludePaths :: IO ()
+applyPatchRtsIncludePaths =
+    forM_ [ "compiler/cmm/SMRep.hs"
+          , "compiler/codeGen/StgCmmLayout.hs" ] $
+    \file ->
+        writeFile file .
+          replace
+              "../includes/rts"
+              "rts"
+        =<< readFile' file
 
 -- | Mangle exported C symbols to avoid collisions between the symbols in ghc-lib-parser and ghc.
 mangleCSymbols :: IO ()
@@ -442,16 +469,8 @@ generateGhcLibCabal = do
         ["extra-source-files:"] ++
         -- Remove Config.hs, Parser.hs and Lexer.hs from the list of
         -- extra source files here.
-        indent (reverse (drop 3 $ reverse extraFiles)) ++
-        ["    includes/*.h"
-        ,"    includes/CodeGen.Platform.hs"
-        ,"    includes/rts/*.h"
-        ,"    includes/rts/storage/*.h"
-        ,"    includes/rts/prof/*.h"
-        ,"    compiler/nativeGen/*.h"
-        ,"    compiler/utils/*.h"
-        ,"    compiler/*.h"
-        ,"tested-with: GHC==8.6.3, GHC==8.4.3"
+        indent (reverse (drop 3 $ reverse extraFiles)) ++ indent cHeaders ++
+        ["tested-with: GHC==8.6.3, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git@github.com:digital-asset/ghc-lib.git"
@@ -460,6 +479,7 @@ generateGhcLibCabal = do
         ,"    default-language:   Haskell2010"
         ,"    default-extensions: NoImplicitPrelude"
         ,"    include-dirs:"
+        ,"        includes"
         ,"        ghc-lib/generated"
         ,"        ghc-lib/stage0/compiler/build"
         ,"        ghc-lib/stage1/compiler/build"
@@ -544,16 +564,8 @@ generateGhcLibParserCabal = do
         ,"data-files:"] ++
         indent dataFiles ++
         ["extra-source-files:"] ++
-        indent extraFiles ++
-        ["    includes/*.h"
-        ,"    includes/CodeGen.Platform.hs"
-        ,"    includes/rts/*.h"
-        ,"    includes/rts/storage/*.h"
-        ,"    includes/rts/prof/*.h"
-        ,"    compiler/nativeGen/*.h"
-        ,"    compiler/utils/*.h"
-        ,"    compiler/*.h"
-        ,"tested-with: GHC==8.6.3, GHC==8.4.3"
+        indent extraFiles ++ indent cHeaders ++
+        ["tested-with: GHC==8.6.3, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git@github.com:digital-asset/ghc-lib.git"
@@ -562,6 +574,7 @@ generateGhcLibParserCabal = do
         ,"    default-language:   Haskell2010"
         ,"    default-extensions: NoImplicitPrelude"
         ,"    include-dirs:"
+        ,"        includes"
         ,"        ghc-lib/generated"
         ,"        ghc-lib/stage0/compiler/build"
         ,"        ghc-lib/stage1/compiler/build"
