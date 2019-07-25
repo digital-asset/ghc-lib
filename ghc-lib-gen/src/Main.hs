@@ -35,6 +35,7 @@ ghclibgen (GhclibgenOpts root target) =
   where
     init :: IO ()
     init = do
+        applyPatchRtsIncludePaths
         applyPatchHeapClosures
         applyPatchDisableCompileTimeOptimizations
         generatePrerequisites

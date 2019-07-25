@@ -5,8 +5,9 @@
 module Ghclibgen (
     applyPatchHeapClosures
   , applyPatchDisableCompileTimeOptimizations
-  , generatePrerequisites
+  , applyPatchRtsIncludePaths
   , applyPatchStage
+  , generatePrerequisites
   , mangleCSymbols
   , generateGhcLibCabal
   , generateGhcLibParserCabal
@@ -40,7 +41,8 @@ cabalFileLibraries =
 -- | C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: [FilePath]
 ghcLibParserIncludeDirs =
-  [ "ghc-lib/generated"
+  [ "includes" -- ghcconfig.h, MachDeps.h, CodeGen.Platform.hs
+  , "ghc-lib/generated"
   , "ghc-lib/stage0/compiler/build"
   , "ghc-lib/stage1/compiler/build"
   , "compiler"
@@ -124,37 +126,49 @@ dataFiles =
 extraFiles :: [FilePath]
 extraFiles =
     -- See ghc/hadrian/src/Rules/Generate.hs
-    ["ghc-lib/generated/ghcautoconf.h"
-    ,"ghc-lib/generated/ghcplatform.h"
-    ,"ghc-lib/generated/ghcversion.h"
-    ,"ghc-lib/generated/DerivedConstants.h"
-    ,"ghc-lib/generated/GHCConstantsHaskellExports.hs"
-    ,"ghc-lib/generated/GHCConstantsHaskellType.hs"
-    ,"ghc-lib/generated/GHCConstantsHaskellWrappers.hs"
-    ,"ghc-lib/stage1/compiler/build/ghc_boot_platform.h"
-    ,"ghc-lib/stage1/compiler/build/primop-can-fail.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-code-size.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-commutable.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-data-decl.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-fixity.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-has-side-effects.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-list.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-out-of-line.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-primop-info.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-strictness.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-tag.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-vector-tycons.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-vector-tys-exports.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
-    ,"ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
-    ,"ghc-lib/stage0/compiler/build/Fingerprint.hs"
+    [ "ghc-lib/generated/ghcautoconf.h"
+    , "ghc-lib/generated/ghcplatform.h"
+    , "ghc-lib/generated/ghcversion.h"
+    , "ghc-lib/generated/DerivedConstants.h"
+    , "ghc-lib/generated/GHCConstantsHaskellExports.hs"
+    , "ghc-lib/generated/GHCConstantsHaskellType.hs"
+    , "ghc-lib/generated/GHCConstantsHaskellWrappers.hs"
+    , "ghc-lib/stage1/compiler/build/ghc_boot_platform.h"
+    , "ghc-lib/stage1/compiler/build/primop-can-fail.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-code-size.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-commutable.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-data-decl.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-fixity.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-has-side-effects.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-list.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-out-of-line.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-primop-info.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-strictness.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-tag.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-vector-tycons.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-vector-tys-exports.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
+    , "ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
+    , "ghc-lib/stage0/compiler/build/Fingerprint.hs"
     -- Be careful not to add these files to a ghc-lib.cabal, just
     -- ghc-lib-parser.cabal.
-    ,"ghc-lib/stage1/compiler/build/Config.hs"
-    ,"ghc-lib/stage0/compiler/build/Parser.hs"
-    ,"ghc-lib/stage0/compiler/build/Lexer.hs"
-    ,"ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs"
+    , "ghc-lib/stage1/compiler/build/Config.hs"
+    , "ghc-lib/stage0/compiler/build/Parser.hs"
+    , "ghc-lib/stage0/compiler/build/Lexer.hs"
+    , "ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs"
     ]
+
+-- | The C headers shipped with ghc-lib. These globs get glommed onto
+-- the 'extraFiles' above as 'extra-source-files'.
+cHeaders :: [String]
+cHeaders =
+  [ "includes/ghcconfig.h"
+  , "    includes/MachDeps.h"
+  , "    includes/CodeGen.Platform.hs"
+  , "    compiler/nativeGen/*.h"
+  , "    compiler/utils/*.h"
+  , "    compiler/*.h"
+  ]
 
 -- | Calculate via `ghc -M` the list of modules that are required for
 -- 'ghc-lib-parser'.
@@ -227,6 +241,19 @@ applyPatchHeapClosures = do
         replace
             "foreign import prim \"reallyUnsafePtrEqualityUpToTag\"\n    reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#"
             "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
+        =<< readFile' file
+
+-- | Fix up these rts include paths. We don't ship rts headers - we go
+-- to the compiler installation for those.
+applyPatchRtsIncludePaths :: IO ()
+applyPatchRtsIncludePaths =
+    forM_ [ "compiler/cmm/SMRep.hs"
+          , "compiler/codeGen/StgCmmLayout.hs" ] $
+    \file ->
+        writeFile file .
+          replace
+              "../includes/rts"
+              "rts"
         =<< readFile' file
 
 -- | Mangle exported C symbols to avoid collisions between the symbols
@@ -381,16 +408,8 @@ generateGhcLibCabal = do
         ["extra-source-files:"] ++
         -- Remove Config.hs, Version.hs, Parser.hs and Lexer.hs from
         -- the list of extra source files here.
-        indent (reverse (drop 4 $ reverse extraFiles)) ++
-        ["    includes/*.h"
-        ,"    includes/CodeGen.Platform.hs"
-        ,"    includes/rts/*.h"
-        ,"    includes/rts/storage/*.h"
-        ,"    includes/rts/prof/*.h"
-        ,"    compiler/nativeGen/*.h"
-        ,"    compiler/utils/*.h"
-        ,"    compiler/*.h"
-        ,"tested-with: GHC==8.6.3, GHC==8.4.3"
+        indent (reverse (drop 4 $ reverse extraFiles)) ++ indent cHeaders ++
+        ["tested-with: GHC==8.6.3, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git@github.com:digital-asset/ghc-lib.git"
@@ -480,16 +499,8 @@ generateGhcLibParserCabal = do
         ,"data-files:"] ++
         indent dataFiles ++
         ["extra-source-files:"] ++
-        indent extraFiles ++
-        ["    includes/*.h"
-        ,"    includes/CodeGen.Platform.hs"
-        ,"    includes/rts/*.h"
-        ,"    includes/rts/storage/*.h"
-        ,"    includes/rts/prof/*.h"
-        ,"    compiler/nativeGen/*.h"
-        ,"    compiler/utils/*.h"
-        ,"    compiler/*.h"
-        ,"tested-with: GHC==8.6.3, GHC==8.4.3"
+        indent extraFiles ++ indent cHeaders ++
+        ["tested-with: GHC==8.6.3, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git@github.com:digital-asset/ghc-lib.git"
