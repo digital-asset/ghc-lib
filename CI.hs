@@ -27,7 +27,7 @@ main = do
     cmd "git checkout stack.yaml"
 
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
-    cmd "cd ghc && git checkout 4854a3490518760405f04826df1768b5a7b96da2" -- 07/21/2019
+    cmd "cd ghc && git checkout ea08fa37c05303dea42f6ce2e9fdfe16e73a4df7" -- 07/26/2019
     cmd "cd ghc && git submodule update --init --recursive"
 
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
