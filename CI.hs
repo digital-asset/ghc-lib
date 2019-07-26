@@ -5,17 +5,26 @@
 -- CI script, compatible with all of Travis, Appveyor and Azure.
 
 import Control.Monad
+import Control.Exception
 import System.Directory
 import System.FilePath
+import System.IO.Error
 import System.IO.Extra
 import System.Info.Extra
 import System.Process.Extra
 import System.Time.Extra
+import Data.List
 
 main :: IO ()
 main = do
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
+
+    -- Clear up any detritus left over from previous runs (useful when
+    -- building locally).
+    rmDirs ["ghc", "ghc-lib-parser", "ghc-lib"]
+    rmFiles <$> filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
+    cmd "git checkout stack.yaml"
 
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
     cmd "cd ghc && git checkout 4854a3490518760405f04826df1768b5a7b96da2" -- 07/21/2019
@@ -27,9 +36,8 @@ main = do
     cmd "stack --no-terminal build"
     -- Make and extract an sdist of ghc-lib-parser.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
-    tarball <- mkTarball
-    renameDirectory (dropExtensions tarball) "ghc-lib-parser"
-    removeFile tarball
+    mkTarball "ghc-lib-parser-0.1.0"
+    renameDirectory "ghc-lib-parser-0.1.0" "ghc-lib-parser"
     removeFile "ghc/ghc-lib-parser.cabal"
     cmd "git checkout stack.yaml"
 
@@ -38,9 +46,8 @@ main = do
 
     -- Make and extract an sdist of ghc-lib.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
-    tarball <- mkTarball
-    renameDirectory (dropExtensions tarball) "ghc-lib"
-    removeFile tarball
+    tarball <- mkTarball "ghc-lib-0.1.0"
+    renameDirectory "ghc-lib-0.1.0" "ghc-lib"
     removeFile "ghc/ghc-lib.cabal"
     cmd "git checkout stack.yaml"
 
@@ -86,15 +93,21 @@ main = do
         putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
         hFlush stdout
 
-      mkTarball :: IO String
-      mkTarball = do
+      mkTarball :: String -> IO ()
+      mkTarball target = do
         stackYaml <- readFile' "stack.yaml"
         writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
-        sDistCreateExtract
+        sDistCreateExtract target
 
-      sDistCreateExtract :: IO String
-      sDistCreateExtract = do
+      sDistCreateExtract :: String -> IO ()
+      sDistCreateExtract target = do
         cmd "stack sdist ghc --tar-dir=."
-        [tarball] <- filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
-        cmd $ "tar -xf " ++ tarball
-        return tarball
+        cmd $ "tar -xvf " ++ target ++ ".tar.gz"
+
+      rmFiles :: [FilePath] -> IO ()
+      rmFiles fs = forM_ fs $
+        \f -> removeFile f `catchIOError` (const  $ return ())
+
+      rmDirs :: [FilePath] -> IO ()
+      rmDirs ds = forM_ ds $
+        \d -> removeDirectoryRecursive d `catchIOError` (const $ return ())
