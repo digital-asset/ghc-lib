@@ -132,7 +132,7 @@ tag = do
 applyPatchVersion :: String -> FilePath -> IO ()
 applyPatchVersion version file = do
   writeFile file .
-    replace "version: 0.1.0" ("version :" ++ version)
+    replace "version: 0.1.0" ("version: " ++ version)
   =<< readFile' file
 
 applyPatchConstraint :: String -> FilePath -> IO ()
