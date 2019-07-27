@@ -13,41 +13,52 @@ import System.IO.Extra
 import System.Info.Extra
 import System.Process.Extra
 import System.Time.Extra
-import Data.List
+import Data.List.Extra
+import Data.Dates
+import Text.Printf
 
 main :: IO ()
 main = do
+    -- Get packages missing on Windows needed by hadrian.
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
-    -- Clear up any detritus left over from previous runs (useful when
-    -- building locally).
-    rmDirs ["ghc", "ghc-lib-parser", "ghc-lib"]
+    -- Clear up any detritus left over from previous runs.
+    rmDirs ["ghc", "ghc-lib", "ghc-lib-parser"]
     rmFiles <$> filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
     cmd "git checkout stack.yaml"
 
+    -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
     cmd "cd ghc && git checkout ea08fa37c05303dea42f6ce2e9fdfe16e73a4df7" -- 07/26/2019
     cmd "cd ghc && git submodule update --init --recursive"
-
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+
     -- Build ghc-lib-gen. Do this here rather than in the Azure script
     -- so that it's not forgotten when testing this program locally.
     cmd "stack --no-terminal build"
+
+    -- Calculate verison and package names.
+    version <- tag
+    let pkg_ghclib = "ghc-lib-" ++ version
+        pkg_ghclib_parser = "ghc-lib-parser-" ++ version
+
     -- Make and extract an sdist of ghc-lib-parser.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
-    mkTarball "ghc-lib-parser-0.1.0"
-    renameDirectory "ghc-lib-parser-0.1.0" "ghc-lib-parser"
+    applyPatchVersion version "ghc/ghc-lib-parser.cabal"
+    mkTarball pkg_ghclib_parser
+    renameDirectory pkg_ghclib_parser "ghc-lib-parser"
     removeFile "ghc/ghc-lib-parser.cabal"
     cmd "git checkout stack.yaml"
 
+    -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-
-    -- Make and extract an sdist of ghc-lib.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
-    tarball <- mkTarball "ghc-lib-0.1.0"
-    renameDirectory "ghc-lib-0.1.0" "ghc-lib"
+    applyPatchVersion version "ghc/ghc-lib.cabal"
+    applyPatchConstraint version "ghc/ghc-lib.cabal"
+    mkTarball pkg_ghclib
+    renameDirectory pkg_ghclib "ghc-lib"
     removeFile "ghc/ghc-lib.cabal"
     cmd "git checkout stack.yaml"
 
@@ -68,8 +79,8 @@ main = do
     cmd "stack build ghc-lib-parser --no-terminal --interleaved-output"
     cmd "stack build ghc-lib --no-terminal --interleaved-output"
     cmd "stack build mini-hlint mini-compile strip-locs --no-terminal --interleaved-output"
+
     -- Run tests.
-    cmd "stack exec --no-terminal -- ghc-lib --version"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fatal_error.hs"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
@@ -104,10 +115,28 @@ main = do
         cmd "stack sdist ghc --tar-dir=."
         cmd $ "tar -xvf " ++ target ++ ".tar.gz"
 
-      rmFiles :: [FilePath] -> IO ()
-      rmFiles fs = forM_ fs $
-        \f -> removeFile f `catchIOError` (const  $ return ())
+rmFiles :: [FilePath] -> IO ()
+rmFiles fs = forM_ fs $
+  \f -> removeFile f `catchIOError` (const  $ return ())
 
-      rmDirs :: [FilePath] -> IO ()
-      rmDirs ds = forM_ ds $
-        \d -> removeDirectoryRecursive d `catchIOError` (const $ return ())
+rmDirs :: [FilePath] -> IO ()
+rmDirs ds = forM_ ds $
+ \d -> removeDirectoryRecursive d `catchIOError` (const $ return ())
+
+tag :: IO String
+tag = do
+  DateTime y m d _ _ _ <- getCurrentDateTime
+  return $  "0." ++ show y ++ show_ m ++ show_ d
+  where show_ = printf "%02d"
+
+applyPatchVersion :: String -> FilePath -> IO ()
+applyPatchVersion version file = do
+  writeFile file .
+    replace "version: 0.1.0" ("version :" ++ version)
+  =<< readFile' file
+
+applyPatchConstraint :: String -> FilePath -> IO ()
+applyPatchConstraint version file = do
+  writeFile file .
+    replace "ghc-lib-parser" ("ghc-lib-parser == " ++ version)
+  =<< readFile' file

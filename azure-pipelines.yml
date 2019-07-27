@@ -38,4 +38,4 @@ steps:
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
       curl -sSL https://get.haskellstack.org/ | sh
       stack setup > /dev/null
-      stack runhaskell --package extra CI.hs
+      stack runhaskell --package extra --package dates CI.hs

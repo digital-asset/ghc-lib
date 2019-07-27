@@ -442,29 +442,7 @@ generateGhcLibCabal = do
         ["    exposed-modules:"
         ,"        Paths_ghc_lib"
         ] ++
-        indent2 (nubSort nonParserModules) ++
-        [""
-        ,"executable ghc-lib"
-        ,"    default-language:   Haskell2010"
-        ,"    if !os(windows)"
-        ,"        build-depends: unix"
-        ,"    else"
-        ,"        build-depends: Win32"
-        ,"    build-depends:"
-        ,"        base == 4.*, array, bytestring, directory, process, filepath,"
-        ,"        containers, deepseq, ghc-prim, haskeline, time, transformers,"
-        ,"        ghc-lib"
-        ,"    hs-source-dirs: ghc"
-        ,"    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
-        ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DHAVE_INTERPRETER -DTHREADED_RTS -DGHC_LOADED_INTO_GHCI"
-        ,"    other-modules:"] ++
-        indent2 (askField bin "other-modules:") ++
-        ["    other-extensions:"] ++
-        indent2 (askField bin "other-extensions:") ++
-        ["    default-extensions: NoImplicitPrelude"
-        ,"    main-is: Main.hs"
-        ]
+        indent2 (nubSort nonParserModules)
 
 -- | This utility factored out to avoid repetion.
 libBinParserModules :: IO ([Cabal], [Cabal], [String])
