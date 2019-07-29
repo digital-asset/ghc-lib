@@ -14,7 +14,8 @@ import System.Info.Extra
 import System.Process.Extra
 import System.Time.Extra
 import Data.List.Extra
-import Data.Dates
+import Data.Time.Clock
+import Data.Time.Calendar
 import Text.Printf
 
 main :: IO ()
@@ -24,8 +25,9 @@ main = do
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
     -- Clear up any detritus left over from previous runs.
-    rmDirs ["ghc", "ghc-lib", "ghc-lib-parser"]
-    rmFiles <$> filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
+    toDelete <- (["ghc", "ghc-lib", "ghc-lib-parser"] ++) .
+      filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
+    forM_ toDelete removePathForcibly
     cmd "git checkout stack.yaml"
 
     -- Get a clone of ghc.
@@ -45,7 +47,7 @@ main = do
 
     -- Make and extract an sdist of ghc-lib-parser.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
-    applyPatchVersion version "ghc/ghc-lib-parser.cabal"
+    patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser
     renameDirectory pkg_ghclib_parser "ghc-lib-parser"
     removeFile "ghc/ghc-lib-parser.cabal"
@@ -55,8 +57,8 @@ main = do
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
-    applyPatchVersion version "ghc/ghc-lib.cabal"
-    applyPatchConstraint version "ghc/ghc-lib.cabal"
+    patchVersion version "ghc/ghc-lib.cabal"
+    patchConstraint version "ghc/ghc-lib.cabal"
     mkTarball pkg_ghclib
     renameDirectory pkg_ghclib "ghc-lib"
     removeFile "ghc/ghc-lib.cabal"
@@ -106,8 +108,9 @@ main = do
 
       mkTarball :: String -> IO ()
       mkTarball target = do
-        stackYaml <- readFile' "stack.yaml"
-        writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
+        writeFile "stack.yaml" .
+          (++ "- ghc\n")
+          =<< readFile' "stack.yaml"
         sDistCreateExtract target
 
       sDistCreateExtract :: String -> IO ()
@@ -115,28 +118,19 @@ main = do
         cmd "stack sdist ghc --tar-dir=."
         cmd $ "tar -xvf " ++ target ++ ".tar.gz"
 
-rmFiles :: [FilePath] -> IO ()
-rmFiles fs = forM_ fs $
-  \f -> removeFile f `catchIOError` (const  $ return ())
+      tag :: IO String
+      tag = do
+        UTCTime day _ <- getCurrentTime
+        return $ "0." ++ replace "-" "" (showGregorian day)
 
-rmDirs :: [FilePath] -> IO ()
-rmDirs ds = forM_ ds $
- \d -> removeDirectoryRecursive d `catchIOError` (const $ return ())
+      patchVersion :: String -> FilePath -> IO ()
+      patchVersion version file =
+        writeFile file .
+          replace "version: 0.1.0" ("version: " ++ version)
+        =<< readFile' file
 
-tag :: IO String
-tag = do
-  DateTime y m d _ _ _ <- getCurrentDateTime
-  return $  "0." ++ show y ++ show_ m ++ show_ d
-  where show_ = printf "%02d"
-
-applyPatchVersion :: String -> FilePath -> IO ()
-applyPatchVersion version file = do
-  writeFile file .
-    replace "version: 0.1.0" ("version: " ++ version)
-  =<< readFile' file
-
-applyPatchConstraint :: String -> FilePath -> IO ()
-applyPatchConstraint version file = do
-  writeFile file .
-    replace "ghc-lib-parser" ("ghc-lib-parser == " ++ version)
-  =<< readFile' file
+      patchConstraint :: String -> FilePath -> IO ()
+      patchConstraint version file =
+        writeFile file .
+          replace "ghc-lib-parser" ("ghc-lib-parser == " ++ version)
+        =<< readFile' file
