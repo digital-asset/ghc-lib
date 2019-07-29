@@ -5,49 +5,59 @@
 -- CI script, compatible with all of Travis, Appveyor and Azure.
 
 import Control.Monad
-import Control.Exception
 import System.Directory
 import System.FilePath
-import System.IO.Error
 import System.IO.Extra
 import System.Info.Extra
 import System.Process.Extra
 import System.Time.Extra
-import Data.List
+import Data.List.Extra
+import Data.Time.Clock
+import Data.Time.Calendar
 
 main :: IO ()
 main = do
+    -- Get packages missing on Windows needed by hadrian.
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
-    -- Clear up any detritus left over from previous runs (useful when
-    -- building locally).
-    rmDirs ["ghc", "ghc-lib-parser", "ghc-lib"]
-    rmFiles <$> filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
+    -- Clear up any detritus left over from previous runs.
+    toDelete <- (["ghc", "ghc-lib", "ghc-lib-parser"] ++) .
+      filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
+    forM_ toDelete removePathForcibly
     cmd "git checkout stack.yaml"
 
+    -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
-    cmd "cd ghc && git checkout 4854a3490518760405f04826df1768b5a7b96da2" -- 07/21/2019
+    cmd "cd ghc && git checkout ea08fa37c05303dea42f6ce2e9fdfe16e73a4df7" -- 07/26/2019
     cmd "cd ghc && git submodule update --init --recursive"
-
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+
     -- Build ghc-lib-gen. Do this here rather than in the Azure script
     -- so that it's not forgotten when testing this program locally.
     cmd "stack --no-terminal build"
+
+    -- Calculate verison and package names.
+    version <- tag
+    let pkg_ghclib = "ghc-lib-" ++ version
+        pkg_ghclib_parser = "ghc-lib-parser-" ++ version
+
     -- Make and extract an sdist of ghc-lib-parser.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
-    mkTarball "ghc-lib-parser-0.1.0"
-    renameDirectory "ghc-lib-parser-0.1.0" "ghc-lib-parser"
+    patchVersion version "ghc/ghc-lib-parser.cabal"
+    mkTarball pkg_ghclib_parser
+    renameDirectory pkg_ghclib_parser "ghc-lib-parser"
     removeFile "ghc/ghc-lib-parser.cabal"
     cmd "git checkout stack.yaml"
 
+    -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-
-    -- Make and extract an sdist of ghc-lib.
     cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
-    tarball <- mkTarball "ghc-lib-0.1.0"
-    renameDirectory "ghc-lib-0.1.0" "ghc-lib"
+    patchVersion version "ghc/ghc-lib.cabal"
+    patchConstraint version "ghc/ghc-lib.cabal"
+    mkTarball pkg_ghclib
+    renameDirectory pkg_ghclib "ghc-lib"
     removeFile "ghc/ghc-lib.cabal"
     cmd "git checkout stack.yaml"
 
@@ -68,8 +78,8 @@ main = do
     cmd "stack build ghc-lib-parser --no-terminal --interleaved-output"
     cmd "stack build ghc-lib --no-terminal --interleaved-output"
     cmd "stack build mini-hlint mini-compile strip-locs --no-terminal --interleaved-output"
+
     -- Run tests.
-    cmd "stack exec --no-terminal -- ghc-lib --version"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fatal_error.hs"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
@@ -82,9 +92,6 @@ main = do
     cmd "stack exec --no-terminal -- ghc -package=ghc-lib-parser -e \"print 1\""
     cmd "stack exec --no-terminal -- ghc -package=ghc-lib -e \"print 1\""
     where
-      dropExtensions :: String -> String
-      dropExtensions = dropExtension . dropExtension
-
       cmd :: String -> IO ()
       cmd x = do
         putStrLn $ "\n\n# Running: " ++ x
@@ -95,19 +102,23 @@ main = do
 
       mkTarball :: String -> IO ()
       mkTarball target = do
-        stackYaml <- readFile' "stack.yaml"
-        writeFile "stack.yaml" $ stackYaml ++ unlines ["- ghc"]
-        sDistCreateExtract target
-
-      sDistCreateExtract :: String -> IO ()
-      sDistCreateExtract target = do
+        writeFile "stack.yaml" . (++ "- ghc\n") =<< readFile' "stack.yaml"
         cmd "stack sdist ghc --tar-dir=."
         cmd $ "tar -xvf " ++ target ++ ".tar.gz"
 
-      rmFiles :: [FilePath] -> IO ()
-      rmFiles fs = forM_ fs $
-        \f -> removeFile f `catchIOError` (const  $ return ())
+      tag :: IO String
+      tag = do
+        UTCTime day _ <- getCurrentTime
+        return $ "0." ++ replace "-" "" (showGregorian day)
 
-      rmDirs :: [FilePath] -> IO ()
-      rmDirs ds = forM_ ds $
-        \d -> removeDirectoryRecursive d `catchIOError` (const $ return ())
+      patchVersion :: String -> FilePath -> IO ()
+      patchVersion version file =
+        writeFile file .
+          replace "version: 0.1.0" ("version: " ++ version)
+          =<< readFile' file
+
+      patchConstraint :: String -> FilePath -> IO ()
+      patchConstraint version file =
+        writeFile file .
+          replace "ghc-lib-parser" ("ghc-lib-parser == " ++ version)
+          =<< readFile' file
