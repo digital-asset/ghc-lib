@@ -102,13 +102,7 @@ main = do
 
       mkTarball :: String -> IO ()
       mkTarball target = do
-        writeFile "stack.yaml" .
-          (++ "- ghc\n")
-          =<< readFile' "stack.yaml"
-        sDistCreateExtract target
-
-      sDistCreateExtract :: String -> IO ()
-      sDistCreateExtract target = do
+        writeFile "stack.yaml" . (++ "- ghc\n") =<< readFile' "stack.yaml"
         cmd "stack sdist ghc --tar-dir=."
         cmd $ "tar -xvf " ++ target ++ ".tar.gz"
 
@@ -121,10 +115,10 @@ main = do
       patchVersion version file =
         writeFile file .
           replace "version: 0.1.0" ("version: " ++ version)
-        =<< readFile' file
+          =<< readFile' file
 
       patchConstraint :: String -> FilePath -> IO ()
       patchConstraint version file =
         writeFile file .
           replace "ghc-lib-parser" ("ghc-lib-parser == " ++ version)
-        =<< readFile' file
+          =<< readFile' file
