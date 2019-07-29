@@ -5,10 +5,8 @@
 -- CI script, compatible with all of Travis, Appveyor and Azure.
 
 import Control.Monad
-import Control.Exception
 import System.Directory
 import System.FilePath
-import System.IO.Error
 import System.IO.Extra
 import System.Info.Extra
 import System.Process.Extra
@@ -16,7 +14,6 @@ import System.Time.Extra
 import Data.List.Extra
 import Data.Time.Clock
 import Data.Time.Calendar
-import Text.Printf
 
 main :: IO ()
 main = do
@@ -95,9 +92,6 @@ main = do
     cmd "stack exec --no-terminal -- ghc -package=ghc-lib-parser -e \"print 1\""
     cmd "stack exec --no-terminal -- ghc -package=ghc-lib -e \"print 1\""
     where
-      dropExtensions :: String -> String
-      dropExtensions = dropExtension . dropExtension
-
       cmd :: String -> IO ()
       cmd x = do
         putStrLn $ "\n\n# Running: " ++ x
