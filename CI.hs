@@ -124,10 +124,7 @@ main = do
           =<< readFile' file
 
       removePath :: FilePath -> IO ()
-      removePath p = do
-        whenM (doesFileExist p) $ do
-          putStrLn ("# Removing file " ++ p)
-          removePathForcibly p
-        whenM (doesDirectoryExist p) $ do
-          putStrLn ("# Removing directory " ++ p)
+      removePath p =
+        whenM (doesPathExist p) $ do
+          putStrLn ("# Removing " ++ p)
           removePathForcibly p
