@@ -4,7 +4,7 @@
 
 -- CI script, compatible with all of Travis, Appveyor and Azure.
 
-import Control.Monad
+import Control.Monad.Extra
 import System.Directory
 import System.FilePath
 import System.IO.Extra
@@ -24,7 +24,7 @@ main = do
     -- Clear up any detritus left over from previous runs.
     toDelete <- (["ghc", "ghc-lib", "ghc-lib-parser"] ++) .
       filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
-    forM_ toDelete removePathForcibly
+    forM_ toDelete removePath
     cmd "git checkout stack.yaml"
 
     -- Get a clone of ghc.
@@ -122,3 +122,9 @@ main = do
         writeFile file .
           replace "ghc-lib-parser" ("ghc-lib-parser == " ++ version)
           =<< readFile' file
+
+      removePath :: FilePath -> IO ()
+      removePath p =
+        whenM (doesPathExist p) $ do
+          putStrLn ("# Removing " ++ p)
+          removePathForcibly p
