@@ -97,7 +97,7 @@ fakeSettings = Settings
       }
     platform =
       Platform{
-        platformWordSize=8
+        platformWordSize=PW8
       , platformOS=OSUnknown
       , platformUnregisterised=True
       , platformArch=ArchUnknown

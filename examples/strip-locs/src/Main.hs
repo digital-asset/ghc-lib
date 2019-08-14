@@ -56,7 +56,7 @@ fakeSettings = Settings
                     ,ghcNameVersion_projectVersion=cProjectVersion
                     }
     platform =
-      Platform{platformWordSize=8
+      Platform{platformWordSize=PW8
               , platformOS=OSUnknown
               , platformUnregisterised=True}
     platformConstants =
