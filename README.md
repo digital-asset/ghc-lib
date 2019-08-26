@@ -20,7 +20,7 @@ There are some downsides to `ghc-lib`:
 
 ## Using `ghc-lib`
 
-The packages `ghc-lib-parser` and `ghc-lib` are available on [Hackage](https://hackage.haskell.org/), and can be used like any normal packages, e.g. `cabal install ghc-lib`. Since `ghc-lib-parser` and `ghc-lib` conflict perfectly with the GHC API and [`template-haskell`](https://hackage.haskell.org/package/template-haskell), the packages are [hidden by default](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/packages.html#using-packages) : use the language extension `PackageImports` to do `import "ghc-lib" ...` or `import "ghc-lib-parser" ...` as approriate. There are two release streams within the `ghc-lib` name:
+The packages `ghc-lib-parser` and `ghc-lib` are available on [Hackage](https://hackage.haskell.org/), and can be used like any normal packages, e.g. `cabal install ghc-lib`. Since `ghc-lib-parser` and `ghc-lib` conflict perfectly with the GHC API and [`template-haskell`](https://hackage.haskell.org/package/template-haskell), ~the packages are [hidden by default](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/packages.html#using-packages)~ (actually, they are not - we don't enable that at this time as it requires newer versions of Cabal) : use the language extension `PackageImports` to do `import "ghc-lib" ...` or `import "ghc-lib-parser" ...` as approriate. There are two release streams within the `ghc-lib` name:
 
 * Version 8.8.1 will be the version of `ghc-lib` produced against the released GHC 8.8.1, once it comes out;
 * Version [0.20190204](http://hackage.haskell.org/package/ghc-lib-0.20190204) is the version of `ghc-lib` using GHC HEAD on the date 2019-02-04.
@@ -35,114 +35,17 @@ To build `ghc-lib-parser` and `ghc-lib` you need clones of this repository and t
 
 *Warning : `ghc-lib-parser` and `ghc-lib` are known to work on all of MacOS, Linux and Windows. Distributions produced with `cabal sdist` on Linux/MacOS build on Windows, but a `cabal sdist` produced on Windows does not build on MacOS/Linux.*
 
-### Building `ghc-lib` via `cabal`
+### Building `ghc-lib`
 
-In a bash shell, build with the following commands.
+By far the easist way to produce `ghc-lib-parser` and `ghc-lib` packages is to execute the CI script which incidentally builds and executes the examples (this procedure makes versioned packages  based on the current date and expresses the version constraint between `ghc-lib` and `ghc-lib-parser` accordingly).
 
 ```bash
 # Setup
 git clone git@github.com:digital-asset/ghc-lib.git
 cd ghc-lib
-git clone https://gitlab.haskell.org/ghc/ghc.git --recursive
-# Build ghc-lib-parser
-cabal run -- ghc --ghc-lib-parser
-cd ghc
-cabal sdist
-tar xvf dist/ghc-lib-parser-*.tar.gz
-cd ghc-lib-parser-*
-cabal install
-# Reset
-cd ..
-git clean -xdf && git checkout .
-cd ..
-# Build ghc-lib
-cabal run -- ghc --ghc-lib
-cd ghc
-cabal sdist
-tar xvf dist/ghc-lib-*.tar.gz
-cd ghc-lib-*
-cabal install
-# Build the tests
-cd ../..
-(cd examples/mini-hlint && cabal build)
-(cd examples/mini-compile && cabal build)
-```
-### Building `ghc-lib` via `stack`
-
-In a bash shell, build with the following commands.
-
-```bash
-git clone git@github.com:digital-asset/ghc-lib.git
-cd ghc-lib && git clone --recursive https://gitlab.haskell.org/ghc/ghc.git
-stack setup > /dev/null 2>&1
-stack build --no-terminal --interleaved-output
-stack exec -- ghc-lib-gen ghc --ghc-lib-parser
-cat << EOF >> stack.yaml
-- ghc
-EOF
-stack sdist ghc --tar-dir=.
-(cd ghc && git clean -xf && git checkout .)
-stack exec -- ghc-lib-gen ghc --ghc-lib
-stack sdist ghc --tar-dir=.
-tar xvf ghc-lib-parser-0.1.0.tar.gz
-tar xvf ghc-lib-0.1.0.tar.gz
-mv ghc-lib-parser-0.1.0 ghc-lib-parser
-mv ghc-lib-0.1.0 ghc-lib
-sed '$d' stack.yaml > stack.yaml.tmp&&cp stack.yaml.tmp stack.yaml
-cat << EOF >> stack.yaml
-- ghc-lib-parser
-- ghc-lib
-EOF
-stack build ghc-lib-parser --interleaved-output
-stack build ghc-lib --interleaved-output
-cat << EOF >> stack.yaml
-- examples/mini-hlint
-- examples/mini-compile
-EOF
-stack build mini-hlint
-stack build mini-compile
-
-# Execute the examples
-stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest.hs
-stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest_fatal_error.hs
-stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs
-stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs
-stack exec mini-hlint -- examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs
-stack exec mini-compile -- examples/mini-compile/test/MiniCompileTest.hs
+stack runhaskell --package extra CI.hs
 ```
 
 ## Releasing `ghc-lib` (notes for maintainers)
 
-First prepare with:
-
-```bash
-cd ghc-lib
-git clone https://gitlab.haskell.org/ghc/ghc.git --recursive
-cabal run -- ghc --ghc-lib-parser
-cd ghc
-```
-
-Then edit `ghc-lib-parser.cabal` to fix the version number (e.g. 0.20190204)
-before executing:
-
-```bash
-cabal sdist
-```
-
-Upload `dist/ghc-lib-parser-xxx.tar.gz` to [Hackage](https://hackage.haskell.org/upload).
-
-Next,
-```bash
-git clean -xdf && git checkout .
-cd ..
-cabal run -- ghc --ghc-lib
-cd ghc
-```
-
-Then edit `ghc-lib.cabal` to fix the version number (e.g. 0.20190204) and constrain the `ghc-lib-parser` version in the `build-depends` section before executing:
-
-```bash
-cabal sdist
-```
-
-Upload `dist/ghc-lib-xxx.tar.gz` to [Hackage](https://hackage.haskell.org/upload).
+Build `ghc-lib` using the [above instructions](file:///Users/shaynefletcher/tmp/ghc-lib-master/README.md#building-ghc-lib)  and upload the resulting `.tar.gz` files to [Hackage](https://hackage.haskell.org/upload).
