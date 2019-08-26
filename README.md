@@ -49,4 +49,4 @@ stack runhaskell --package extra CI.hs
 ## Releasing `ghc-lib` (notes for maintainers)
 
 
-Build `ghc-lib` using the [above instructions](file:///Users/shaynefletcher/tmp/ghc-lib-master/README.md#building-ghc-lib)  and upload the resulting `.tar.gz` files to [Hackage](https://hackage.haskell.org/upload).
+Build `ghc-lib` using the [above instructions](#building-ghc-lib)  and upload the resulting `.tar.gz` files to [Hackage](https://hackage.haskell.org/upload).
