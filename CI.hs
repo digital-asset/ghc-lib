@@ -18,7 +18,7 @@ main = do
 
     -- Make and extract an sdist of ghc-lib-parser.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
-    cmd "cd ghc && git checkout ghc-8.8.1-rc1"
+    cmd "cd ghc && git checkout ghc-8.8.1-release"
     cmd "cd ghc && git submodule update --init --recursive"
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     -- Build ghc-lib-gen. Do this here rather than in the Azure script
