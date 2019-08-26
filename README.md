@@ -118,6 +118,7 @@ First prepare with:
 ```bash
 cd ghc-lib
 git clone https://gitlab.haskell.org/ghc/ghc.git --recursive
+cd ..
 cabal run -- ghc --ghc-lib-parser
 cd ghc
 ```
