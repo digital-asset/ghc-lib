@@ -37,16 +37,25 @@ To build `ghc-lib-parser` and `ghc-lib` you need clones of this repository and t
 
 ### Building `ghc-lib`
 
-By far the easist way to produce `ghc-lib-parser` and `ghc-lib` packages is to execute the CI script which incidentally builds and executes the examples (this procedure makes versioned packages  based on the current date and expresses the version constraint between `ghc-lib` and `ghc-lib-parser` accordingly).
+By far the easiest way to produce `ghc-lib-parser` and `ghc-lib` packages is to
+execute the CI script which incidentally builds and executes the examples (this
+procedure makes versioned packages based on the current date and expresses the
+version constraint between `ghc-lib` and `ghc-lib-parser` accordingly).
 
 ```bash
 # Setup
 git clone git@github.com:digital-asset/ghc-lib.git
 cd ghc-lib
-stack runhaskell --package extra CI.hs
+./CI.hs
 ```
 
 ## Releasing `ghc-lib` (notes for maintainers)
 
-
-Build `ghc-lib` using the [above instructions](#building-ghc-lib)  and upload the resulting `.tar.gz` files to [Hackage](https://hackage.haskell.org/upload).
+You can use
+```bash
+git clone git@github.com:digital-asset/ghc-lib.git
+cd ghc-lib
+./CI.hs --upload-to-bintray
+```
+to build the tarballs and upload them to Bintray, provided you have your
+Bintray credentials in `BINTRAY_BASIC_AUTH`.

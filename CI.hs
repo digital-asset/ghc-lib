@@ -1,3 +1,4 @@
+#!/usr/bin/env stack --resolver lts-12.10 runhaskell --package extra --package optparse-applicative --
 -- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
 -- affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
@@ -14,9 +15,64 @@ import System.Time.Extra
 import Data.List.Extra
 import Data.Time.Clock
 import Data.Time.Calendar
+import Data.Semigroup ((<>))
+import qualified Options.Applicative as Opts
+import qualified System.Environment as Env
+import qualified System.Exit as Exit
 
 main :: IO ()
 main = do
+    let opts = Opts.info (parseOptions Opts.<**> Opts.helper)
+                 ( Opts.fullDesc
+                <> Opts.progDesc "Build (and possibly upload) ghc-lib and ghc-lib-parser tarballs."
+                <> Opts.header "CI - CI script for ghc-lib" )
+    Options { upload = upload }  <- Opts.execParser opts
+    version <- buildDists
+    when upload $ bintrayUpload version
+
+newtype Options = Options { upload :: Bool }
+
+parseOptions :: Opts.Parser Options
+parseOptions = Options
+    <$> Opts.switch
+        ( Opts.long "upload-to-bintray"
+       <> Opts.help "If specified, will try uploading the sdists to Bintray, using credentials in BINTRAY_BASIC_AUTH env var.")
+
+bintrayUpload :: String -> IO ()
+bintrayUpload version = do
+    credentials <- Env.lookupEnv "BINTRAY_BASIC_AUTH"
+    case credentials of
+      Nothing ->
+        Exit.die $ unlines ["Error: Cannot upload without BINTRAY_BASIC_AUTH.",
+                            "To set the environment variable, run:",
+                            "    BINTRAY_BASIC_AUTH=<creds> ./CI.hs --upload-to-bintray",
+                            "where <creds> should be of the form:",
+                            "  fname.lname@digitalassetsdk:0123456789abcdef0123456789abcdef01234567",
+                            "You can find your API key (the part after the colon) at:",
+                            "  https://bintray.com/profile/edit",
+                            "after logging in. (The username is also displayed on that page.)"]
+      Just creds -> do
+        cmd $ concat ["curl -T ./ghc-lib-parser-", version, ".tar.gz",
+                          " -u", creds,
+                          " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/ghc-lib-parser-", version, ".tar.gz"]
+        cmd $ concat ["curl -T ./ghc-lib-", version, ".tar.gz",
+                          " -u", creds,
+                          " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/ghc-lib-", version, ".tar.gz"]
+        cmd $ concat ["curl -X POST",
+                          " -u", creds,
+                          " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/publish"]
+        where
+          cmd :: String -> IO ()
+          cmd x = do
+            let c = replace creds "***:***" x
+            putStrLn $ "\n\n# Running: " ++ c
+            hFlush stdout
+            (t, _) <- duration $ callCommand x
+            putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ c ++ "\n"
+            hFlush stdout
+
+buildDists :: IO String
+buildDists = do
     -- Get packages missing on Windows needed by hadrian.
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
@@ -91,6 +147,7 @@ main = do
     -- https://github.com/digital-asset/ghc-lib/issues/27
     cmd "stack exec --no-terminal -- ghc -package=ghc-lib-parser -e \"print 1\""
     cmd "stack exec --no-terminal -- ghc -package=ghc-lib -e \"print 1\""
+    tag
     where
       cmd :: String -> IO ()
       cmd x = do
