@@ -534,4 +534,11 @@ generatePrerequisites = do
   -- of the way.
   removeFile "compiler/parser/Lexer.x"
   removeFile "compiler/parser/Parser.y"
+  -- These have been generated too. Don't confuse hazel by including
+  -- them in the sdist.
   removeFile "compiler/utils/Fingerprint.hsc"
+  removeFile "libraries/ghc-heap/GHC/Exts/Heap/InfoTableProf.hsc"
+  removeFile "libraries/ghc-heap/GHC/Exts/Heap/Constants.hsc"
+  removeFile "libraries/ghc-heap/GHC/Exts/Heap/Utils.hsc"
+  removeFile "libraries/ghc-heap/GHC/Exts/Heap/InfoTable/Types.hsc"
+  removeFile "libraries/ghc-heap/GHC/Exts/Heap/InfoTable.hsc"
