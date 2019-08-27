@@ -57,7 +57,7 @@ mkDynFlags filename s = do
         , dirsToClean = dirs_to_clean
         , filesToClean = files_to_clean
         , nextTempSuffix = next_temp_suffix
-        , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "ghc-prim")
+        , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "daml-prim")
         }
   parsePragmasIntoDynFlags filename s baseFlags
   where

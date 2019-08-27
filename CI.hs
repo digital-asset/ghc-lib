@@ -29,7 +29,11 @@ main = do
 
     -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
-    cmd "cd ghc && git checkout ghc-8.8.1-release"
+    cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
+    -- Apply Digital Asset extensions.
+    cmd "cd ghc && git remote add upstream git@github.com:digital-asset/ghc.git"
+    cmd "cd ghc && git fetch upstream"
+    cmd "cd ghc && git merge --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
     cmd "cd ghc && git submodule update --init --recursive"
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
 
