@@ -542,3 +542,4 @@ generatePrerequisites = do
   removeFile "libraries/ghc-heap/GHC/Exts/Heap/Utils.hsc"
   removeFile "libraries/ghc-heap/GHC/Exts/Heap/InfoTable/Types.hsc"
   removeFile "libraries/ghc-heap/GHC/Exts/Heap/InfoTable.hsc"
+  removeFile "libraries/ghci/GHCi/FFI.hsc"
