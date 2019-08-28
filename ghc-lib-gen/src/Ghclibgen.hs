@@ -84,8 +84,8 @@ ghcLibHsSrcDirs lib =
   let all = Set.fromList $
         [ "ghc-lib/stage1/compiler/build"
         -- , "ghc-lib/stage0/libraries/ghci/build"
-        -- No, don't include this. Have Cabal generate 'InfoTable.hs'
-        -- from the libraries/ghci, .hsc file. The hazel/bazel build
+        -- No, don't include this. Generate 'InfoTable.hs'
+        -- via the libraries/ghci, .hsc file. The hazel/bazel build
         -- breaks when we allow this source dir.
         ]
         ++ map takeDirectory cabalFileLibraries
