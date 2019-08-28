@@ -83,7 +83,10 @@ ghcLibHsSrcDirs :: [Cabal] -> [FilePath]
 ghcLibHsSrcDirs lib =
   let all = Set.fromList $
         [ "ghc-lib/stage1/compiler/build"
-        , "ghc-lib/stage0/libraries/ghci/build"
+        -- , "ghc-lib/stage0/libraries/ghci/build"
+        -- No, don't include this. Generate 'InfoTable.hs'
+        -- via the libraries/ghci, .hsc file. The hazel/bazel build
+        -- breaks when we allow this source dir.
         ]
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
@@ -439,7 +442,10 @@ generateGhcLibCabal = do
         ["    exposed-modules:"
         ,"        Paths_ghc_lib"
         ] ++
-        indent2 (nubSort nonParserModules)
+        indent2 (nubSort nonParserModules) ++
+        ["    extra-libraries:"
+        ,"        ffi"
+        ]
 
 -- | This utility factored out to avoid repetion.
 libBinParserModules :: IO ([Cabal], [Cabal], [String])
@@ -510,7 +516,10 @@ generateGhcLibParserCabal = do
         ,"        Parser"
         ] ++
         ["    exposed-modules:"
-        ]++ indent2 parserModules
+        ]++ indent2 parserModules ++
+        ["    extra-libraries:"
+        ,"        ffi"
+        ]
     putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 
 -- | Run Hadrian to build the things that the Cabal files need.
@@ -534,3 +543,5 @@ generatePrerequisites = do
   -- of the way.
   removeFile "compiler/parser/Lexer.x"
   removeFile "compiler/parser/Parser.y"
+  -- These have been generated too. Don't confuse hazel by including
+  -- them in the sdist.
