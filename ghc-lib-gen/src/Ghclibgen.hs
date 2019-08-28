@@ -378,9 +378,9 @@ commonBuildDepends =
 libBinParserModules :: IO ([Cabal], [Cabal], [String])
 libBinParserModules = do
     lib <- mapM readCabalFile cabalFileLibraries
-    bin <- (:[]) <$> readCabalFile cabalFileBinary
+    bin <- readCabalFile cabalFileBinary
     parserModules <- calcParserModules
-    return (lib, bin, parserModules)
+    return (lib, [bin], parserModules)
 
 -- | Call this after cabal file generation. These files are generated
 -- from '.hsc' files in the source tree and we prefer to ship those in
