@@ -561,3 +561,4 @@ generatePrerequisites = do
   -- of the way.
   removeFile "compiler/parser/Lexer.x"
   removeFile "compiler/parser/Parser.y"
+  removeFile "compiler/utils/Fingerprint.hsc" -- Favor the generated .hs file here too.
