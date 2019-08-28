@@ -83,9 +83,11 @@ ghcLibParserHsSrcDirs lib =
 ghcLibHsSrcDirs :: [Cabal] -> [FilePath]
 ghcLibHsSrcDirs lib =
   let all = Set.fromList $
-        [ "ghc-lib/stage0/compiler/build"
-        , "ghc-lib/stage1/compiler/build"
-        , "ghc-lib/stage0/libraries/ghci/build"
+        [ "ghc-lib/stage1/compiler/build"
+        -- , "ghc-lib/stage0/libraries/ghci/build"
+        -- No, don't include this. Generate 'InfoTable.hs'
+        -- via the libraries/ghci, .hsc file. The hazel/bazel build
+        -- breaks when we allow this source dir.
         ]
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
@@ -374,6 +376,29 @@ commonBuildDepends =
   , "hpc == 0.6.*"
   ]
 
+-- | This utility factored out to avoid repetion.
+libBinParserModules :: IO ([Cabal], [Cabal], [String])
+libBinParserModules = do
+    lib <- mapM readCabalFile cabalFileLibraries
+    bin <- readCabalFile cabalFileBinary
+    parserModules <- calcParserModules
+    return (lib, [bin], parserModules)
+
+-- | Call this after cabal file generation. These files are generated
+-- from '.hsc' files in the source tree and we prefer to ship those in
+-- the sdists rather than these. If we don't remove them, some
+-- ambiguity results. Cabal and stack are OK with that but bazel gets
+-- messed up.
+removeGeneratedIntermediateFiles :: IO ()
+removeGeneratedIntermediateFiles = do
+    removeFile "ghc-lib/stage0/libraries/ghc-heap/build/GHC/Exts/Heap/Utils.hs"
+    removeFile "ghc-lib/stage0/libraries/ghc-heap/build/GHC/Exts/Heap/InfoTableProf.hs"
+    removeFile "ghc-lib/stage0/libraries/ghc-heap/build/GHC/Exts/Heap/InfoTable.hs"
+    removeFile "ghc-lib/stage0/libraries/ghc-heap/build/GHC/Exts/Heap/InfoTable/Types.hs"
+    removeFile "ghc-lib/stage0/libraries/ghc-heap/build/GHC/Exts/Heap/Constants.hs"
+    removeFile "ghc-lib/stage0/libraries/ghci/build/GHCi/FFI.hs"
+    removeFile "ghc-lib/stage0/libraries/ghci/build/GHCi/InfoTable.hs"
+
 -- | Produces a ghc-lib Cabal file.
 generateGhcLibCabal :: IO ()
 generateGhcLibCabal = do
@@ -443,14 +468,8 @@ generateGhcLibCabal = do
         ,"        Paths_ghc_lib"
         ] ++
         indent2 (nubSort nonParserModules)
-
--- | This utility factored out to avoid repetion.
-libBinParserModules :: IO ([Cabal], [Cabal], [String])
-libBinParserModules = do
-    lib <- mapM readCabalFile cabalFileLibraries
-    bin <- (:[]) <$> readCabalFile cabalFileBinary
-    parserModules <- calcParserModules
-    return (lib, bin, parserModules)
+    removeGeneratedIntermediateFiles
+    putStrLn "# Generating 'ghc-lib.cabal'... Done!"
 
 -- | Produces a ghc-lib-parser Cabal file.
 generateGhcLibParserCabal :: IO ()
@@ -514,6 +533,7 @@ generateGhcLibParserCabal = do
         ] ++
         ["    exposed-modules:"
         ]++ indent2 parserModules
+    removeGeneratedIntermediateFiles
     putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 
 -- | Run Hadrian to build the things that the Cabal files need.
