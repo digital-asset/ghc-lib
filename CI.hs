@@ -147,7 +147,10 @@ buildDists = do
     -- https://github.com/digital-asset/ghc-lib/issues/27
     cmd "stack exec --no-terminal -- ghc -package=ghc-lib-parser -e \"print 1\""
     cmd "stack exec --no-terminal -- ghc -package=ghc-lib -e \"print 1\""
-    tag
+
+    -- Something like, "8.8.1.20190828".
+    tag  -- The return value of type 'IO string'.
+
     where
       cmd :: String -> IO ()
       cmd x = do

@@ -374,6 +374,29 @@ commonBuildDepends =
   , "hpc == 0.6.*"
   ]
 
+-- | This utility factored out to avoid repetion.
+libBinParserModules :: IO ([Cabal], [Cabal], [String])
+libBinParserModules = do
+    lib <- mapM readCabalFile cabalFileLibraries
+    bin <- readCabalFile cabalFileBinary
+    parserModules <- calcParserModules
+    return (lib, [bin], parserModules)
+
+-- | Call this after cabal file generation. These files are generated
+-- from '.hsc' files in the source tree and we prefer to ship those in
+-- the sdists rather than these. If we don't remove them, some
+-- ambiguity results. Cabal and stack are OK with that but bazel gets
+-- messed up.
+removeGeneratedIntermediateFiles :: IO ()
+removeGeneratedIntermediateFiles = do
+    removeFile "ghc-lib/stage0/libraries/ghc-heap/build/GHC/Exts/Heap/Utils.hs"
+    removeFile "ghc-lib/stage0/libraries/ghc-heap/build/GHC/Exts/Heap/InfoTableProf.hs"
+    removeFile "ghc-lib/stage0/libraries/ghc-heap/build/GHC/Exts/Heap/InfoTable.hs"
+    removeFile "ghc-lib/stage0/libraries/ghc-heap/build/GHC/Exts/Heap/InfoTable/Types.hs"
+    removeFile "ghc-lib/stage0/libraries/ghc-heap/build/GHC/Exts/Heap/Constants.hs"
+    removeFile "ghc-lib/stage0/libraries/ghci/build/GHCi/FFI.hs"
+    removeFile "ghc-lib/stage0/libraries/ghci/build/GHCi/InfoTable.hs"
+
 -- | Produces a ghc-lib Cabal file.
 generateGhcLibCabal :: IO ()
 generateGhcLibCabal = do
@@ -446,14 +469,8 @@ generateGhcLibCabal = do
         ["    extra-libraries:"
         ,"        ffi"
         ]
-
--- | This utility factored out to avoid repetion.
-libBinParserModules :: IO ([Cabal], [Cabal], [String])
-libBinParserModules = do
-    lib <- mapM readCabalFile cabalFileLibraries
-    bin <- (:[]) <$> readCabalFile cabalFileBinary
-    parserModules <- calcParserModules
-    return (lib, bin, parserModules)
+    removeGeneratedIntermediateFiles
+    putStrLn "# Generating 'ghc-lib.cabal'... Done!"
 
 -- | Produces a ghc-lib-parser Cabal file.
 generateGhcLibParserCabal :: IO ()
@@ -520,6 +537,7 @@ generateGhcLibParserCabal = do
         ["    extra-libraries:"
         ,"        ffi"
         ]
+    removeGeneratedIntermediateFiles
     putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 
 -- | Run Hadrian to build the things that the Cabal files need.
@@ -543,5 +561,4 @@ generatePrerequisites = do
   -- of the way.
   removeFile "compiler/parser/Lexer.x"
   removeFile "compiler/parser/Parser.y"
-  -- These have been generated too. Don't confuse hazel by including
-  -- them in the sdist.
+  removeFile "compiler/utils/Fingerprint.hsc" -- Favor the generated .hs file here too.
