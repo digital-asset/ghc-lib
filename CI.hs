@@ -171,7 +171,7 @@ buildDists ghcFlavor = do
     -- are disabled in stack.yaml via `ghc-options: -O0`.
     cmd "stack build ghc-lib-parser --no-terminal --interleaved-output"
     cmd "stack build ghc-lib --no-terminal --interleaved-output"
-    cmd "stack build mini-hlint mini-compile --no-terminal --interleaved-output"
+    cmd "stack build mini-hlint mini-compile strip-locs --no-terminal --interleaved-output"
 
     -- Run tests.
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
