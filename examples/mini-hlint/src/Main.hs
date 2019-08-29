@@ -34,8 +34,14 @@ import qualified Data.Map as Map
 import Data.Generics.Uniplate.Operations
 import Data.Generics.Uniplate.Data
 
+-- We use 0.x for HEAD
+#if !MIN_VERSION_ghc_lib(1,0,0)
+#define GHC_MASTER
+#endif
+
 fakeSettings :: Settings
 fakeSettings = Settings
+#ifdef GHC_MASTER
   { sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
@@ -43,7 +49,16 @@ fakeSettings = Settings
   , sPlatformConstants=platformConstants
   , sToolSettings=toolSettings
   }
+#else
+  { sTargetPlatform=platform
+  , sPlatformConstants=platformConstants
+  , sProjectVersion=cProjectVersion
+  , sProgramName="ghc"
+  , sOpt_P_fingerprint=fingerprint0
+  }
+#endif
   where
+#ifdef GHC_MASTER
     toolSettings = ToolSettings {
       toolSettings_opt_P_fingerprint=fingerprint0
       }
@@ -53,8 +68,13 @@ fakeSettings = Settings
       GhcNameVersion{ghcNameVersion_programName="ghc"
                     ,ghcNameVersion_projectVersion=cProjectVersion
                     }
+#endif
     platform =
+#ifdef GHC_MASTER
       Platform{platformWordSize=PW8
+#else
+      Platform{platformWordSize=8
+#endif
               , platformOS=OSUnknown
               , platformUnregisterised=True}
     platformConstants =
