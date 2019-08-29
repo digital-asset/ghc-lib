@@ -67,6 +67,7 @@ ghcLibParserHsSrcDirs lib =
         , "ghc-lib/stage1/compiler/build"
         , "ghc-lib/stage0/libraries/ghci/build"
         , "ghc-lib/stage0/libraries/ghc-heap/build"
+        , "ghc-lib/stage0/libraries/ghc-boot/build"
         ]
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
@@ -158,6 +159,7 @@ extraFiles =
     , "ghc-lib/stage1/compiler/build/Config.hs"
     , "ghc-lib/stage0/compiler/build/Parser.hs"
     , "ghc-lib/stage0/compiler/build/Lexer.hs"
+    , "ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs"
     ]
 
 -- | The C headers shipped with ghc-lib. These globs get glommed onto
@@ -447,7 +449,7 @@ generateGhcLibCabal _ghcFlavor = do
         indent2 ghcLibIncludeDirs ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DHAVE_INTERPRETER -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
@@ -510,7 +512,7 @@ generateGhcLibParserCabal _ghcFlavor = do
         indent2 ghcLibParserIncludeDirs ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DGHCI -DGHC_IN_GHCI"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DHAVE_INTERPRETER -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"

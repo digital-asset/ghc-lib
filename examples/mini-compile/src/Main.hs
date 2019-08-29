@@ -13,16 +13,22 @@ import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" Module
 import "ghc-lib-parser" Config
 import "ghc-lib-parser" DynFlags
-import "ghc-lib-parser" Platform
+import "ghc-lib-parser" GHC.Platform
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Outputable
+import "ghc-lib-parser" ToolSettings
 
 import System.Environment
 import System.Directory
 import System.IO.Extra
 import qualified Data.Map.Strict as Map
 import Data.IORef
+
+-- We use 0.x for HEAD
+#if !MIN_VERSION_ghc_lib(1,0,0)
+#define GHC_MASTER
+#endif
 
 main :: IO ()
 main = do
@@ -77,31 +83,52 @@ fakeLlvmConfig = ([], [])
 
 fakeSettings :: Settings
 fakeSettings = Settings
-  { sTargetPlatform=platform
+  { sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
   , sPlatformConstants=platformConstants
+#ifdef GHC_MASTER
   , sProjectVersion=cProjectVersion
   , sProgramName="ghc"
   , sOpt_P_fingerprint=fingerprint0
   , sTmpDir="."
+#else
+  , sToolSettings=toolSettings
+#endif
   }
   where
+    fileSettings = FileSettings {
+        fileSettings_tmpDir="."
+      }
+    toolSettings = ToolSettings {
+        toolSettings_opt_P_fingerprint=fingerprint0
+      }
+    platformMisc = PlatformMisc {
+        platformMisc_integerLibraryType=IntegerSimple
+      }
+    ghcNameVersion =
+      GhcNameVersion{
+        ghcNameVersion_programName="ghc"
+      , ghcNameVersion_projectVersion=cProjectVersion
+      }
     platform =
       Platform{
-          platformWordSize=8
-        , platformOS=OSUnknown
-        , platformUnregisterised=True
-        }
-    -- This bit may need to be conditional on OS.
-    platformConstants =
-      PlatformConstants {
-        pc_DYNAMIC_BY_DEFAULT=False
-      , pc_WORD_SIZE=8
-      , pc_STD_HDR_SIZE=1
-      , pc_TAG_BITS=3
-      , pc_BLOCKS_PER_MBLOCK=252
-      , pc_BLOCK_SIZE=4096
-      , pc_MIN_PAYLOAD_SIZE=1
-      , pc_MAX_Real_Vanilla_REG=6
-      , pc_MAX_Vanilla_REG=10
-      , pc_MAX_Real_Long_REG=0
+        platformWordSize=PW8
+      , platformOS=OSUnknown
+      , platformUnregisterised=True
+      , platformArch=ArchUnknown
       }
+    platformConstants =
+       PlatformConstants {
+         pc_DYNAMIC_BY_DEFAULT=False
+       , pc_WORD_SIZE=8
+       , pc_STD_HDR_SIZE=1
+       , pc_TAG_BITS=3
+       , pc_BLOCKS_PER_MBLOCK=252
+       , pc_BLOCK_SIZE=4096
+       , pc_MIN_PAYLOAD_SIZE=1
+       , pc_MAX_Real_Vanilla_REG=6
+       , pc_MAX_Vanilla_REG=10
+       , pc_MAX_Real_Long_REG=0
+       }

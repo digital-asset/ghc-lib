@@ -1,4 +1,4 @@
-#!/usr/bin/env stack --resolver lts-12.10 runhaskell --package extra --package optparse-applicative --
+#!/usr/bin/env stack --resolver lts-14.3 runhaskell --package extra --package optparse-applicative --
 -- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
 -- affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
@@ -36,13 +36,14 @@ data Options = Options
     , ghcFlavor :: GhcFlavor
     }
 
-data GhcFlavor = Ghc881 | DaGhc881
+data GhcFlavor = Ghc881 | DaGhc881 | GhcMaster
   deriving (Eq, Show)
 
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
     Ghc881 -> "--ghc-flavor ghc-8.8.1"
     DaGhc881 -> "--ghc-flavor da-ghc-8.8.1"
+    GhcMaster -> "--ghc-flavor ghc-master"
 
 parseOptions :: Opts.Parser Options
 parseOptions = Options
@@ -58,6 +59,7 @@ parseOptions = Options
    readFlavor = Opts.eitherReader $ \case
        "ghc-8.8.1" -> Right Ghc881
        "da-ghc-8.8.1" -> Right DaGhc881
+       "ghc-master" -> Right GhcMaster
        flavor -> Left $ "Failed to parse ghc flavor " <> show flavor <> " expected ghc-8.8.1 or da-ghc-8.8.1"
 
 
@@ -117,6 +119,8 @@ buildDists ghcFlavor = do
             cmd "cd ghc && git remote add upstream https://github.com/digital-asset/ghc.git"
             cmd "cd ghc && git fetch upstream"
             cmd "cd ghc && git -c \"user.name=Doesn't Matter\" -c \"user.email=doesnt.matter@example.com\" merge --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
+        GhcMaster ->
+            cmd "cd ghc && git checkout 47070144030d85bd510f31ab70006d055a2af151" -- 08/24/2019
     cmd "cd ghc && git submodule update --init --recursive"
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
 
@@ -156,6 +160,7 @@ buildDists ghcFlavor = do
               , "- ghc-lib"
               , "- examples/mini-hlint"
               , "- examples/mini-compile"
+              , "- examples/strip-locs"
               ] ++
       if ghcFlavor == DaGhc881
         then unlines ["flags: {mini-compile: {daml-unit-ids: true}}"]
@@ -172,6 +177,9 @@ buildDists ghcFlavor = do
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fatal_error.hs"
     cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
+    cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs"
+    cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
+    cmd "stack exec --no-terminal -- strip-locs examples/mini-compile/test/MiniCompileTest.hs"
     cmd "stack exec --no-terminal -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
     -- Test everything loads in GHCi, see
     -- https://github.com/digital-asset/ghc-lib/issues/27
@@ -199,7 +207,9 @@ buildDists ghcFlavor = do
       tag :: IO String
       tag = do
         UTCTime day _ <- getCurrentTime
-        return $ "8.8.1." ++ replace "-" "" (showGregorian day)
+        return $ if ghcFlavor == GhcMaster
+          then "0." ++ replace "-" "" (showGregorian day)
+          else "8.8.1." ++ replace "-" "" (showGregorian day)
 
       patchVersion :: String -> FilePath -> IO ()
       patchVersion version file =

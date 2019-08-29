@@ -26,6 +26,8 @@ import "ghc-lib-parser" HscTypes
 import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" ApiAnnotation
 
+import "ghc-lib" HsDumpAst
+
 import Control.Monad
 import Control.Monad.Extra
 import System.Environment
@@ -83,27 +85,12 @@ parsePragmasIntoDynFlags flags filepath str =
                         (handleSourceError reportErr act)
     reportErr e = do putStrLn $ "error : " ++ show e; return Nothing
 
-idNot :: RdrName
-idNot = mkVarUnqual (fsLit "not")
+dumpParseTree :: DynFlags -> Located (HsModule GhcPs) -> IO ()
+dumpParseTree flags m =
+  dumpSDoc flags alwaysQualify Opt_D_dump_parsed_ast "" $ showAstData NoBlankSrcSpan m
 
-isNegated :: HsExpr GhcPs -> Bool
-isNegated (HsApp _ (L _ (HsVar _ (L _ id))) _) = id == idNot
-isNegated (HsPar _ (L _ e)) = isNegated e
-isNegated _ = False
-
-analyzeExpr :: DynFlags -> Located (HsExpr GhcPs) -> IO ()
-analyzeExpr flags (L loc expr) =
-  case expr of
-    HsApp _ (L _ (HsVar _ (L _ id))) (L _ e)
-        | id == idNot, isNegated e ->
-            putStrLn (showSDoc flags (ppr loc)
-                      ++ " : lint : double negation "
-                      ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
-    _ -> return ()
-
-analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> ApiAnns -> IO ()
-analyzeModule flags (L _ modu) _ =
-  sequence_ [analyzeExpr flags e | e <- universeBi modu]
+stripLocs :: Located (HsModule GhcPs) -> Located (HsModule GhcPs)
+stripLocs = transformBi $ const noSrcSpan
 
 main :: IO ()
 main = do
@@ -111,7 +98,6 @@ main = do
   case args of
     [file] -> do
       s <- readFile' file
-#ifdef GHC_MASTER
       flags <-
         parsePragmasIntoDynFlags
           (defaultDynFlags fakeSettings fakeLlvmConfig) file s
@@ -123,18 +109,7 @@ main = do
               let (wrns, errs) = getMessages s flags
               report flags wrns
               report flags errs
-              when (null errs) $ analyzeModule flags m (harvestAnns s)
-#else
-      let flags = defaultDynFlags fakeSettings fakeLlvmConfig
-      case parse file flags s of
-        PFailed _ loc err ->
-          putStrLn (showSDoc flags (pprLocErrMsg (mkPlainErrMsg flags loc err)))
-        POk s m -> do
-          let (warns, errs) = getMessages s flags
-          report flags warns
-          report flags errs
-          when (null errs) $ analyzeModule flags m
-#endif
+              when (null errs) $ dumpParseTree flags (stripLocs m)
     _ -> fail "Exactly one file argument required"
   where
     report flags msgs =
