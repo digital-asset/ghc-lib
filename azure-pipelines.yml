@@ -8,6 +8,7 @@ trigger:
   branches:
     include:
     - master
+    - da-ghc-8.8.1
 
 # Enable PR triggers that target the master branch
 pr:
@@ -15,6 +16,7 @@ pr:
   branches:
     include:
     - master
+    - da-ghc-8.8.1
 
 strategy:
   matrix:
