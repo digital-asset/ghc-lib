@@ -116,7 +116,7 @@ buildDists ghcFlavor = do
             -- Apply Digital Asset extensions.
             cmd "cd ghc && git remote add upstream https://github.com/digital-asset/ghc.git"
             cmd "cd ghc && git fetch upstream"
-            cmd "cd ghc && git merge --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
+            cmd "cd ghc && git merge -c \"user.name=Doesn't Matter\" -c \"user.email=doesnt.matter@example.com\" --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
     cmd "cd ghc && git submodule update --init --recursive"
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
 
