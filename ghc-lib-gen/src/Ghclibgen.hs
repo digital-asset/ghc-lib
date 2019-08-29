@@ -448,7 +448,7 @@ generateGhcLibCabal ghcFlavor = do
         indent2 ghcLibIncludeDirs ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DHAVE_INTERPRETER -DGHC_IN_GHCI"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS " <> ghciDef ghcFlavor <> " -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
@@ -471,6 +471,10 @@ generateGhcLibCabal ghcFlavor = do
         indent2 (nubSort nonParserModules)
     removeGeneratedIntermediateFiles
     putStrLn "# Generating 'ghc-lib.cabal'... Done!"
+
+ghciDef :: GhcFlavor -> String
+ghciDef GhcMaster = "-DHAVE_INTERPRETER"
+ghciDef _ = "-DGHCI"
 
 -- | Produces a ghc-lib-parser Cabal file.
 generateGhcLibParserCabal :: GhcFlavor -> IO ()
@@ -511,7 +515,7 @@ generateGhcLibParserCabal ghcFlavor = do
         indent2 ghcLibParserIncludeDirs ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DHAVE_INTERPRETER -DGHC_IN_GHCI"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS " <> ghciDef ghcFlavor <> " -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
