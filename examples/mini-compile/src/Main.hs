@@ -13,11 +13,16 @@ import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" Module
 import "ghc-lib-parser" Config
 import "ghc-lib-parser" DynFlags
-import "ghc-lib-parser" GHC.Platform
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Outputable
+
+#ifdef GHC_MASTER
+import "ghc-lib-parser" GHC.Platform
 import "ghc-lib-parser" ToolSettings
+#else
+import "ghc-lib-parser" Platform
+#endif
 
 import System.Environment
 import System.Directory

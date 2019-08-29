@@ -2,6 +2,7 @@
 -- affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -Wno-missing-fields #-}
 
@@ -10,7 +11,6 @@ module Main (main) where
 import "ghc-lib-parser" HsSyn
 import "ghc-lib-parser" Config
 import "ghc-lib-parser" DynFlags
-import "ghc-lib-parser" GHC.Platform
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Lexer
@@ -20,11 +20,17 @@ import qualified "ghc-lib-parser" Parser
 import "ghc-lib-parser" FastString
 import "ghc-lib-parser" Outputable
 import "ghc-lib-parser" SrcLoc
-import "ghc-lib-parser" ToolSettings
 import "ghc-lib-parser" Panic
 import "ghc-lib-parser" HscTypes
 import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" ApiAnnotation
+
+#ifdef GHC_MASTER
+import "ghc-lib-parser" GHC.Platform
+import "ghc-lib-parser" ToolSettings
+#else
+import "ghc-lib-parser" Platform
+#endif
 
 import Control.Monad
 import Control.Monad.Extra
