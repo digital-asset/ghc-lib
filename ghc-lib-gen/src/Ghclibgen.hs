@@ -25,6 +25,8 @@ import Data.Maybe
 import Data.Ord
 import qualified Data.Set as Set
 
+import GhclibgenOpts
+
 -- Constants.
 
 -- | Cabal files from libraries inside GHC that are merged together
@@ -398,8 +400,8 @@ removeGeneratedIntermediateFiles = do
     removeFile "ghc-lib/stage0/libraries/ghci/build/GHCi/InfoTable.hs"
 
 -- | Produces a ghc-lib Cabal file.
-generateGhcLibCabal :: IO ()
-generateGhcLibCabal = do
+generateGhcLibCabal :: GhcFlavor -> IO ()
+generateGhcLibCabal ghcFlavor = do
     -- Compute the list of modules to be compiled. The rest are parser
     -- modules re-exported from ghc-lib-parser.
     (lib, bin, parserModules) <- libBinParserModules
@@ -466,15 +468,17 @@ generateGhcLibCabal = do
         ,"        Paths_ghc_lib"
         ] ++
         indent2 (nubSort nonParserModules) ++
-        ["    extra-libraries:"
-        ,"        ffi"
-        ]
+        if ghcFlavor == DaGhc881
+            then ["    extra-libraries:"
+                 ,"        ffi"
+                 ]
+            else []
     removeGeneratedIntermediateFiles
     putStrLn "# Generating 'ghc-lib.cabal'... Done!"
 
 -- | Produces a ghc-lib-parser Cabal file.
-generateGhcLibParserCabal :: IO ()
-generateGhcLibParserCabal = do
+generateGhcLibParserCabal :: GhcFlavor -> IO ()
+generateGhcLibParserCabal ghcFlavor = do
     (lib, bin, parserModules) <- libBinParserModules
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
         -- header
@@ -534,9 +538,11 @@ generateGhcLibParserCabal = do
         ] ++
         ["    exposed-modules:"
         ]++ indent2 parserModules ++
-        ["    extra-libraries:"
-        ,"        ffi"
-        ]
+        if ghcFlavor == DaGhc881
+            then ["    extra-libraries:"
+                 ,"        ffi"
+                 ]
+            else []
     removeGeneratedIntermediateFiles
     putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 

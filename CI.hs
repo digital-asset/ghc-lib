@@ -4,7 +4,8 @@
 -- (Apache-2.0 OR BSD-3-Clause)
 
 -- CI script, compatible with all of Travis, Appveyor and Azure.
-
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 import Control.Monad.Extra
 import System.Directory
 import System.FilePath
@@ -26,17 +27,39 @@ main = do
                  ( Opts.fullDesc
                 <> Opts.progDesc "Build (and possibly upload) ghc-lib and ghc-lib-parser tarballs."
                 <> Opts.header "CI - CI script for ghc-lib" )
-    Options { upload = upload }  <- Opts.execParser opts
-    version <- buildDists
+    Options { upload, ghcFlavor }  <- Opts.execParser opts
+    version <- buildDists ghcFlavor
     when upload $ bintrayUpload version
 
-newtype Options = Options { upload :: Bool }
+data Options = Options
+    { upload :: Bool
+    , ghcFlavor :: GhcFlavor
+    }
+
+data GhcFlavor = Ghc881 | DaGhc881
+  deriving (Eq, Show)
+
+ghcFlavorOpt :: GhcFlavor -> String
+ghcFlavorOpt = \case
+    Ghc881 -> "--ghc-flavor ghc-8.8.1"
+    DaGhc881 -> "--ghc-flavor da-ghc-8.8.1"
 
 parseOptions :: Opts.Parser Options
 parseOptions = Options
     <$> Opts.switch
         ( Opts.long "upload-to-bintray"
        <> Opts.help "If specified, will try uploading the sdists to Bintray, using credentials in BINTRAY_BASIC_AUTH env var.")
+    <*> Opts.option readFlavor
+        ( Opts.long "ghc-flavor"
+       <> Opts.help "The ghc-flavor to test against"
+        )
+ where
+   readFlavor :: Opts.ReadM GhcFlavor
+   readFlavor = Opts.eitherReader $ \case
+       "ghc-8.8.1" -> Right Ghc881
+       "da-ghc-8.8.1" -> Right DaGhc881
+       flavor -> Left $ "Failed to parse ghc flavor " <> show flavor <> " expected ghc-8.8.1 or da-ghc-8.8.1"
+
 
 bintrayUpload :: String -> IO ()
 bintrayUpload version = do
@@ -71,8 +94,8 @@ bintrayUpload version = do
             putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ c ++ "\n"
             hFlush stdout
 
-buildDists :: IO String
-buildDists = do
+buildDists :: GhcFlavor -> IO String
+buildDists ghcFlavor = do
     -- Get packages missing on Windows needed by hadrian.
     when isWindows $
         cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
@@ -85,11 +108,15 @@ buildDists = do
 
     -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
-    cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
-    -- Apply Digital Asset extensions.
-    cmd "cd ghc && git remote add upstream git@github.com:digital-asset/ghc.git"
-    cmd "cd ghc && git fetch upstream"
-    cmd "cd ghc && git merge --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
+    case ghcFlavor of
+        Ghc881 ->
+            cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
+        DaGhc881 -> do
+            cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
+            -- Apply Digital Asset extensions.
+            cmd "cd ghc && git remote add upstream git@github.com:digital-asset/ghc.git"
+            cmd "cd ghc && git fetch upstream"
+            cmd "cd ghc && git merge --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
     cmd "cd ghc && git submodule update --init --recursive"
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
 
@@ -103,7 +130,7 @@ buildDists = do
         pkg_ghclib_parser = "ghc-lib-parser-" ++ version
 
     -- Make and extract an sdist of ghc-lib-parser.
-    cmd "stack exec -- ghc-lib-gen ghc --ghc-lib-parser"
+    cmd $ "stack exec -- ghc-lib-gen ghc --ghc-lib-parser " <> ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser
     renameDirectory pkg_ghclib_parser "ghc-lib-parser"
@@ -113,7 +140,7 @@ buildDists = do
     -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-    cmd "stack exec -- ghc-lib-gen ghc --ghc-lib"
+    cmd $ "stack exec -- ghc-lib-gen ghc --ghc-lib " <> ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraint version "ghc/ghc-lib.cabal"
     mkTarball pkg_ghclib
@@ -129,7 +156,10 @@ buildDists = do
               , "- ghc-lib"
               , "- examples/mini-hlint"
               , "- examples/mini-compile"
-              ]
+              ] ++
+      if ghcFlavor == DaGhc881
+        then unlines ["flags: {mini-compile: {daml-unit-ids: true}}"]
+        else ""
 
     -- Separate the two library build commands so they are
     -- independently timed. Note that optimizations in these builds

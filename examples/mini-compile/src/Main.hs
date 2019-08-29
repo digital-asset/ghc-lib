@@ -1,6 +1,7 @@
 -- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
 -- SPDX-License-Identifier: (Apache-2.0 OR BSD-3-Clause)
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -Wno-missing-fields #-}
 
@@ -57,7 +58,11 @@ mkDynFlags filename s = do
         , dirsToClean = dirs_to_clean
         , filesToClean = files_to_clean
         , nextTempSuffix = next_temp_suffix
+#ifdef DAML_UNIT_IDS
         , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "daml-prim")
+#else
+        , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "ghc-prim")
+#endif
         }
   parsePragmasIntoDynFlags filename s baseFlags
   where

@@ -46,7 +46,7 @@ version constraint between `ghc-lib` and `ghc-lib-parser` accordingly).
 # Setup
 git clone git@github.com:digital-asset/ghc-lib.git
 cd ghc-lib
-./CI.hs
+./CI.hs --ghc-flavor ghc-8.8.1
 ```
 
 ## Releasing `ghc-lib` (notes for maintainers)
@@ -55,7 +55,7 @@ You can use
 ```bash
 git clone git@github.com:digital-asset/ghc-lib.git
 cd ghc-lib
-./CI.hs --upload-to-bintray
+./CI.hs --upload-to-bintray --ghc-flavor da-ghc-8.8.1
 ```
 to build the tarballs and upload them to Bintray, provided you have your
 Bintray credentials in `BINTRAY_BASIC_AUTH`.

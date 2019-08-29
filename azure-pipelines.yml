@@ -18,9 +18,25 @@ pr:
 
 strategy:
   matrix:
-    linux:   {image: "Ubuntu 16.04"}
-    windows: {image: "vs2017-win2016"}
-    mac:     {image: "macOS-10.13"}
+    linux-ghc-881:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "ghc-8.8.1"
+    windows-ghc-881:
+      image: "vs2017-win2016"
+      ghc-flavor: "ghc-8.8.1"
+    mac-ghc-881:
+      image: "macOS-10.13"
+      ghc-flavor: "ghc-8.8.1"
+
+    linux-da-ghc-881:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "da-ghc-8.8.1"
+    windows-da-ghc-881:
+      image: "vs2017-win2016"
+      ghc-flavor: "da-ghc-8.8.1"
+    mac-da-ghc-881:
+      image: "macOS-10.13"
+      ghc-flavor: "da-ghc-8.8.1"
 
 pool: {vmImage: '$(image)'}
 
@@ -39,4 +55,4 @@ steps:
       curl -sSL https://get.haskellstack.org/ | sh
       stack setup > /dev/null
       stack --no-terminal build
-      stack runhaskell CI.hs
+      stack runhaskell CI.hs -- --ghc-flavor $(ghc-flavor)

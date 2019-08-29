@@ -21,17 +21,17 @@ main = ghclibgen =<< execParser opts
       )
 
 ghclibgen :: GhclibgenOpts -> IO ()
-ghclibgen (GhclibgenOpts root target) =
+ghclibgen (GhclibgenOpts root target ghcFlavor) =
   withCurrentDirectory root $
     case target of
       GhclibParser -> do
         init
         mangleCSymbols
         applyPatchStage
-        generateGhcLibParserCabal
+        generateGhcLibParserCabal ghcFlavor
       Ghclib -> do
         init
-        generateGhcLibCabal
+        generateGhcLibCabal ghcFlavor
   where
     init :: IO ()
     init = do

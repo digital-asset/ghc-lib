@@ -2,9 +2,11 @@
 -- affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
+{-# LANGUAGE LambdaCase #-}
 module GhclibgenOpts(
     GhclibgenTarget(..)
   , GhclibgenOpts(..)
+  , GhcFlavor(..)
   , ghclibgenVersion
   , ghclibgenOpts
 ) where
@@ -23,6 +25,7 @@ data GhclibgenTarget = GhclibParser | Ghclib
 data GhclibgenOpts = GhclibgenOpts {
     ghclibgenOpts_root :: !FilePath -- ^ Path to a GHC git repository.
   , ghclibgenOpts_target :: !GhclibgenTarget -- ^ What target?
+  , ghclibgenOpts_ghcFlavor :: !GhcFlavor
  }
 
 -- | A parser of the "--ghc-lib" target.
@@ -57,3 +60,22 @@ ghclibgenOpts :: Parser GhclibgenOpts
 ghclibgenOpts = GhclibgenOpts
   <$> argument str (metavar "GHC_ROOT")
   <*> ghclibgenTarget
+  <*> ghcFlavorOpt
+
+-- | We might want to factor this out so we can share it with CI.hs
+-- but for now it doesn’t seem worth it and having CI.hs be
+-- self-contained simplifies things.
+data GhcFlavor = Ghc881 | DaGhc881
+    deriving (Show, Eq)
+
+ghcFlavorOpt :: Parser GhcFlavor
+ghcFlavorOpt = option readFlavor
+    ( long "ghc-flavor"
+   <> help "The ghc-flavor to test against"
+    )
+
+readFlavor :: ReadM GhcFlavor
+readFlavor = eitherReader $ \case
+    "ghc-8.8.1" -> Right Ghc881
+    "da-ghc-8.8.1" -> Right DaGhc881
+    flavor -> Left $ "Failed to parse ghc flavor " <> show flavor <> " expected ghc-8.8.1 or da-ghc-8.8.1"
