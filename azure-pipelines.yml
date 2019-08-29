@@ -38,13 +38,13 @@ strategy:
       image: "macOS-10.13"
       ghc-flavor: "da-ghc-8.8.1"
 
-    linux-da-ghc-master:
+    linux-ghc-master:
       image: "Ubuntu 16.04"
       ghc-flavor: "ghc-master"
-    windows-da-ghc-master:
+    windows-ghc-master:
       image: "vs2017-win2016"
       ghc-flavor: "ghc-master"
-    mac-da-ghc-master:
+    mac-ghc-master:
       image: "macOS-10.13"
       ghc-flavor: "ghc-master"
 
