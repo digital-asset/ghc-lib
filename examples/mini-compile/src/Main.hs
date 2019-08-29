@@ -83,21 +83,25 @@ fakeLlvmConfig = ([], [])
 
 fakeSettings :: Settings
 fakeSettings = Settings
+#ifndef GHC_MASTER
+  { sTargetPlatform=platform
+  , sPlatformConstants=platformConstants
+  , sProjectVersion=cProjectVersion
+  , sProgramName="ghc"
+  , sOpt_P_fingerprint=fingerprint0
+  , sTmpDir="."
+  }
+#else
   { sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
   , sPlatformMisc=platformMisc
   , sPlatformConstants=platformConstants
-#ifdef GHC_MASTER
-  , sProjectVersion=cProjectVersion
-  , sProgramName="ghc"
-  , sOpt_P_fingerprint=fingerprint0
-  , sTmpDir="."
-#else
   , sToolSettings=toolSettings
-#endif
   }
+#endif
   where
+#ifdef GHC_MASTER
     fileSettings = FileSettings {
         fileSettings_tmpDir="."
       }
@@ -112,12 +116,17 @@ fakeSettings = Settings
         ghcNameVersion_programName="ghc"
       , ghcNameVersion_projectVersion=cProjectVersion
       }
+#endif
     platform =
       Platform{
+#ifdef GHC_MASTER
         platformWordSize=PW8
+      , platformArch=ArchUnknown
+#else
+        platformWordSize=8
+#endif
       , platformOS=OSUnknown
       , platformUnregisterised=True
-      , platformArch=ArchUnknown
       }
     platformConstants =
        PlatformConstants {
