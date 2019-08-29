@@ -27,7 +27,7 @@ import Data.IORef
 
 -- We use 0.x for HEAD
 #if !MIN_VERSION_ghc_lib(1,0,0)
-#define GHC_MASTER
+#  define GHC_MASTER
 #endif
 
 main :: IO ()
