@@ -401,7 +401,7 @@ removeGeneratedIntermediateFiles = do
 
 -- | Produces a ghc-lib Cabal file.
 generateGhcLibCabal :: GhcFlavor -> IO ()
-generateGhcLibCabal ghcFlavor = do
+generateGhcLibCabal _ghcFlavor = do
     -- Compute the list of modules to be compiled. The rest are parser
     -- modules re-exported from ghc-lib-parser.
     (lib, bin, parserModules) <- libBinParserModules
@@ -467,18 +467,13 @@ generateGhcLibCabal ghcFlavor = do
         ["    exposed-modules:"
         ,"        Paths_ghc_lib"
         ] ++
-        indent2 (nubSort nonParserModules) ++
-        if ghcFlavor == DaGhc881
-            then ["    extra-libraries:"
-                 ,"        ffi"
-                 ]
-            else []
+        indent2 (nubSort nonParserModules)
     removeGeneratedIntermediateFiles
     putStrLn "# Generating 'ghc-lib.cabal'... Done!"
 
 -- | Produces a ghc-lib-parser Cabal file.
 generateGhcLibParserCabal :: GhcFlavor -> IO ()
-generateGhcLibParserCabal ghcFlavor = do
+generateGhcLibParserCabal _ghcFlavor = do
     (lib, bin, parserModules) <- libBinParserModules
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
         -- header
@@ -537,12 +532,7 @@ generateGhcLibParserCabal ghcFlavor = do
         ,"        Parser"
         ] ++
         ["    exposed-modules:"
-        ]++ indent2 parserModules ++
-        if ghcFlavor == DaGhc881
-            then ["    extra-libraries:"
-                 ,"        ffi"
-                 ]
-            else []
+        ]++ indent2 parserModules
     removeGeneratedIntermediateFiles
     putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 

@@ -23,5 +23,5 @@ executable mini-compile
 
 flag daml-unit-ids
   description: If enabled, we use daml unit ids, e.g. daml-prim instead of ghc-prim
-  manual: true
-  default: false
+  manual: True
+  default: False
