@@ -7,6 +7,11 @@
 
 module Main (main) where
 
+-- We use 0.x for HEAD
+#if !MIN_VERSION_ghc_lib(1,0,0)
+#  define GHC_MASTER
+#endif
+
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
 import "ghc-lib-parser" HeaderInfo
@@ -29,11 +34,6 @@ import System.Directory
 import System.IO.Extra
 import qualified Data.Map.Strict as Map
 import Data.IORef
-
--- We use 0.x for HEAD
-#if !MIN_VERSION_ghc_lib(1,0,0)
-#  define GHC_MASTER
-#endif
 
 main :: IO ()
 main = do

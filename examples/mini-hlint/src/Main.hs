@@ -8,6 +8,11 @@
 
 module Main (main) where
 
+-- We use 0.x for HEAD
+#if !MIN_VERSION_ghc_lib(1,0,0)
+#  define GHC_MASTER
+#endif
+
 import "ghc-lib-parser" HsSyn
 import "ghc-lib-parser" Config
 import "ghc-lib-parser" DynFlags
@@ -39,11 +44,6 @@ import System.IO.Extra
 import qualified Data.Map as Map
 import Data.Generics.Uniplate.Operations
 import Data.Generics.Uniplate.Data
-
--- We use 0.x for HEAD
-#if !MIN_VERSION_ghc_lib(1,0,0)
-#  define GHC_MASTER
-#endif
 
 fakeSettings :: Settings
 fakeSettings = Settings
