@@ -64,5 +64,5 @@ steps:
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
       curl -sSL https://get.haskellstack.org/ | sh
       stack setup > /dev/null
-      stack --no-terminal build
-      stack runhaskell CI.hs -- --ghc-flavor $(ghc-flavor)
+      # This should be equivalent to ./CI.hs but that doesn’t work on Windows.
+      stack --resolver lts-14.3 script --package extra --package optparse-applicative --package directory --package filepath --package time CI.hs -- --ghc-flavor ghc-8.8.1

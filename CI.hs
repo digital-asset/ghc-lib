@@ -1,4 +1,5 @@
-#!/usr/bin/env stack --resolver lts-14.3 runhaskell --package extra --package optparse-applicative --
+#!/usr/bin/env stack
+-- stack --resolver lts-14.3 script --package extra --package optparse-applicative --package directory --package filepath --package time
 -- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
 -- affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
