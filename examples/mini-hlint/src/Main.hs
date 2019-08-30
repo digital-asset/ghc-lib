@@ -9,7 +9,7 @@
 module Main (main) where
 
 -- We use 0.x for HEAD
-#if !MIN_VERSION_ghc_lib(1,0,0)
+#if !MIN_VERSION_ghc_lib_parser(1,0,0)
 #  define GHC_MASTER
 #endif
 

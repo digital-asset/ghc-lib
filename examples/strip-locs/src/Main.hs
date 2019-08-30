@@ -2,15 +2,20 @@
 -- affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -Wno-missing-fields #-}
 
 module Main (main) where
 
+-- We use 0.x for HEAD
+#if !MIN_VERSION_ghc_lib_parser(1,0,0)
+#  define GHC_MASTER
+#endif
+
 import "ghc-lib-parser" HsSyn
 import "ghc-lib-parser" Config
 import "ghc-lib-parser" DynFlags
-import "ghc-lib-parser" GHC.Platform
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Lexer
@@ -20,11 +25,18 @@ import qualified "ghc-lib-parser" Parser
 import "ghc-lib-parser" FastString
 import "ghc-lib-parser" Outputable
 import "ghc-lib-parser" SrcLoc
-import "ghc-lib-parser" ToolSettings
 import "ghc-lib-parser" Panic
 import "ghc-lib-parser" HscTypes
 import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" ApiAnnotation
+
+#ifdef GHC_MASTER
+import "ghc-lib-parser" GHC.Platform
+import "ghc-lib-parser" ToolSettings
+#else
+import "ghc-lib-parser" Bag
+import "ghc-lib-parser" Platform
+#endif
 
 import "ghc-lib" HsDumpAst
 
@@ -38,6 +50,7 @@ import Data.Generics.Uniplate.Data
 
 fakeSettings :: Settings
 fakeSettings = Settings
+#ifdef GHC_MASTER
   { sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
@@ -45,7 +58,16 @@ fakeSettings = Settings
   , sPlatformConstants=platformConstants
   , sToolSettings=toolSettings
   }
+#else
+  { sTargetPlatform=platform
+  , sPlatformConstants=platformConstants
+  , sProjectVersion=cProjectVersion
+  , sProgramName="ghc"
+  , sOpt_P_fingerprint=fingerprint0
+  }
+#endif
   where
+#ifdef GHC_MASTER
     toolSettings = ToolSettings {
       toolSettings_opt_P_fingerprint=fingerprint0
       }
@@ -55,8 +77,13 @@ fakeSettings = Settings
       GhcNameVersion{ghcNameVersion_programName="ghc"
                     ,ghcNameVersion_projectVersion=cProjectVersion
                     }
+#endif
     platform =
+#ifdef GHC_MASTER
       Platform{platformWordSize=PW8
+#else
+      Platform{platformWordSize=8
+#endif
               , platformOS=OSUnknown
               , platformUnregisterised=True}
     platformConstants =
@@ -103,8 +130,13 @@ main = do
           (defaultDynFlags fakeSettings fakeLlvmConfig) file s
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
+#ifdef GHC_MASTER
             PFailed s ->
               report flags $ snd (getMessages s flags)
+#else
+            PFailed _ loc err ->
+              report flags $ unitBag $ mkPlainErrMsg flags loc err
+#endif
             POk s m -> do
               let (wrns, errs) = getMessages s flags
               report flags wrns
