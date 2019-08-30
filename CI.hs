@@ -183,8 +183,8 @@ buildDists ghcFlavor = do
     cmd "stack exec --no-terminal -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
     -- Test everything loads in GHCi, see
     -- https://github.com/digital-asset/ghc-lib/issues/27
-    cmd "stack exec --no-terminal -- ghc -package=ghc-lib-parser -e \"print 1\""
-    cmd "stack exec --no-terminal -- ghc -package=ghc-lib -e \"print 1\""
+    cmd "stack exec --no-terminal -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
+    cmd "stack exec --no-terminal -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
 
     -- Something like, "8.8.1.20190828".
     tag  -- The return value of type 'IO string'.
