@@ -1,5 +1,5 @@
 # Use the same resolver as GHC/Hadrian to increase caching
-resolver: lts-13.21
+resolver: lts-14.3
 
 ghc-options:
   # try and speed up recompilation on the CI server

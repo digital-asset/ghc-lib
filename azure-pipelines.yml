@@ -20,9 +20,35 @@ pr:
 
 strategy:
   matrix:
-    linux:   {image: "Ubuntu 16.04"}
-    windows: {image: "vs2017-win2016"}
-    mac:     {image: "macOS-10.13"}
+    linux-ghc-881:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "ghc-8.8.1"
+    windows-ghc-881:
+      image: "vs2017-win2016"
+      ghc-flavor: "ghc-8.8.1"
+    mac-ghc-881:
+      image: "macOS-10.13"
+      ghc-flavor: "ghc-8.8.1"
+
+    linux-da-ghc-881:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "da-ghc-8.8.1"
+    windows-da-ghc-881:
+      image: "vs2017-win2016"
+      ghc-flavor: "da-ghc-8.8.1"
+    mac-da-ghc-881:
+      image: "macOS-10.13"
+      ghc-flavor: "da-ghc-8.8.1"
+
+    linux-ghc-master:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "ghc-master"
+    windows-ghc-master:
+      image: "vs2017-win2016"
+      ghc-flavor: "ghc-master"
+    mac-ghc-master:
+      image: "macOS-10.13"
+      ghc-flavor: "ghc-master"
 
 pool: {vmImage: '$(image)'}
 
@@ -40,4 +66,5 @@ steps:
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
       curl -sSL https://get.haskellstack.org/ | sh
       stack setup > /dev/null
-      stack runhaskell --package extra CI.hs
+      stack --no-terminal build
+      stack runhaskell CI.hs -- --ghc-flavor $(ghc-flavor)

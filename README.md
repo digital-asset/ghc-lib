@@ -43,10 +43,9 @@ By far the easist way to produce `ghc-lib-parser` and `ghc-lib` packages is to e
 # Setup
 git clone git@github.com:digital-asset/ghc-lib.git
 cd ghc-lib
-stack runhaskell --package extra CI.hs
+./CI.hs --ghc-flavor ghc-8.8.1
 ```
 
 ## Releasing `ghc-lib` (notes for maintainers)
-
 
 Build `ghc-lib` using the [above instructions](#building-ghc-lib)  and upload the resulting `.tar.gz` files to [Hackage](https://hackage.haskell.org/upload).

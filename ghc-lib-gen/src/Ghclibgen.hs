@@ -25,6 +25,8 @@ import Data.Maybe
 import Data.Ord
 import qualified Data.Set as Set
 
+import GhclibgenOpts
+
 -- Constants.
 
 -- | Cabal files from libraries inside GHC that are merged together
@@ -58,15 +60,14 @@ sortDiffListByLength all excludes =
   sortBy (flip (comparing length)) $ Set.toList (Set.difference all excludes)
 
 -- | The "hs-source-dirs" for 'ghc-lib-parser'.
-ghcLibParserHsSrcDirs :: [Cabal] -> [FilePath]
-ghcLibParserHsSrcDirs lib =
+ghcLibParserHsSrcDirs :: GhcFlavor -> [Cabal] -> [FilePath]
+ghcLibParserHsSrcDirs ghcFlavor lib =
   let all = Set.fromList $
         [ "ghc-lib/stage0/compiler/build"
         , "ghc-lib/stage1/compiler/build"
         , "ghc-lib/stage0/libraries/ghci/build"
         , "ghc-lib/stage0/libraries/ghc-heap/build"
-        , "ghc-lib/stage0/libraries/ghc-boot/build"
-        ]
+        ] ++ [ "ghc-lib/stage0/libraries/ghc-boot/build" | ghcFlavor == GhcMaster ]
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
       excludes = Set.fromList
@@ -125,8 +126,8 @@ dataFiles =
 
 -- | Additional source and data files for Cabal. The files in this
 -- list are all created by Hadrian.
-extraFiles :: [FilePath]
-extraFiles =
+extraFiles :: GhcFlavor -> [FilePath]
+extraFiles ghcFlavor =
     -- See ghc/hadrian/src/Rules/Generate.hs
     [ "ghc-lib/generated/ghcautoconf.h"
     , "ghc-lib/generated/ghcplatform.h"
@@ -157,8 +158,8 @@ extraFiles =
     , "ghc-lib/stage1/compiler/build/Config.hs"
     , "ghc-lib/stage0/compiler/build/Parser.hs"
     , "ghc-lib/stage0/compiler/build/Lexer.hs"
-    , "ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs"
-    ]
+    ] ++
+    ["ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs" | ghcFlavor == GhcMaster ]
 
 -- | The C headers shipped with ghc-lib. These globs get glommed onto
 -- the 'extraFiles' above as 'extra-source-files'.
@@ -174,11 +175,11 @@ cHeaders =
 
 -- | Calculate via `ghc -M` the list of modules that are required for
 -- 'ghc-lib-parser'.
-calcParserModules :: IO [String]
-calcParserModules = do
+calcParserModules :: GhcFlavor -> IO [String]
+calcParserModules ghcFlavor = do
   lib <- mapM readCabalFile cabalFileLibraries
   let includeDirs = map ("-I" ++ ) ghcLibParserIncludeDirs
-      hsSrcDirs = ghcLibParserHsSrcDirs lib
+      hsSrcDirs = ghcLibParserHsSrcDirs ghcFlavor lib
       hsSrcIncludes = map ("-i" ++ ) hsSrcDirs
       cmd = unwords $
         [ "stack exec -- ghc"
@@ -377,11 +378,11 @@ commonBuildDepends =
   ]
 
 -- | This utility factored out to avoid repetion.
-libBinParserModules :: IO ([Cabal], [Cabal], [String])
-libBinParserModules = do
+libBinParserModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String])
+libBinParserModules ghcFlavor = do
     lib <- mapM readCabalFile cabalFileLibraries
     bin <- readCabalFile cabalFileBinary
-    parserModules <- calcParserModules
+    parserModules <- calcParserModules ghcFlavor
     return (lib, [bin], parserModules)
 
 -- | Call this after cabal file generation. These files are generated
@@ -400,11 +401,11 @@ removeGeneratedIntermediateFiles = do
     removeFile "ghc-lib/stage0/libraries/ghci/build/GHCi/InfoTable.hs"
 
 -- | Produces a ghc-lib Cabal file.
-generateGhcLibCabal :: IO ()
-generateGhcLibCabal = do
+generateGhcLibCabal :: GhcFlavor -> IO ()
+generateGhcLibCabal ghcFlavor = do
     -- Compute the list of modules to be compiled. The rest are parser
     -- modules re-exported from ghc-lib-parser.
-    (lib, bin, parserModules) <- libBinParserModules
+    (lib, bin, parserModules) <- libBinParserModules ghcFlavor
     let nonParserModules =
           Set.toList (Set.difference
           (Set.fromList (askField lib "exposed-modules:" ))
@@ -434,7 +435,7 @@ generateGhcLibCabal = do
         ["extra-source-files:"] ++
         -- Remove Config.hs, Version.hs, Parser.hs and Lexer.hs from
         -- the list of extra source files here.
-        indent (reverse (drop 4 $ reverse extraFiles)) ++ indent cHeaders ++
+        indent (reverse (drop 4 $ reverse $ extraFiles ghcFlavor)) ++ indent cHeaders ++
         ["tested-with: GHC==8.6.3, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
@@ -447,7 +448,7 @@ generateGhcLibCabal = do
         indent2 ghcLibIncludeDirs ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DHAVE_INTERPRETER -DGHC_IN_GHCI"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS " <> ghciDef ghcFlavor <> " -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
@@ -471,10 +472,14 @@ generateGhcLibCabal = do
     removeGeneratedIntermediateFiles
     putStrLn "# Generating 'ghc-lib.cabal'... Done!"
 
+ghciDef :: GhcFlavor -> String
+ghciDef GhcMaster = "-DHAVE_INTERPRETER"
+ghciDef _ = "-DGHCI"
+
 -- | Produces a ghc-lib-parser Cabal file.
-generateGhcLibParserCabal :: IO ()
-generateGhcLibParserCabal = do
-    (lib, bin, parserModules) <- libBinParserModules
+generateGhcLibParserCabal :: GhcFlavor -> IO ()
+generateGhcLibParserCabal ghcFlavor = do
+    (lib, bin, parserModules) <- libBinParserModules ghcFlavor
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
         -- header
         ["cabal-version: >=1.22"
@@ -497,7 +502,7 @@ generateGhcLibParserCabal = do
         ,"data-files:"] ++
         indent dataFiles ++
         ["extra-source-files:"] ++
-        indent extraFiles ++ indent cHeaders ++
+        indent (extraFiles ghcFlavor) ++ indent cHeaders ++
         ["tested-with: GHC==8.6.3, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
@@ -510,7 +515,7 @@ generateGhcLibParserCabal = do
         indent2 ghcLibParserIncludeDirs ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS -DHAVE_INTERPRETER -DGHC_IN_GHCI"
+        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS " <> ghciDef ghcFlavor <> " -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
@@ -526,7 +531,7 @@ generateGhcLibParserCabal = do
         -- https://github.com/digital-asset/ghc-lib/issues/27
         indent2 ["compiler/cbits/genSym.c","compiler/parser/cutils.c"] ++
         ["    hs-source-dirs:"] ++
-        indent2 (ghcLibParserHsSrcDirs lib) ++
+        indent2 (ghcLibParserHsSrcDirs ghcFlavor lib) ++
         ["    autogen-modules:"
         ,"        Lexer"
         ,"        Parser"
@@ -537,8 +542,8 @@ generateGhcLibParserCabal = do
     putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 
 -- | Run Hadrian to build the things that the Cabal files need.
-generatePrerequisites :: IO ()
-generatePrerequisites = do
+generatePrerequisites :: GhcFlavor -> IO ()
+generatePrerequisites ghcFlavor = do
   system_ "stack build alex happy" -- If building happy from git, the
                                    -- next line can fail without this.
   system_ "stack --stack-yaml hadrian/stack.yaml build --only-dependencies"
@@ -551,9 +556,10 @@ generatePrerequisites = do
         ,"--directory=.."
         ,"--integer-simple"
         ,"--build-root=ghc-lib"
-        ] ++ extraFiles ++
+        ] ++ extraFiles ghcFlavor ++
         map (dataDir </>) dataFiles
   -- We use the hadrian generated Lexer and Parser so get these out
   -- of the way.
   removeFile "compiler/parser/Lexer.x"
   removeFile "compiler/parser/Parser.y"
+  removeFile "compiler/utils/Fingerprint.hsc" -- Favor the generated .hs file here too.

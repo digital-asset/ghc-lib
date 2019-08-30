@@ -1,10 +1,16 @@
 -- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
 -- SPDX-License-Identifier: (Apache-2.0 OR BSD-3-Clause)
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -Wno-missing-fields #-}
 
 module Main (main) where
+
+-- We use 0.x for HEAD
+#if !MIN_VERSION_ghc_lib(1,0,0)
+#  define GHC_MASTER
+#endif
 
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
@@ -12,11 +18,16 @@ import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" Module
 import "ghc-lib-parser" Config
 import "ghc-lib-parser" DynFlags
-import "ghc-lib-parser" GHC.Platform
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Outputable
+
+#ifdef GHC_MASTER
+import "ghc-lib-parser" GHC.Platform
 import "ghc-lib-parser" ToolSettings
+#else
+import "ghc-lib-parser" Platform
+#endif
 
 import System.Environment
 import System.Directory
@@ -58,7 +69,11 @@ mkDynFlags filename s = do
         , dirsToClean = dirs_to_clean
         , filesToClean = files_to_clean
         , nextTempSuffix = next_temp_suffix
+#ifdef DAML_UNIT_IDS
+        , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "daml-prim")
+#else
         , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "ghc-prim")
+#endif
         }
   parsePragmasIntoDynFlags filename s baseFlags
   where
@@ -73,6 +88,15 @@ fakeLlvmConfig = ([], [])
 
 fakeSettings :: Settings
 fakeSettings = Settings
+#ifndef GHC_MASTER
+  { sTargetPlatform=platform
+  , sPlatformConstants=platformConstants
+  , sProjectVersion=cProjectVersion
+  , sProgramName="ghc"
+  , sOpt_P_fingerprint=fingerprint0
+  , sTmpDir="."
+  }
+#else
   { sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
@@ -80,7 +104,9 @@ fakeSettings = Settings
   , sPlatformConstants=platformConstants
   , sToolSettings=toolSettings
   }
+#endif
   where
+#ifdef GHC_MASTER
     fileSettings = FileSettings {
         fileSettings_tmpDir="."
       }
@@ -95,12 +121,17 @@ fakeSettings = Settings
         ghcNameVersion_programName="ghc"
       , ghcNameVersion_projectVersion=cProjectVersion
       }
+#endif
     platform =
       Platform{
+#ifdef GHC_MASTER
         platformWordSize=PW8
+      , platformArch=ArchUnknown
+#else
+        platformWordSize=8
+#endif
       , platformOS=OSUnknown
       , platformUnregisterised=True
-      , platformArch=ArchUnknown
       }
     platformConstants =
        PlatformConstants {
