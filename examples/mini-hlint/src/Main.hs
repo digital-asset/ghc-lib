@@ -159,7 +159,7 @@ main = do
           let (warns, errs) = getMessages s flags
           report flags warns
           report flags errs
-          when (null errs) $ analyzeModule flags m
+          when (null errs) $ analyzeModule flags m (harvestAnns s)
 #endif
     _ -> fail "Exactly one file argument required"
   where
