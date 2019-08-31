@@ -120,7 +120,7 @@ buildDists ghcFlavor = do
             cmd "cd ghc && git fetch upstream"
             cmd "cd ghc && git -c \"user.name=Doesn't Matter\" -c \"user.email=doesnt.matter@example.com\" merge --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
         GhcMaster ->
-            cmd "cd ghc && git checkout 47070144030d85bd510f31ab70006d055a2af151" -- 08/24/2019
+            cmd "cd ghc && git checkout c0956c14f49b85326d81d2c2fa2afb2c40165721" -- 08/30/2019
     cmd "cd ghc && git submodule update --init --recursive"
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
 

@@ -59,15 +59,34 @@ sortDiffListByLength :: Set.Set FilePath -> Set.Set FilePath -> [FilePath]
 sortDiffListByLength all excludes =
   sortBy (flip (comparing length)) $ Set.toList (Set.difference all excludes)
 
--- | The "hs-source-dirs" for 'ghc-lib-parser'.
-ghcLibParserHsSrcDirs :: GhcFlavor -> [Cabal] -> [FilePath]
-ghcLibParserHsSrcDirs ghcFlavor lib =
+-- | The "hs-source-dirs" for 'ghc-lib-parser' (actually used in two
+-- contexts, 'ghc-lib-parser.cabal' generation and when calculating
+-- the set of parser modules).
+ghcLibParserHsSrcDirs :: Bool -> GhcFlavor -> [Cabal] -> [FilePath]
+ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
   let all = Set.fromList $
         [ "ghc-lib/stage0/compiler/build"
         , "ghc-lib/stage1/compiler/build"
-        , "ghc-lib/stage0/libraries/ghci/build"
-        , "ghc-lib/stage0/libraries/ghc-heap/build"
-        ] ++ [ "ghc-lib/stage0/libraries/ghc-boot/build" | ghcFlavor == GhcMaster ]
+        ]
+        -- The subtlety here is that, when calculating parser modules
+        -- (i.e. 'forParserDepends == True') via 'ghc -M' we need
+        -- these directories poplulated with generated intermediate
+        -- files ('ghc -M' isn't smart enough to "read through" .hsc
+        -- files). When we sdist though, we exclude the generated
+        -- files (rather, we ship their .hsc sources and the generated
+        -- files are physically deleted at that point) and
+        -- consequently, these directories are empty causing Cabal to
+        -- warn (which is then going to cause problems with uploading
+        -- to Hackage for example). Thus, when writing
+        -- 'ghc-lib-parser.cabal' (i.e. 'forParserDepends == False'),
+        -- we exclude these directories.
+        ++ [dir | dir <- ["ghc-lib/stage0/libraries/ghci/build"
+                         ,"ghc-lib/stage0/libraries/ghc-heap/build"]
+                , forParserDepends]
+        -- This next conditional just smooths over a 'master'
+        -- vs. '8.8.1' branch difference (relating to a file
+        -- 'GhcVersion.hs' IIRC).
+        ++ [ "ghc-lib/stage0/libraries/ghc-boot/build" | ghcFlavor == GhcMaster ]
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
       excludes = Set.fromList
@@ -78,18 +97,13 @@ ghcLibParserHsSrcDirs ghcFlavor lib =
         , "compiler/stgSyn"
         , "compiler/stranal"
         ]
-  in sortDiffListByLength all excludes
+  in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
 
 -- | The "hs-source-dirs" for 'ghc-lib'.
 ghcLibHsSrcDirs :: [Cabal] -> [FilePath]
 ghcLibHsSrcDirs lib =
   let all = Set.fromList $
-        [ "ghc-lib/stage1/compiler/build"
-        -- , "ghc-lib/stage0/libraries/ghci/build"
-        -- No, don't include this. Generate 'InfoTable.hs'
-        -- via the libraries/ghci, .hsc file. The hazel/bazel build
-        -- breaks when we allow this source dir.
-        ]
+        [ "ghc-lib/stage1/compiler/build"]
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
       excludes = Set.fromList
@@ -99,11 +113,11 @@ ghcLibHsSrcDirs lib =
         , "libraries/ghc-boot-th"
         , "libraries/ghc-heap"
         ]
-  in sortDiffListByLength all excludes
+  in sortDiffListByLength all excludes -- Not so important. Here for symmetry with 'ghcLibParserHsSrcDirs' I think.
 
 -- | C-preprocessor "include dirs" for 'ghc-lib'.
 ghcLibIncludeDirs :: [FilePath]
-ghcLibIncludeDirs = ghcLibParserIncludeDirs -- Needs adjusting.
+ghcLibIncludeDirs = ghcLibParserIncludeDirs -- Needs adjusting (we really should get to this but good enough for now).
 
 -- | Cabal file for the GHC binary.
 cabalFileBinary :: FilePath
@@ -179,7 +193,7 @@ calcParserModules :: GhcFlavor -> IO [String]
 calcParserModules ghcFlavor = do
   lib <- mapM readCabalFile cabalFileLibraries
   let includeDirs = map ("-I" ++ ) ghcLibParserIncludeDirs
-      hsSrcDirs = ghcLibParserHsSrcDirs ghcFlavor lib
+      hsSrcDirs = ghcLibParserHsSrcDirs True ghcFlavor lib
       hsSrcIncludes = map ("-i" ++ ) hsSrcDirs
       cmd = unwords $
         [ "stack exec -- ghc"
@@ -531,7 +545,7 @@ generateGhcLibParserCabal ghcFlavor = do
         -- https://github.com/digital-asset/ghc-lib/issues/27
         indent2 ["compiler/cbits/genSym.c","compiler/parser/cutils.c"] ++
         ["    hs-source-dirs:"] ++
-        indent2 (ghcLibParserHsSrcDirs ghcFlavor lib) ++
+        indent2 (ghcLibParserHsSrcDirs False ghcFlavor lib) ++
         ["    autogen-modules:"
         ,"        Lexer"
         ,"        Parser"
