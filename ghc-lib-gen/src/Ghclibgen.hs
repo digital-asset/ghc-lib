@@ -196,7 +196,7 @@ calcParserModules ghcFlavor = do
       hsSrcDirs = ghcLibParserHsSrcDirs True ghcFlavor lib
       hsSrcIncludes = map ("-i" ++ ) hsSrcDirs
       cmd = unwords $
-        [ "stack exec -- ghc"
+        [ "stack exec --stack-yaml hadrian/stack.yaml -- ghc"
         , "-dep-suffix ''"
         , "-dep-makefile .parser-depends"
         , "-M"]
@@ -558,12 +558,15 @@ generateGhcLibParserCabal ghcFlavor = do
 -- | Run Hadrian to build the things that the Cabal files need.
 generatePrerequisites :: GhcFlavor -> IO ()
 generatePrerequisites ghcFlavor = do
-  system_ "stack build alex happy" -- If building happy from git, the
-                                   -- next line can fail without this.
+  -- If building happy in the next step, the configure it does
+  -- requires some versions of alex and happy pre-exist. We make sure
+  -- of this in CI.hs.
   system_ "stack --stack-yaml hadrian/stack.yaml build --only-dependencies"
   system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./boot"
   system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c \"./configure --enable-tarballs-autodownload\""
   withCurrentDirectory "hadrian" $ do
+    -- No need to specify a stack.yaml here, we are in the hadrian
+    -- directory itself.
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
         ["stack exec hadrian --"

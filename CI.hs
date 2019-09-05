@@ -23,18 +23,26 @@ import qualified System.Exit as Exit
 
 main :: IO ()
 main = do
-    let opts = Opts.info (parseOptions Opts.<**> Opts.helper)
-                 ( Opts.fullDesc
-                <> Opts.progDesc "Build (and possibly upload) ghc-lib and ghc-lib-parser tarballs."
-                <> Opts.header "CI - CI script for ghc-lib" )
-    Options { upload, ghcFlavor }  <- Opts.execParser opts
-    version <- buildDists ghcFlavor
+    let opts =
+          Opts.info (parseOptions Opts.<**> Opts.helper)
+          ( Opts.fullDesc
+            <> Opts.progDesc "Build (and possibly upload) ghc-lib and ghc-lib-parser tarballs."
+            <> Opts.header "CI - CI script for ghc-lib"
+          )
+    options@Options { upload, ghcFlavor, resolver }  <- Opts.execParser opts
+    version <- buildDists ghcFlavor resolver
     when upload $ bintrayUpload version
 
 data Options = Options
     { upload :: Bool
     , ghcFlavor :: GhcFlavor
-    }
+    , resolver :: Maybe String -- If 'Just _', override stack.yaml.
+    } deriving (Show)
+
+stackResolverOpt :: Maybe String -> String
+stackResolverOpt = \case
+  Just resolver -> "--resolver " ++ resolver
+  Nothing -> ""
 
 data GhcFlavor = Ghc881 | DaGhc881 | GhcMaster
   deriving (Eq, Show)
@@ -54,6 +62,10 @@ parseOptions = Options
         ( Opts.long "ghc-flavor"
        <> Opts.help "The ghc-flavor to test against"
         )
+    <*> Opts.optional ( Opts.strOption
+        ( Opts.long "resolver"
+       <> Opts.help "If specified, the stack resolver to use"
+        ))
  where
    readFlavor :: Opts.ReadM GhcFlavor
    readFlavor = Opts.eitherReader $ \case
@@ -62,30 +74,33 @@ parseOptions = Options
        "ghc-master" -> Right GhcMaster
        flavor -> Left $ "Failed to parse ghc flavor " <> show flavor <> " expected ghc-8.8.1 or da-ghc-8.8.1"
 
-
 bintrayUpload :: String -> IO ()
 bintrayUpload version = do
     credentials <- Env.lookupEnv "BINTRAY_BASIC_AUTH"
     case credentials of
       Nothing ->
-        Exit.die $ unlines ["Error: Cannot upload without BINTRAY_BASIC_AUTH.",
-                            "To set the environment variable, run:",
-                            "    BINTRAY_BASIC_AUTH=<creds> ./CI.hs --upload-to-bintray",
-                            "where <creds> should be of the form:",
-                            "  fname.lname@digitalassetsdk:0123456789abcdef0123456789abcdef01234567",
-                            "You can find your API key (the part after the colon) at:",
-                            "  https://bintray.com/profile/edit",
-                            "after logging in. (The username is also displayed on that page.)"]
+        Exit.die $ unlines [
+          "Error: Cannot upload without BINTRAY_BASIC_AUTH.",
+          "To set the environment variable, run:",
+          "    BINTRAY_BASIC_AUTH=<creds> ./CI.hs --upload-to-bintray",
+          "where <creds> should be of the form:",
+          "  fname.lname@digitalassetsdk:0123456789abcdef0123456789abcdef01234567",
+          "You can find your API key (the part after the colon) at:",
+          "  https://bintray.com/profile/edit",
+          "after logging in. (The username is also displayed on that page.)"]
       Just creds -> do
-        cmd $ concat ["curl -T ./ghc-lib-parser-", version, ".tar.gz",
-                          " -u", creds,
-                          " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/ghc-lib-parser-", version, ".tar.gz"]
-        cmd $ concat ["curl -T ./ghc-lib-", version, ".tar.gz",
-                          " -u", creds,
-                          " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/ghc-lib-", version, ".tar.gz"]
-        cmd $ concat ["curl -X POST",
-                          " -u", creds,
-                          " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/publish"]
+        cmd $ concat [
+            "curl -T ./ghc-lib-parser-", version, ".tar.gz",
+            " -u", creds,
+            " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/ghc-lib-parser-", version, ".tar.gz"]
+        cmd $ concat [
+            "curl -T ./ghc-lib-", version, ".tar.gz",
+            " -u", creds,
+            " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/ghc-lib-", version, ".tar.gz"]
+        cmd $ concat [
+            "curl -X POST",
+            " -u", creds,
+            " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/publish"]
         where
           cmd :: String -> IO ()
           cmd x = do
@@ -96,11 +111,14 @@ bintrayUpload version = do
             putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ c ++ "\n"
             hFlush stdout
 
-buildDists :: GhcFlavor -> IO String
-buildDists ghcFlavor = do
+buildDists :: GhcFlavor -> Maybe String -> IO String
+buildDists ghcFlavor resolver = do
+    -- One of "" (use 'stack.yaml') or, "--resolver=xxx".
+    let resolverFlag=stackResolverOpt resolver
+
     -- Get packages missing on Windows needed by hadrian.
     when isWindows $
-        cmd "stack exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
+        cmd $ "stack exec "  ++ resolverFlag ++ " -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
 
     -- Clear up any detritus left over from previous runs.
     toDelete <- (["ghc", "ghc-lib", "ghc-lib-parser"] ++) .
@@ -124,19 +142,32 @@ buildDists ghcFlavor = do
     cmd "cd ghc && git submodule update --init --recursive"
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
 
+
+    -- Feedback on the compiler used for ghc-lib-gen.
+    cmd $ "stack " ++ resolverFlag ++ " exec -- ghc --version"
+
     -- Build ghc-lib-gen. Do this here rather than in the Azure script
     -- so that it's not forgotten when testing this program locally.
-    cmd "stack --no-terminal build"
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal build"
 
     -- Calculate verison and package names.
     version <- tag
     let pkg_ghclib = "ghc-lib-" ++ version
         pkg_ghclib_parser = "ghc-lib-parser-" ++ version
 
+    cmd $ "stack " ++ resolverFlag ++ " build alex happy"
+    -- Building of hadrian dependencies that result from the
+    -- invocations of ghc-lib-gen can require some versions of these
+    -- have been installed.
+
+    -- Any invocations of GHC in the sdist steps that follow use the
+    -- hadrian/stack.yaml resolver (which can and we should expect
+    -- to be, different to our resolver).
+
     -- Make and extract an sdist of ghc-lib-parser.
-    cmd $ "stack exec -- ghc-lib-gen ghc --ghc-lib-parser " <> ghcFlavorOpt ghcFlavor
+    cmd $ "stack " ++ resolverFlag ++ " exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
-    mkTarball pkg_ghclib_parser
+    mkTarball pkg_ghclib_parser resolverFlag
     renameDirectory pkg_ghclib_parser "ghc-lib-parser"
     removeFile "ghc/ghc-lib-parser.cabal"
     cmd "git checkout stack.yaml"
@@ -144,10 +175,10 @@ buildDists ghcFlavor = do
     -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-    cmd $ "stack exec -- ghc-lib-gen ghc --ghc-lib " <> ghcFlavorOpt ghcFlavor
+    cmd $ "stack " ++ resolverFlag ++ " exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraint version "ghc/ghc-lib.cabal"
-    mkTarball pkg_ghclib
+    mkTarball pkg_ghclib resolverFlag
     renameDirectory pkg_ghclib "ghc-lib"
     removeFile "ghc/ghc-lib.cabal"
     cmd "git checkout stack.yaml"
@@ -166,25 +197,31 @@ buildDists ghcFlavor = do
         then unlines ["flags: {mini-compile: {daml-unit-ids: true}}"]
         else ""
 
+    -- All GHC steps from here are using our resolver.
+
+    -- Feedback on what compiler has been selected for building
+    -- ghc-lib packages and tests.
+    cmd $ "stack " ++ resolverFlag ++ " exec -- ghc --version"
+
     -- Separate the two library build commands so they are
     -- independently timed. Note that optimizations in these builds
     -- are disabled in stack.yaml via `ghc-options: -O0`.
-    cmd "stack build ghc-lib-parser --no-terminal --interleaved-output"
-    cmd "stack build ghc-lib --no-terminal --interleaved-output"
-    cmd "stack build mini-hlint mini-compile strip-locs --no-terminal --interleaved-output"
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal --interleaved-output " ++ "build ghc-lib-parser"
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal --interleaved-output " ++ "build ghc-lib"
+    cmd $ "stack " ++ resolverFlag ++ " build mini-hlint mini-compile strip-locs --no-terminal --interleaved-output"
 
     -- Run tests.
-    cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
-    cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fatal_error.hs"
-    cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
-    cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs"
-    cmd "stack exec --no-terminal -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
-    cmd "stack exec --no-terminal -- strip-locs examples/mini-compile/test/MiniCompileTest.hs"
-    cmd "stack exec --no-terminal -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fatal_error.hs"
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs"
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- strip-locs examples/mini-compile/test/MiniCompileTest.hs"
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
     -- Test everything loads in GHCi, see
     -- https://github.com/digital-asset/ghc-lib/issues/27
-    cmd "stack exec --no-terminal -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
-    cmd "stack exec --no-terminal -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
+    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
 
     -- Something like, "8.8.1.20190828".
     tag  -- The return value of type 'IO string'.
@@ -198,10 +235,10 @@ buildDists ghcFlavor = do
         putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
         hFlush stdout
 
-      mkTarball :: String -> IO ()
-      mkTarball target = do
+      mkTarball :: String -> String -> IO ()
+      mkTarball target resolverFlag = do
         writeFile "stack.yaml" . (++ "- ghc\n") =<< readFile' "stack.yaml"
-        cmd "stack sdist ghc --tar-dir=."
+        cmd $ "stack " ++ resolverFlag ++ " sdist ghc --tar-dir=."
         cmd $ "tar -xvf " ++ target ++ ".tar.gz"
 
       tag :: IO String
