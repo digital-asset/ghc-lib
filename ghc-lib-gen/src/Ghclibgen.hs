@@ -450,7 +450,7 @@ generateGhcLibCabal ghcFlavor = do
         -- Remove Config.hs, Version.hs, Parser.hs and Lexer.hs from
         -- the list of extra source files here.
         indent (reverse (drop 4 $ reverse $ extraFiles ghcFlavor)) ++ indent cHeaders ++
-        ["tested-with: GHC==8.6.3, GHC==8.4.3"
+        ["tested-with: GHC==8.8.1, GHC==8.6.5, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git@github.com:digital-asset/ghc-lib.git"
@@ -517,7 +517,7 @@ generateGhcLibParserCabal ghcFlavor = do
         indent dataFiles ++
         ["extra-source-files:"] ++
         indent (extraFiles ghcFlavor) ++ indent cHeaders ++
-        ["tested-with: GHC==8.6.3, GHC==8.4.3"
+        ["tested-with: GHC==8.8.1, GHC==8.6.5, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git@github.com:digital-asset/ghc-lib.git"
