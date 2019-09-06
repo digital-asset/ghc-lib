@@ -113,18 +113,19 @@ bintrayUpload version = do
 
 buildDists :: GhcFlavor -> Maybe String -> IO String
 buildDists ghcFlavor resolver = do
-    -- One of "" (use 'stack.yaml') or, "--resolver=xxx".
-    let resolverFlag=stackResolverOpt resolver
-
-    -- Get packages missing on Windows needed by hadrian.
-    when isWindows $
-        cmd $ "stack exec "  ++ resolverFlag ++ " -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
-
     -- Clear up any detritus left over from previous runs.
     toDelete <- (["ghc", "ghc-lib", "ghc-lib-parser"] ++) .
       filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
     forM_ toDelete removePath
     cmd "git checkout stack.yaml"
+
+    -- Get packages missing on Windows needed by hadrian.
+    when isWindows $
+        stack "exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
+    -- Building of hadrian dependencies that result from the
+    -- invocations of ghc-lib-gen can require some versions of these
+    -- have been installed.
+    stack "build alex happy"
 
     -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
@@ -136,36 +137,29 @@ buildDists ghcFlavor resolver = do
             -- Apply Digital Asset extensions.
             cmd "cd ghc && git remote add upstream https://github.com/digital-asset/ghc.git"
             cmd "cd ghc && git fetch upstream"
-            cmd "cd ghc && git -c \"user.name=Doesn't Matter\" -c \"user.email=doesnt.matter@example.com\" merge --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
+            cmd "cd ghc && git -c \"user.name=Cookie Monster\" -c \"user.email=cookie.monster@seasame-street.com\" merge --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
         GhcMaster ->
             cmd "cd ghc && git checkout 11679e5bec1994775072e8e60f24b4ce104af0a7" -- 09/03/2019
     cmd "cd ghc && git submodule update --init --recursive"
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
 
-
     -- Feedback on the compiler used for ghc-lib-gen.
-    cmd $ "stack " ++ resolverFlag ++ " exec -- ghc --version"
-
+    stack "exec -- ghc --version"
     -- Build ghc-lib-gen. Do this here rather than in the Azure script
     -- so that it's not forgotten when testing this program locally.
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal build"
+    stack "--no-terminal build"
+
+    -- Any invocations of GHC in the sdist steps that follow use the
+    -- hadrian/stack.yaml resolver (which can and we should expect
+    -- to be, different to our resolver).
 
     -- Calculate verison and package names.
     version <- tag
     let pkg_ghclib = "ghc-lib-" ++ version
         pkg_ghclib_parser = "ghc-lib-parser-" ++ version
 
-    cmd $ "stack " ++ resolverFlag ++ " build alex happy"
-    -- Building of hadrian dependencies that result from the
-    -- invocations of ghc-lib-gen can require some versions of these
-    -- have been installed.
-
-    -- Any invocations of GHC in the sdist steps that follow use the
-    -- hadrian/stack.yaml resolver (which can and we should expect
-    -- to be, different to our resolver).
-
     -- Make and extract an sdist of ghc-lib-parser.
-    cmd $ "stack " ++ resolverFlag ++ " exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
+    stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser resolverFlag
     renameDirectory pkg_ghclib_parser "ghc-lib-parser"
@@ -175,7 +169,7 @@ buildDists ghcFlavor resolver = do
     -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-    cmd $ "stack " ++ resolverFlag ++ " exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor
+    stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraint version "ghc/ghc-lib.cabal"
     mkTarball pkg_ghclib resolverFlag
@@ -197,36 +191,43 @@ buildDists ghcFlavor resolver = do
         then unlines ["flags: {mini-compile: {daml-unit-ids: true}}"]
         else ""
 
-    -- All GHC steps from here are using our resolver.
+    -- All invocations of GHC from here on are using our resolver.
 
     -- Feedback on what compiler has been selected for building
     -- ghc-lib packages and tests.
-    cmd $ "stack " ++ resolverFlag ++ " exec -- ghc --version"
+    stack "exec -- ghc --version"
 
     -- Separate the two library build commands so they are
     -- independently timed. Note that optimizations in these builds
     -- are disabled in stack.yaml via `ghc-options: -O0`.
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal --interleaved-output " ++ "build ghc-lib-parser"
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal --interleaved-output " ++ "build ghc-lib"
-    cmd $ "stack " ++ resolverFlag ++ " build mini-hlint mini-compile strip-locs --no-terminal --interleaved-output"
+    stack $ "--no-terminal --interleaved-output " ++ "build ghc-lib-parser"
+    stack $ "--no-terminal --interleaved-output " ++ "build ghc-lib"
+    stack $ "--no-terminal --interleaved-output build mini-hlint mini-compile strip-locs"
 
     -- Run tests.
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fatal_error.hs"
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs"
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- strip-locs examples/mini-compile/test/MiniCompileTest.hs"
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
+    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
+    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fatal_error.hs"
+    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
+    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs"
+    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
+    stack "--no-terminal exec -- strip-locs examples/mini-compile/test/MiniCompileTest.hs"
+    stack "--no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
+
     -- Test everything loads in GHCi, see
     -- https://github.com/digital-asset/ghc-lib/issues/27
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
-    cmd $ "stack " ++ resolverFlag ++ " --no-terminal exec -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
+    stack "--no-terminal exec -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
+    stack "--no-terminal exec -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
 
     -- Something like, "8.8.1.20190828".
     tag  -- The return value of type 'IO string'.
 
     where
+      resolverFlag :: String -- One of "" or, "--resolver=xxx".
+      resolverFlag = stackResolverOpt resolver
+
+      stack :: String -> IO ()
+      stack action = cmd $ "stack " ++ resolverFlag ++ " " ++ action
+
       cmd :: String -> IO ()
       cmd x = do
         putStrLn $ "\n\n# Running: " ++ x
@@ -263,5 +264,5 @@ buildDists ghcFlavor resolver = do
       removePath :: FilePath -> IO ()
       removePath p =
         whenM (doesPathExist p) $ do
-          putStrLn ("# Removing " ++ p)
+          putStrLn $ "# Removing " ++ p
           removePathForcibly p
