@@ -18,35 +18,95 @@ pr:
 
 strategy:
   matrix:
-    linux-ghc-881:
-      image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-8.8.1"
-    windows-ghc-881:
-      image: "vs2017-win2016"
-      ghc-flavor: "ghc-8.8.1"
-    mac-ghc-881:
-      image: "macOS-10.13"
-      ghc-flavor: "ghc-8.8.1"
+    # ghc-lib v8.8.1 (vanilla)
 
-    linux-da-ghc-881:
+    # ghc-8.4.4
+    linux-ghc-881-844:
       image: "Ubuntu 16.04"
-      ghc-flavor: "da-ghc-8.8.1"
-    windows-da-ghc-881:
+      ghc-flavor: "ghc-8.8.1"
+      resolver: "lts-12.26"
+    windows-ghc-881-844:
       image: "vs2017-win2016"
-      ghc-flavor: "da-ghc-8.8.1"
-    mac-da-ghc-881:
+      ghc-flavor: "ghc-8.8.1"
+      resolver: "lts-12.26"
+    mac-ghc-881-844:
       image: "macOS-10.13"
-      ghc-flavor: "da-ghc-8.8.1"
+      ghc-flavor: "ghc-8.8.1"
+      resolver: "lts-12.26"
 
-    linux-ghc-master:
+    # ghc-8.6.5
+    linux-ghc-881-865:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "ghc-8.8.1"
+      resolver: "lts-14.3"
+    windows-ghc-881-865:
+      image: "vs2017-win2016"
+      ghc-flavor: "ghc-8.8.1"
+      resolver: "lts-14.3"
+    mac-ghc-881-865:
+      image: "macOS-10.13"
+      ghc-flavor: "ghc-8.8.1"
+      resolver: "lts-14.3"
+
+    # ghc-lib v8.8.1 (DA)
+
+    # #ghc-8.4.4 (not useful - skipped)
+    # linux-da-ghc-881-844:
+    #   image: "Ubuntu 16.04"
+    #   ghc-flavor: "da-ghc-8.8.1"
+    #   resolver: "lts-12.26"
+    # windows-da-ghc-881-844:
+    #   image: "vs2017-win2016"
+    #   ghc-flavor: "da-ghc-8.8.1"
+    #   resolver: "lts-12.26"
+    # mac-da-ghc-881-844:
+    #   image: "macOS-10.13"
+    #   ghc-flavor: "da-ghc-8.8.1"
+    #   resolver: "lts-12.26"
+
+    # ghc-8.6.5
+    linux-da-ghc-881-865:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "da-ghc-8.8.1"
+      resolver: "lts-14.3"
+    windows-da-ghc-881-865:
+      image: "vs2017-win2016"
+      ghc-flavor: "da-ghc-8.8.1"
+      resolver: "lts-14.3"
+    mac-da-ghc-881-865:
+      image: "macOS-10.13"
+      ghc-flavor: "da-ghc-8.8.1"
+      resolver: "lts-14.3"
+
+    # ghc-lib master (vanilla)
+
+    # ghc-8.4.4
+    linux-ghc-master-844:
       image: "Ubuntu 16.04"
       ghc-flavor: "ghc-master"
-    windows-ghc-master:
+      resolver: "lts-12.26"
+    windows-ghc-master-844:
       image: "vs2017-win2016"
       ghc-flavor: "ghc-master"
-    mac-ghc-master:
+      resolver: "lts-12.26"
+    mac-ghc-master-844:
       image: "macOS-10.13"
       ghc-flavor: "ghc-master"
+      resolver: "lts-12.26"
+
+    # ghc-8.6.5
+    linux-ghc-master-865:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "ghc-master"
+      resolver: "lts-14.3"
+    windows-ghc-master-865:
+      image: "vs2017-win2016"
+      ghc-flavor: "ghc-master"
+      resolver: "lts-14.3"
+    mac-ghc-master-865:
+      image: "macOS-10.13"
+      ghc-flavor: "ghc-master"
+      resolver: "lts-14.3"
 
 pool: {vmImage: '$(image)'}
 
@@ -63,6 +123,5 @@ steps:
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/src
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
       curl -sSL https://get.haskellstack.org/ | sh
-      stack setup > /dev/null
-      stack --no-terminal build
-      stack runhaskell CI.hs -- --ghc-flavor $(ghc-flavor)
+      stack --resolver $(resolver) setup > /dev/null
+      stack runhaskell --resolver $(resolver) --package extra --package optparse-applicative CI.hs -- --ghc-flavor $(ghc-flavor) --resolver $(resolver)
