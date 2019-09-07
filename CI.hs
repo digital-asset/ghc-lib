@@ -29,7 +29,7 @@ main = do
             <> Opts.progDesc "Build (and possibly upload) ghc-lib and ghc-lib-parser tarballs."
             <> Opts.header "CI - CI script for ghc-lib"
           )
-    options@Options { upload, ghcFlavor, resolver }  <- Opts.execParser opts
+    Options { upload, ghcFlavor, resolver } <- Opts.execParser opts
     version <- buildDists ghcFlavor resolver
     when upload $ bintrayUpload version
 
@@ -39,19 +39,33 @@ data Options = Options
     , resolver :: Maybe String -- If 'Just _', override stack.yaml.
     } deriving (Show)
 
+data GhcFlavor = Ghc881 | DaGhc881 | GhcMaster String
+  deriving (Eq, Show)
+
+-- Last tested gitlab.haskell.org/ghc/ghc.git at
+current :: String
+current =    "b55ee979d32df938eee9c4c02c189f8be267e8a1" -- 09/06/2019
+          -- "11679e5bec1994775072e8e60f24b4ce104af0a7" -- 09/03/2019
+
+-- ghc-lib-gen argument generators.
+
 stackResolverOpt :: Maybe String -> String
 stackResolverOpt = \case
   Just resolver -> "--resolver " ++ resolver
   Nothing -> ""
 
-data GhcFlavor = Ghc881 | DaGhc881 | GhcMaster
-  deriving (Eq, Show)
-
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
     Ghc881 -> "--ghc-flavor ghc-8.8.1"
     DaGhc881 -> "--ghc-flavor da-ghc-8.8.1"
-    GhcMaster -> "--ghc-flavor ghc-master"
+    GhcMaster _hash -> "--ghc-flavor ghc-master"
+      -- The git SHA1 hash is not passed to ghc-lib-gen at this time.
+
+-- Calculate a version string based on a date and a ghc flavor.
+genVersionStr :: GhcFlavor -> (Day -> String)
+genVersionStr = \case
+  GhcMaster _ -> \day -> "0." ++ replace "-" "" (showGregorian day)
+  _           -> \day -> "8.8.1." ++ replace "-" "" (showGregorian day)
 
 parseOptions :: Opts.Parser Options
 parseOptions = Options
@@ -71,8 +85,8 @@ parseOptions = Options
    readFlavor = Opts.eitherReader $ \case
        "ghc-8.8.1" -> Right Ghc881
        "da-ghc-8.8.1" -> Right DaGhc881
-       "ghc-master" -> Right GhcMaster
-       flavor -> Left $ "Failed to parse ghc flavor " <> show flavor <> " expected ghc-8.8.1 or da-ghc-8.8.1"
+       "ghc-master" -> Right (GhcMaster current)
+       hash -> Right (GhcMaster hash)
 
 bintrayUpload :: String -> IO ()
 bintrayUpload version = do
@@ -130,16 +144,14 @@ buildDists ghcFlavor resolver = do
     -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
     case ghcFlavor of
-        Ghc881 ->
-            cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
+        Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
         DaGhc881 -> do
             cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
             -- Apply Digital Asset extensions.
             cmd "cd ghc && git remote add upstream https://github.com/digital-asset/ghc.git"
             cmd "cd ghc && git fetch upstream"
             cmd "cd ghc && git -c \"user.name=Cookie Monster\" -c \"user.email=cookie.monster@seasame-street.com\" merge --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
-        GhcMaster ->
-            cmd "cd ghc && git checkout 11679e5bec1994775072e8e60f24b4ce104af0a7" -- 09/03/2019
+        GhcMaster hash -> cmd $ "cd ghc && git checkout " ++ hash
     cmd "cd ghc && git submodule update --init --recursive"
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
 
@@ -245,9 +257,7 @@ buildDists ghcFlavor resolver = do
       tag :: IO String
       tag = do
         UTCTime day _ <- getCurrentTime
-        return $ if ghcFlavor == GhcMaster
-          then "0." ++ replace "-" "" (showGregorian day)
-          else "8.8.1." ++ replace "-" "" (showGregorian day)
+        return $ genVersionStr ghcFlavor day
 
       patchVersion :: String -> FilePath -> IO ()
       patchVersion version file =
