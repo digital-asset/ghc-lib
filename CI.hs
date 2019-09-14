@@ -44,7 +44,8 @@ data GhcFlavor = Ghc881 | DaGhc881 | GhcMaster String
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current =    "270fbe8512f04b6107755fa22bdec62205c0a567" -- 09/09/2019
+current =    "bd079345f633e01e8d4ff76aef39cb2aa50af6a9" -- 09/14/2019
+          -- "270fbe8512f04b6107755fa22bdec62205c0a567" -- 09/09/2019
           -- "b55ee979d32df938eee9c4c02c189f8be267e8a1" -- 09/06/2019
           -- "11679e5bec1994775072e8e60f24b4ce104af0a7" -- 09/03/2019
 
@@ -154,7 +155,6 @@ buildDists ghcFlavor resolver = do
             cmd "cd ghc && git -c \"user.name=Cookie Monster\" -c \"user.email=cookie.monster@seasame-street.com\" merge --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
         GhcMaster hash -> cmd $ "cd ghc && git checkout " ++ hash
     cmd "cd ghc && git submodule update --init --recursive"
-    appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
 
     -- Feedback on the compiler used for ghc-lib-gen.
     stack "exec -- ghc --version"
@@ -172,6 +172,11 @@ buildDists ghcFlavor resolver = do
         pkg_ghclib_parser = "ghc-lib-parser-" ++ version
 
     -- Make and extract an sdist of ghc-lib-parser.
+    appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+    -- Temporary (09/14/2012) : Until
+    -- https://gitlab.haskell.org/ghc/ghc/merge_requests/1716 lands.
+    appendFile "ghc/hadrian/stack.yaml" $ unlines ["allow-newer: True"]
+    -- Feedback on the compiler used for ghc-lib-gen.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser resolverFlag
@@ -182,6 +187,10 @@ buildDists ghcFlavor resolver = do
     -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+    -- Temporary (09/14/2012) : Until
+    -- https://gitlab.haskell.org/ghc/ghc/merge_requests/1716 lands.
+    appendFile "ghc/hadrian/stack.yaml" $ unlines ["allow-newer: True"]
+    -- Feedback on the compiler used for ghc-lib-gen.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraint version "ghc/ghc-lib.cabal"
