@@ -97,8 +97,14 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         , "compiler/rename"
         , "compiler/stgSyn"
         , "compiler/stranal"
+        , "compiler/nativeGen"
         ]
   in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
+
+-- | C-preprocessor "include dirs" for 'ghc-lib'.
+ghcLibIncludeDirs :: GhcFlavor -> [FilePath]
+ghcLibIncludeDirs ghcFlavor =
+  ghcLibParserIncludeDirs ghcFlavor \\ ["ghc-lib/stage0/compiler/build"]-- Needs checking (good enough for now).
 
 -- | The "hs-source-dirs" for 'ghc-lib'.
 ghcLibHsSrcDirs :: [Cabal] -> [FilePath]
@@ -115,10 +121,6 @@ ghcLibHsSrcDirs lib =
         , "libraries/ghc-heap"
         ]
   in sortDiffListByLength all excludes -- Not so important. Here for symmetry with 'ghcLibParserHsSrcDirs' I think.
-
--- | C-preprocessor "include dirs" for 'ghc-lib'.
-ghcLibIncludeDirs :: GhcFlavor -> [FilePath]
-ghcLibIncludeDirs = ghcLibParserIncludeDirs -- Needs adjusting (we really should get to this but good enough for now).
 
 -- | Cabal file for the GHC binary.
 cabalFileBinary :: FilePath
@@ -139,20 +141,26 @@ dataFiles =
     , "platformConstants"
     ]
 
--- | Additional source and data files for Cabal. The files in this
--- list are all created by Hadrian.
-extraFiles :: GhcFlavor -> [FilePath]
-extraFiles ghcFlavor =
-    -- See ghc/hadrian/src/Rules/Generate.hs
+-- | See 'hadrian/src/Rules/Generate.hs'.
+
+includesDependencies :: GhcFlavor -> [FilePath]
+includesDependencies _ =
     [ "ghc-lib/generated/ghcautoconf.h"
     , "ghc-lib/generated/ghcplatform.h"
     , "ghc-lib/generated/ghcversion.h"
-    , "ghc-lib/generated/DerivedConstants.h"
-    , "ghc-lib/generated/GHCConstantsHaskellExports.hs"
-    , "ghc-lib/generated/GHCConstantsHaskellType.hs"
-    , "ghc-lib/generated/GHCConstantsHaskellWrappers.hs"
-    , "ghc-lib/stage1/compiler/build/ghc_boot_platform.h"
-    , "ghc-lib/stage1/compiler/build/primop-can-fail.hs-incl"
+    ]
+
+derivedConstantsDependencies :: GhcFlavor -> [FilePath]
+derivedConstantsDependencies _ =
+   [ "ghc-lib/generated/DerivedConstants.h"
+   , "ghc-lib/generated/GHCConstantsHaskellExports.hs"
+   , "ghc-lib/generated/GHCConstantsHaskellType.hs"
+   , "ghc-lib/generated/GHCConstantsHaskellWrappers.hs"
+   ]
+
+compilerDependencies :: GhcFlavor -> [FilePath]
+compilerDependencies _ =
+    [ "ghc-lib/stage1/compiler/build/primop-can-fail.hs-incl"
     , "ghc-lib/stage1/compiler/build/primop-code-size.hs-incl"
     , "ghc-lib/stage1/compiler/build/primop-commutable.hs-incl"
     , "ghc-lib/stage1/compiler/build/primop-data-decl.hs-incl"
@@ -167,14 +175,18 @@ extraFiles ghcFlavor =
     , "ghc-lib/stage1/compiler/build/primop-vector-tys-exports.hs-incl"
     , "ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
     , "ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
-    ] ++ ["ghc-lib/stage0/compiler/build/Fingerprint.hs" | ghcFlavor /= GhcMaster] ++
-    -- Be careful not to add these files to a ghc-lib.cabal, just
-    -- ghc-lib-parser.cabal.
-    [ "ghc-lib/stage1/compiler/build/Config.hs"
-    , "ghc-lib/stage0/compiler/build/Parser.hs"
-    , "ghc-lib/stage0/compiler/build/Lexer.hs"
-    ] ++
-    ["ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs" | ghcFlavor == GhcMaster ]
+    ]
+
+platformH :: GhcFlavor -> [FilePath]
+platformH _ = ["ghc-lib/stage1/compiler/build/ghc_boot_platform.h"]
+
+packageCode :: GhcFlavor -> [FilePath]
+packageCode ghcFlavor =
+    [ "ghc-lib/stage1/compiler/build/Config.hs"] ++
+    [ "ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs" | ghcFlavor == GhcMaster ]
+
+fingerprint :: GhcFlavor -> [FilePath]
+fingerprint ghcFlavor = ["ghc-lib/stage0/compiler/build/Fingerprint.hs" | ghcFlavor /= GhcMaster]
 
 -- | The C headers shipped with ghc-lib. These globs get glommed onto
 -- the 'extraFiles' above as 'extra-source-files'.
@@ -187,6 +199,35 @@ cHeaders ghcFlavor =
   , "compiler/Unique.h"
   ] ++
   [ f | f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"], ghcFlavor /= GhcMaster]
+
+-- | We generate the parser and lexer and ship those rather than their
+-- sources.
+generatedParser :: GhcFlavor -> [FilePath]
+generatedParser _ =
+    [ "ghc-lib/stage0/compiler/build/Parser.hs"
+    , "ghc-lib/stage0/compiler/build/Lexer.hs"]
+
+-- | Cabal "extra-source-files" files for ghc-lib-parser.
+ghcLibParserExtraFiles :: GhcFlavor -> [FilePath]
+ghcLibParserExtraFiles ghcFlavor =
+    includesDependencies ghcFlavor ++
+    derivedConstantsDependencies ghcFlavor ++
+    compilerDependencies ghcFlavor ++
+    platformH ghcFlavor ++
+    fingerprint ghcFlavor ++
+    packageCode ghcFlavor ++
+    generatedParser ghcFlavor ++
+    cHeaders ghcFlavor
+
+-- | Cabal "extra-source-files" for ghc-lib.
+ghcLibExtraFiles :: GhcFlavor -> [FilePath]
+ghcLibExtraFiles ghcFlavor =
+    includesDependencies ghcFlavor ++
+    derivedConstantsDependencies ghcFlavor ++
+    compilerDependencies ghcFlavor ++
+    platformH ghcFlavor ++
+    fingerprint ghcFlavor ++
+    cHeaders ghcFlavor
 
 -- | Calculate via `ghc -M` the list of modules that are required for
 -- 'ghc-lib-parser'.
@@ -430,7 +471,6 @@ generateGhcLibCabal ghcFlavor = do
           (Set.fromList parserModules))
 
     writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
-        -- header
         ["cabal-version: >=1.22"
         ,"build-type: Simple"
         ,"name: ghc-lib"
@@ -448,15 +488,8 @@ generateGhcLibCabal ghcFlavor = do
         -- hinders uploading to hackage.
         -- ,"exposed: False" -- automatically hide `ghc-lib` (thanks Ed Kmett!)
         ,"data-dir: " ++ dataDir
-        ,"data-files:"] ++
-        indent dataFiles ++
-        ["extra-source-files:"] ++
-         ( let numFiles = if ghcFlavor == GhcMaster then 4 else 3 in
-             -- Remove Config.hs, Version.hs, Parser.hs and Lexer.hs from
-             -- the list of extra source files here.
-             indent (reverse (drop numFiles $ reverse $ extraFiles ghcFlavor)) ++ indent (cHeaders ghcFlavor)
-         )
-        ++
+        ,"data-files:"] ++ indent dataFiles ++
+        ["extra-source-files:"] ++ indent (ghcLibExtraFiles ghcFlavor) ++
         ["tested-with: GHC==8.8.1, GHC==8.6.5, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
@@ -502,7 +535,6 @@ generateGhcLibParserCabal :: GhcFlavor -> IO ()
 generateGhcLibParserCabal ghcFlavor = do
     (lib, bin, parserModules) <- libBinParserModules ghcFlavor
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
-        -- header
         ["cabal-version: >=1.22"
         ,"build-type: Simple"
         ,"name: ghc-lib-parser"
@@ -520,10 +552,8 @@ generateGhcLibParserCabal ghcFlavor = do
         -- hinders uploading to hackage.
         -- ,"exposed: False" -- automatically hide `ghc-lib` (thanks Ed Kmett!)
         ,"data-dir: " ++ dataDir
-        ,"data-files:"] ++
-        indent dataFiles ++
-        ["extra-source-files:"] ++
-        indent (extraFiles ghcFlavor) ++ indent (cHeaders ghcFlavor) ++
+        ,"data-files:"] ++ indent dataFiles ++
+        ["extra-source-files:"] ++ indent (ghcLibParserExtraFiles ghcFlavor) ++
         ["tested-with: GHC==8.8.1, GHC==8.6.5, GHC==8.4.3"
         ,"source-repository head"
         ,"    type: git"
@@ -532,8 +562,7 @@ generateGhcLibParserCabal ghcFlavor = do
         ,"library"
         ,"    default-language:   Haskell2010"
         ,"    default-extensions: NoImplicitPrelude"
-        ,"    include-dirs:"] ++
-        indent2 (ghcLibParserIncludeDirs ghcFlavor) ++
+        ,"    include-dirs:"] ++ indent2 (ghcLibParserIncludeDirs ghcFlavor) ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
         ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS " <> ghciDef ghcFlavor <> " -DGHC_IN_GHCI"
@@ -541,11 +570,9 @@ generateGhcLibParserCabal ghcFlavor = do
         ,"        build-depends: unix"
         ,"    else"
         ,"        build-depends: Win32"
-        ,"    build-depends:"]++
-        indent2 (withCommas commonBuildDepends) ++
+        ,"    build-depends:"] ++ indent2 (withCommas commonBuildDepends) ++
         ["    build-tools: alex >= 3.1, happy >= 1.19.4"
-        ,"    other-extensions:"] ++
-        indent2 (askField lib "other-extensions:") ++
+        ,"    other-extensions:"] ++ indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
         -- We hardcode these because the inclusion of 'keepCAFsForGHCi'
         -- causes issues in ghci see
@@ -557,8 +584,7 @@ generateGhcLibParserCabal ghcFlavor = do
         ,"        Lexer"
         ,"        Parser"
         ] ++
-        ["    exposed-modules:"
-        ]++ indent2 parserModules
+        ["    exposed-modules:"] ++ indent2 parserModules
     removeGeneratedIntermediateFiles
     putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 
@@ -580,7 +606,7 @@ generatePrerequisites ghcFlavor = do
         ,"--directory=.."
         ,"--integer-simple"
         ,"--build-root=ghc-lib"
-        ] ++ extraFiles ghcFlavor ++
+        ] ++ ghcLibParserExtraFiles ghcFlavor ++
         map (dataDir </>) dataFiles
   -- We use the hadrian generated Lexer and Parser so get these out
   -- of the way.

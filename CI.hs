@@ -173,6 +173,8 @@ buildDists ghcFlavor resolver = do
 
     -- Make and extract an sdist of ghc-lib-parser.
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+    appendFile "ghc/hadrian/stack.yaml" $ unlines ["allow-newer: True"]
+    -- Feedback on the compiler used for ghc-lib-gen.
     -- Feedback on the compiler used for ghc-lib-gen.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
@@ -184,6 +186,7 @@ buildDists ghcFlavor resolver = do
     -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+    appendFile "ghc/hadrian/stack.yaml" $ unlines ["allow-newer: True"]
     -- Feedback on the compiler used for ghc-lib-gen.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib.cabal"
