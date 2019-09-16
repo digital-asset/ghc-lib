@@ -26,8 +26,8 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
     case target of
       GhclibParser -> do
         init ghcFlavor
-        mangleCSymbols
-        applyPatchStage
+        mangleCSymbols ghcFlavor
+        applyPatchStage ghcFlavor
         generateGhcLibParserCabal ghcFlavor
       Ghclib -> do
         init ghcFlavor
@@ -35,9 +35,9 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
   where
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do
-        applyPatchRtsIncludePaths
-        applyPatchHeapClosures
-        applyPatchDisableCompileTimeOptimizations
+        applyPatchRtsIncludePaths ghcFlavor
+        applyPatchHeapClosures ghcFlavor
+        applyPatchDisableCompileTimeOptimizations ghcFlavor
         -- This invokes 'stack' strictly configured by
         -- 'hadrian/stack.yaml'.
         generatePrerequisites ghcFlavor
