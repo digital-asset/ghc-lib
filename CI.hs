@@ -44,7 +44,8 @@ data GhcFlavor = Ghc881 | DaGhc881 | GhcMaster String
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current =    "7208160d2caae125479e8dd39a263620ea7e0ffe" -- 09/16/2019
+current =    "7915afc6bb9539a4534db99aeb6616a6d145918a" -- 09/16/2019
+          -- "7208160d2caae125479e8dd39a263620ea7e0ffe" -- 09/16/2019
           -- "270fbe8512f04b6107755fa22bdec62205c0a567" -- 09/09/2019
           -- "b55ee979d32df938eee9c4c02c189f8be267e8a1" -- 09/06/2019
           -- "11679e5bec1994775072e8e60f24b4ce104af0a7" -- 09/03/2019
@@ -203,6 +204,11 @@ buildDists ghcFlavor resolver = do
               , "- examples/mini-hlint"
               , "- examples/mini-compile"
               , "- examples/strip-locs"
+              -- 'master' now requires transformers >= 5.6.2 which is
+              -- beyond the default for ghc-4.4. This hack works
+              -- around.
+              , ""
+              , "allow-newer: true"
               ] ++
       if ghcFlavor == DaGhc881
         then unlines ["flags: {mini-compile: {daml-unit-ids: true}}"]

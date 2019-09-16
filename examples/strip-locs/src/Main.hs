@@ -33,12 +33,13 @@ import "ghc-lib-parser" ApiAnnotation
 #ifdef GHC_MASTER
 import "ghc-lib-parser" GHC.Platform
 import "ghc-lib-parser" ToolSettings
+import "ghc-lib-parser" HsDumpAst
 #else
 import "ghc-lib-parser" Bag
 import "ghc-lib-parser" Platform
+import "ghc-lib" HsDumpAst
 #endif
 
-import "ghc-lib" HsDumpAst
 
 import Control.Monad
 import Control.Monad.Extra

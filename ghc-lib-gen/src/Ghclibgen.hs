@@ -51,7 +51,6 @@ ghcLibParserIncludeDirs ghcFlavor =
   ] ++
   ["compiler/utils" | ghcFlavor /= GhcMaster]
 
-
 -- Sort by length so the longest paths are at the front. We do this
 -- so that in 'calcParserModules', longer substituions are performed
 -- before shorter ones (and bad things will happen if that were
@@ -91,14 +90,18 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
       excludes = Set.fromList
-        [ "compiler/codeGen"
-        , "compiler/hieFile"
-        , "compiler/llvmGen"
-        , "compiler/rename"
-        , "compiler/stgSyn"
-        , "compiler/stranal"
-        , "compiler/nativeGen"
-        ]
+        ([] ++
+          -- Commit 7915afc6bb9539a4534db99aeb6616a6d145918a (encode
+          -- shape information in 'PmOracle' 09/16/2019) has had a
+          -- very profound effect on ghc-lib-parser dependencies.
+         [dir | dir <- [ "compiler/llvmGen"
+                       , "compiler/stgSyn"
+                       , "compiler/stranal"
+                       , "compiler/codeGen"
+                       , "compiler/hieFile"
+                       , "compiler/rename"
+                       , "compiler/nativeGen"
+                       ], ghcFlavor /= GhcMaster])
   in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
 
 -- | C-preprocessor "include dirs" for 'ghc-lib'.
@@ -107,19 +110,37 @@ ghcLibIncludeDirs ghcFlavor =
   ghcLibParserIncludeDirs ghcFlavor \\ ["ghc-lib/stage0/compiler/build"]-- Needs checking (good enough for now).
 
 -- | The "hs-source-dirs" for 'ghc-lib'.
-ghcLibHsSrcDirs :: [Cabal] -> [FilePath]
-ghcLibHsSrcDirs lib =
+ghcLibHsSrcDirs :: GhcFlavor -> [Cabal] -> [FilePath]
+ghcLibHsSrcDirs ghcFlavor lib =
   let all = Set.fromList $
         [ "ghc-lib/stage1/compiler/build"]
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
       excludes = Set.fromList
-        [ "compiler/basicTypes"
-        , "compiler/parser"
-        , "compiler/types"
-        , "libraries/ghc-boot-th"
-        , "libraries/ghc-heap"
-        ]
+        ([ "compiler/basicTypes"
+         , "compiler/parser"
+         , "compiler/types"
+         , "libraries/ghc-boot-th"
+         , "libraries/ghc-heap"
+         ] ++
+         [f | f <- [ "compiler/specialise"
+                   , "compiler/profiling"
+                   , "compiler/simplCore"
+                   , "compiler/simplStg"
+                   , "compiler/coreSyn"
+                   , "compiler/deSugar"
+                   , "compiler/hieFile"
+                   , "compiler/llvmGen"
+                   , "compiler/prelude"
+                   , "compiler/stranal"
+                   , "compiler/rename"
+                   , "compiler/stgSyn"
+                   , "compiler/hsSyn"
+                   , "compiler/iface"
+                   , "compiler/cmm"
+               ]
+            , ghcFlavor == GhcMaster]
+        )
   in sortDiffListByLength all excludes -- Not so important. Here for symmetry with 'ghcLibParserHsSrcDirs' I think.
 
 -- | Cabal file for the GHC binary.
@@ -200,12 +221,17 @@ cHeaders ghcFlavor =
   ] ++
   [ f | f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"], ghcFlavor /= GhcMaster]
 
--- | We generate the parser and lexer and ship those rather than their
+-- | We generate parsers and lexers and ship those rather than their
 -- sources.
-generatedParser :: GhcFlavor -> [FilePath]
-generatedParser _ =
+generatedParsers :: GhcFlavor -> [FilePath]
+generatedParsers ghcFlavor =
     [ "ghc-lib/stage0/compiler/build/Parser.hs"
-    , "ghc-lib/stage0/compiler/build/Lexer.hs"]
+    , "ghc-lib/stage0/compiler/build/Lexer.hs"
+    ] ++
+    [f | f <- [ "ghc-lib/stage0/compiler/build/CmmParse.hs"
+              , "ghc-lib/stage0/compiler/build/CmmLex.hs"
+              ]
+       , ghcFlavor == GhcMaster]
 
 -- | Cabal "extra-source-files" files for ghc-lib-parser.
 ghcLibParserExtraFiles :: GhcFlavor -> [FilePath]
@@ -216,7 +242,7 @@ ghcLibParserExtraFiles ghcFlavor =
     platformH ghcFlavor ++
     fingerprint ghcFlavor ++
     packageCode ghcFlavor ++
-    generatedParser ghcFlavor ++
+    generatedParsers ghcFlavor ++
     cHeaders ghcFlavor
 
 -- | Cabal "extra-source-files" for ghc-lib.
@@ -431,7 +457,7 @@ commonBuildDepends =
   , "deepseq >= 1.4 && < 1.5"
   , "pretty == 1.1.*"
   , "time >= 1.4 && < 1.10"
-  , "transformers == 0.5.*"
+  , "transformers >= 0.5.6.2"
   , "process >= 1 && < 1.7"
   , "hpc == 0.6.*"
   ]
@@ -513,7 +539,7 @@ generateGhcLibCabal ghcFlavor = do
         ,"    other-extensions:"] ++
         indent2 (askField lib "other-extensions:") ++
         ["    hs-source-dirs:"] ++
-        indent2 (ghcLibHsSrcDirs lib) ++
+        indent2 (ghcLibHsSrcDirs ghcFlavor lib) ++
         ["    autogen-modules:"
         ,"        Paths_ghc_lib"
         ] ++
@@ -614,3 +640,6 @@ generatePrerequisites ghcFlavor = do
   removeFile "compiler/parser/Parser.y"
   when (ghcFlavor /= GhcMaster) $
     removeFile "compiler/utils/Fingerprint.hsc" -- Favor the generated .hs file here too.
+  when (ghcFlavor == GhcMaster) $ do
+    removeFile "compiler/cmm/CmmLex.x"
+    removeFile "compiler/cmm/CmmParse.y"
