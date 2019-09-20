@@ -13,7 +13,11 @@ module Main (main) where
 #  define GHC_MASTER
 #endif
 
+#ifdef GHC_MASTER
+import "ghc-lib-parser" GHC.Hs
+#else
 import "ghc-lib-parser" HsSyn
+#endif
 import "ghc-lib-parser" Config
 import "ghc-lib-parser" DynFlags
 import "ghc-lib-parser" StringBuffer
@@ -38,7 +42,11 @@ import "ghc-lib-parser" Bag
 import "ghc-lib-parser" Platform
 #endif
 
+#ifdef GHC_MASTER
+import "ghc-lib" GHC.Hs.Dump
+#else
 import "ghc-lib" HsDumpAst
+#endif
 
 import Control.Monad
 import Control.Monad.Extra

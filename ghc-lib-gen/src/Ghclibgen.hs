@@ -280,13 +280,18 @@ calcParserModules ghcFlavor = do
 -- those identified as bottlenecks in the 2019 GSoC Hadrian speed
 -- project.
 applyPatchDisableCompileTimeOptimizations :: GhcFlavor -> IO ()
-applyPatchDisableCompileTimeOptimizations _ =
-    forM_ [ "compiler/main/DynFlags.hs"
-          , "compiler/hsSyn/HsInstances.hs" ] $
-    \file ->
-        writeFile file .
-        ("{-# OPTIONS_GHC -O0 #-}\n" ++)
-        =<< readFile' file
+applyPatchDisableCompileTimeOptimizations ghcFlavor =
+    let files =
+          ["compiler/main/DynFlags.hs"] ++
+          (case ghcFlavor of
+            GhcMaster -> [ "compiler/GHC/Hs.hs" ]
+            _ ->         [ "compiler/hsSyn/HsInstances.hs" ])
+    in
+      forM_ files $
+        \file ->
+          writeFile file .
+          ("{-# OPTIONS_GHC -O0 #-}\n" ++)
+          =<< readFile' file
 
 -- | Stub out a couple of definitions in the ghc-heap library that
 -- require CMM features, since Cabal doesn't work well with CMM files.
