@@ -46,7 +46,6 @@ ghcLibParserIncludeDirs ghcFlavor =
   [ "includes" -- ghcconfig.h, MachDeps.h, CodeGen.Platform.hs
   , "ghc-lib/generated"
   , "ghc-lib/stage0/compiler/build"
-  , "ghc-lib/stage1/compiler/build"
   , "compiler"
   ] ++
   ["compiler/utils" | ghcFlavor /= GhcMaster]
@@ -66,9 +65,7 @@ sortDiffListByLength all excludes =
 ghcLibParserHsSrcDirs :: Bool -> GhcFlavor -> [Cabal] -> [FilePath]
 ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
   let all = Set.fromList $
-        [ "ghc-lib/stage0/compiler/build"
-        , "ghc-lib/stage1/compiler/build"
-        ]
+        [ "ghc-lib/stage0/compiler/build"]
         -- The subtlety here is that, when calculating parser modules
         -- (i.e. 'forParserDepends == True') via 'ghc -M' we need
         -- these directories poplulated with generated intermediate
@@ -103,14 +100,13 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
 
 -- | C-preprocessor "include dirs" for 'ghc-lib'.
 ghcLibIncludeDirs :: GhcFlavor -> [FilePath]
-ghcLibIncludeDirs ghcFlavor =
-  ghcLibParserIncludeDirs ghcFlavor \\ ["ghc-lib/stage0/compiler/build"]-- Needs checking (good enough for now).
+ghcLibIncludeDirs ghcFlavor = ghcLibParserIncludeDirs ghcFlavor -- Needs checking (good enough for now).
 
 -- | The "hs-source-dirs" for 'ghc-lib'.
 ghcLibHsSrcDirs :: [Cabal] -> [FilePath]
 ghcLibHsSrcDirs lib =
   let all = Set.fromList $
-        [ "ghc-lib/stage1/compiler/build"]
+        [ "ghc-lib/stage0/compiler/build"]
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
       excludes = Set.fromList
@@ -129,7 +125,7 @@ cabalFileBinary = "ghc/ghc-bin.cabal"
 -- |'dataDir' is the directory cabal looks for data files to install,
 -- relative to the source directory.
 dataDir :: FilePath
-dataDir = "ghc-lib/stage1/lib"
+dataDir = "ghc-lib/stage0/lib"
 
 -- |'dataFiles' is a list of files to be installed for run-time use by
 -- the package.
@@ -160,29 +156,29 @@ derivedConstantsDependencies _ =
 
 compilerDependencies :: GhcFlavor -> [FilePath]
 compilerDependencies _ =
-    [ "ghc-lib/stage1/compiler/build/primop-can-fail.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-code-size.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-commutable.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-data-decl.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-fixity.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-has-side-effects.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-list.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-out-of-line.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-primop-info.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-strictness.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-tag.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-vector-tycons.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-vector-tys-exports.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-vector-tys.hs-incl"
-    , "ghc-lib/stage1/compiler/build/primop-vector-uniques.hs-incl"
+    [ "ghc-lib/stage0/compiler/build/primop-can-fail.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-code-size.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-commutable.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-data-decl.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-fixity.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-has-side-effects.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-list.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-out-of-line.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-primop-info.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-strictness.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-tag.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-vector-tycons.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-vector-tys-exports.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-vector-tys.hs-incl"
+    , "ghc-lib/stage0/compiler/build/primop-vector-uniques.hs-incl"
     ]
 
 platformH :: GhcFlavor -> [FilePath]
-platformH _ = ["ghc-lib/stage1/compiler/build/ghc_boot_platform.h"]
+platformH _ = ["ghc-lib/stage0/compiler/build/ghc_boot_platform.h"]
 
 packageCode :: GhcFlavor -> [FilePath]
 packageCode ghcFlavor =
-    [ "ghc-lib/stage1/compiler/build/Config.hs"] ++
+    [ "ghc-lib/stage0/compiler/build/Config.hs"] ++
     [ "ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs" | ghcFlavor == GhcMaster ]
 
 fingerprint :: GhcFlavor -> [FilePath]
