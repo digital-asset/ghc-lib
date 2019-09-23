@@ -250,6 +250,7 @@ calcParserModules ghcFlavor = do
         ++ hsSrcIncludes
         ++ ["ghc-lib/stage0/compiler/build/Parser.hs"]
   putStrLn "# Generating 'ghc/.parser-depends'..."
+  putStrLn $ "\n\n# Running: " ++ cmd
   system_ cmd
 
   buf <- readFile' ".parser-depends"
