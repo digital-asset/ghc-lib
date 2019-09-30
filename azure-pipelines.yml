@@ -108,19 +108,23 @@ strategy:
 
     # ghc-lib master (vanilla)
 
-    # ghc-8.4.4
-    linux-ghc-master-844:
-      image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-master"
-      resolver: "lts-12.26"
-    windows-ghc-master-844:
-      image: "vs2017-win2016"
-      ghc-flavor: "ghc-master"
-      resolver: "lts-12.26"
-    mac-ghc-master-844:
-      image: "macOS-10.13"
-      ghc-flavor: "ghc-master"
-      resolver: "lts-12.26"
+    # ghc-8.4 is no longer supported for bootstrapping as of
+    # https://gitlab.haskell.org/ghc/ghc/commit/24620182abdfcc65a0cfc0e2f3bc391d464d0ad5
+    # 09/29/2019. Subsequent removal of CPP guards in
+    # https://gitlab.haskell.org/ghc/ghc/commit/795986aaf33e2ffc233836b86a92a77366c91db2
+    # for 'InfoTable.hsc' break the compile.
+    # linux-ghc-master-844:
+    #   image: "Ubuntu 16.04"
+    #   ghc-flavor: "ghc-master"
+    #   resolver: "lts-12.26"
+    # windows-ghc-master-844:
+    #   image: "vs2017-win2016"
+    #   ghc-flavor: "ghc-master"
+    #   resolver: "lts-12.26"
+    # mac-ghc-master-844:
+    #   image: "macOS-10.13"
+    #   ghc-flavor: "ghc-master"
+    #   resolver: "lts-12.26"
 
     # ghc-8.6.5
     linux-ghc-master-865:
