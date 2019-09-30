@@ -17,6 +17,8 @@ pr:
     - master
 
 strategy:
+  # Limit number of executors used so other pipelines can run too
+  maxParallel: 10
   matrix:
     # ghc-lib v8.8.1 (vanilla)
 
