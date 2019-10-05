@@ -43,13 +43,14 @@ cabalFileLibraries =
 -- | C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: GhcFlavor -> [FilePath]
 ghcLibParserIncludeDirs ghcFlavor =
-  [ "includes" -- ghcconfig.h, MachDeps.h, CodeGen.Platform.hs
-  , "ghc-lib/generated"
-  , "ghc-lib/stage0/compiler/build"
+  [ "includes" ] ++ -- ghcconfig.h, MachDeps.h, CodeGen.Platform.hs
+  (case ghcFlavor of
+    GhcMaster ->   ["ghc-lib/stage0/lib"]
+    _ -> ["ghc-lib/generated"]) ++
+  [ "ghc-lib/stage0/compiler/build"
   , "compiler"
   ] ++
   ["compiler/utils" | ghcFlavor /= GhcMaster]
-
 
 -- Sort by length so the longest paths are at the front. We do this
 -- so that in 'calcParserModules', longer substituions are performed
@@ -78,16 +79,18 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         -- to Hackage for example). Thus, when writing
         -- 'ghc-lib-parser.cabal' (i.e. 'forParserDepends == False'),
         -- we exclude these directories.
-        ++ [dir | dir <- ["ghc-lib/stage0/libraries/ghci/build"
+        ++ [dir | forParserDepends
+                , dir <- ["ghc-lib/stage0/libraries/ghci/build"
                          ,"ghc-lib/stage0/libraries/ghc-heap/build"]
-                , forParserDepends]
+                ]
         -- This next conditional just smooths over a 'master'
         -- vs. '8.8.1' branch difference (relating to a file
         -- 'GhcVersion.hs' IIRC).
         ++ [ "ghc-lib/stage0/libraries/ghc-boot/build" | ghcFlavor == GhcMaster ]
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
-      excludes = Set.fromList
+
+      excludes = Set.fromList $
         [ "compiler/codeGen"
         , "compiler/hieFile"
         , "compiler/llvmGen"
@@ -95,18 +98,20 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         , "compiler/stgSyn"
         , "compiler/stranal"
         , "compiler/nativeGen"
-        ]
+        ] ++
+        [ "compiler/deSugar" | ghcFlavor == GhcMaster && not forParserDepends]
   in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
 
 -- | C-preprocessor "include dirs" for 'ghc-lib'.
 ghcLibIncludeDirs :: GhcFlavor -> [FilePath]
-ghcLibIncludeDirs ghcFlavor = ghcLibParserIncludeDirs ghcFlavor -- Needs checking (good enough for now).
+ghcLibIncludeDirs = ghcLibParserIncludeDirs -- Needs checking (good enough for now).
 
 -- | The "hs-source-dirs" for 'ghc-lib'.
-ghcLibHsSrcDirs :: [Cabal] -> [FilePath]
-ghcLibHsSrcDirs lib =
+ghcLibHsSrcDirs :: GhcFlavor -> [Cabal] -> [FilePath]
+ghcLibHsSrcDirs ghcFlavor lib =
   let all = Set.fromList $
         [ "ghc-lib/stage0/compiler/build"]
+        ++ [ "ghc-lib/stage0/libraries/ghc-boot/build" | ghcFlavor == GhcMaster ] -- 'GHC.Platform' is in 'ghc-lib-parser', 'GHC.Platform.Host' is not.
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
       excludes = Set.fromList
@@ -122,10 +127,14 @@ ghcLibHsSrcDirs lib =
 cabalFileBinary :: FilePath
 cabalFileBinary = "ghc/ghc-bin.cabal"
 
+-- We set the hadrian build root to 'ghc-lib'.
+stage0LibPath :: FilePath
+stage0LibPath = "ghc-lib/stage0/lib"
+
 -- |'dataDir' is the directory cabal looks for data files to install,
 -- relative to the source directory.
 dataDir :: FilePath
-dataDir = "ghc-lib/stage0/lib"
+dataDir = stage0LibPath
 
 -- |'dataFiles' is a list of files to be installed for run-time use by
 -- the package.
@@ -140,19 +149,28 @@ dataFiles =
 -- | See 'hadrian/src/Rules/Generate.hs'.
 
 includesDependencies :: GhcFlavor -> [FilePath]
-includesDependencies _ =
-    [ "ghc-lib/generated/ghcautoconf.h"
-    , "ghc-lib/generated/ghcplatform.h"
-    , "ghc-lib/generated/ghcversion.h"
-    ]
+includesDependencies ghcFlavor =
+   map (root ++ )
+   [ "ghcautoconf.h"
+   , "ghcplatform.h"
+   , "ghcversion.h"]
+   where
+      root = (case ghcFlavor of
+                GhcMaster -> stage0LibPath
+                _ -> "ghc-lib/generated") ++ "/"
 
 derivedConstantsDependencies :: GhcFlavor -> [FilePath]
-derivedConstantsDependencies _ =
-   [ "ghc-lib/generated/DerivedConstants.h"
-   , "ghc-lib/generated/GHCConstantsHaskellExports.hs"
-   , "ghc-lib/generated/GHCConstantsHaskellType.hs"
-   , "ghc-lib/generated/GHCConstantsHaskellWrappers.hs"
+derivedConstantsDependencies ghcFlavor =
+   map (root ++)
+   [ "DerivedConstants.h"
+   , "GHCConstantsHaskellExports.hs"
+   , "GHCConstantsHaskellType.hs"
+   , "GHCConstantsHaskellWrappers.hs"
    ]
+   where
+      root = (case ghcFlavor of
+                GhcMaster -> stage0LibPath
+                _ -> "ghc-lib/generated") ++ "/"
 
 compilerDependencies :: GhcFlavor -> [FilePath]
 compilerDependencies _ =
@@ -174,12 +192,12 @@ compilerDependencies _ =
     ]
 
 platformH :: GhcFlavor -> [FilePath]
-platformH _ = ["ghc-lib/stage0/compiler/build/ghc_boot_platform.h"]
+platformH ghcFlavor = ["ghc-lib/stage0/compiler/build/ghc_boot_platform.h" | ghcFlavor /= GhcMaster]
 
 packageCode :: GhcFlavor -> [FilePath]
 packageCode ghcFlavor =
-    [ "ghc-lib/stage0/compiler/build/Config.hs"] ++
-    [ "ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs" | ghcFlavor == GhcMaster ]
+  "ghc-lib/stage0/compiler/build/Config.hs" :
+  [ "ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs" | ghcFlavor == GhcMaster ]
 
 fingerprint :: GhcFlavor -> [FilePath]
 fingerprint ghcFlavor = ["ghc-lib/stage0/compiler/build/Fingerprint.hs" | ghcFlavor /= GhcMaster]
@@ -194,7 +212,9 @@ cHeaders ghcFlavor =
   , "compiler/HsVersions.h"
   , "compiler/Unique.h"
   ] ++
-  [ f | f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"], ghcFlavor /= GhcMaster]
+  [ f | ghcFlavor /= GhcMaster
+    , f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"]
+  ]
 
 -- | We generate the parser and lexer and ship those rather than their
 -- sources.
@@ -279,7 +299,7 @@ calcParserModules ghcFlavor = do
 applyPatchDisableCompileTimeOptimizations :: GhcFlavor -> IO ()
 applyPatchDisableCompileTimeOptimizations ghcFlavor =
     let files =
-          ["compiler/main/DynFlags.hs"] ++
+          "compiler/main/DynFlags.hs" :
           (case ghcFlavor of
             GhcMaster -> [ "compiler/GHC/Hs.hs" ]
             _ ->         [ "compiler/hsSyn/HsInstances.hs" ])
@@ -515,7 +535,7 @@ generateGhcLibCabal ghcFlavor = do
         ,"    other-extensions:"] ++
         indent2 (askField lib "other-extensions:") ++
         ["    hs-source-dirs:"] ++
-        indent2 (ghcLibHsSrcDirs lib) ++
+        indent2 (ghcLibHsSrcDirs ghcFlavor lib) ++
         ["    autogen-modules:"
         ,"        Paths_ghc_lib"
         ] ++
@@ -529,7 +549,7 @@ generateGhcLibCabal ghcFlavor = do
     putStrLn "# Generating 'ghc-lib.cabal'... Done!"
 
 ghciDef :: GhcFlavor -> String
-ghciDef GhcMaster = "-DHAVE_INTERPRETER"
+ghciDef GhcMaster = ""
 ghciDef _ = "-DGHCI"
 
 -- | Produces a ghc-lib-parser Cabal file.

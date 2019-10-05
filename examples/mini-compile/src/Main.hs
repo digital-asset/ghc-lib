@@ -125,12 +125,12 @@ fakeSettings = Settings
     platform =
       Platform{
 #ifdef GHC_MASTER
-        platformWordSize=PW8
-      , platformArch=ArchUnknown
+        platformWordSize = PW8
+      , platformMini = PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
 #else
         platformWordSize=8
-#endif
       , platformOS=OSUnknown
+#endif
       , platformUnregisterised=True
       }
     platformConstants =

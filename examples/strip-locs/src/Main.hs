@@ -75,6 +75,7 @@ fakeSettings = Settings
   }
 #endif
   where
+
 #ifdef GHC_MASTER
     toolSettings = ToolSettings {
       toolSettings_opt_P_fingerprint=fingerprint0
@@ -87,13 +88,17 @@ fakeSettings = Settings
                     }
 #endif
     platform =
+      Platform {
 #ifdef GHC_MASTER
-      Platform{platformWordSize=PW8
+             platformWordSize=PW8
+             , platformMini = PlatformMini {platformMini_os=OSUnknown}
+             , platformUnregisterised=True
 #else
-      Platform{platformWordSize=8
+             platformWordSize=8
+             , platformOS=OSUnknown
+             , platformUnregisterised=True
 #endif
-              , platformOS=OSUnknown
-              , platformUnregisterised=True}
+    }
     platformConstants =
       PlatformConstants{pc_DYNAMIC_BY_DEFAULT=False,pc_WORD_SIZE=8}
 
