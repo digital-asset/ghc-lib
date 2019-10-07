@@ -44,7 +44,9 @@ data GhcFlavor = Ghc881 | DaGhc881 | GhcMaster String
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current =    "241921a0c238a047326b0c0f599f1c24222ff66c" -- 10/05/2019
+current =    "9402608ea5955c70fee51f8b892d418252846a9b" -- 10/08/2019
+          -- "31a29a7a626ca0004c54bff4e087ea3894753410" -- 10/07/2019
+          -- "241921a0c238a047326b0c0f599f1c24222ff66c" -- 10/05/2019
           -- "8039b6257ce5288e9e38c2593ff2d5d6d316efd4" -- 10/05/2019
           -- "822481d5658280fa76f648c3d56dc6a456b8d3a3" -- 10/01/2019
           -- "6f9fa0be8d43a7c9618f6e27e3190dc08bf86bfa" -- 09/28/2019
@@ -180,7 +182,6 @@ buildDists ghcFlavor resolver = do
 
     -- Make and extract an sdist of ghc-lib-parser.
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-    -- Feedback on the compiler used for ghc-lib-gen.
     -- Feedback on the compiler used for ghc-lib-gen.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"

@@ -83,8 +83,13 @@ mkDynFlags filename s = do
       (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
       return dflags
 
+#ifdef GHC_MASTER
+fakeLlvmConfig :: LlvmConfig
+fakeLlvmConfig = LlvmConfig [] []
+#else
 fakeLlvmConfig :: (LlvmTargets, LlvmPasses)
 fakeLlvmConfig = ([], [])
+#endif
 
 fakeSettings :: Settings
 fakeSettings = Settings

@@ -102,8 +102,13 @@ fakeSettings = Settings
     platformConstants =
       PlatformConstants{pc_DYNAMIC_BY_DEFAULT=False,pc_WORD_SIZE=8}
 
+#ifdef GHC_MASTER
+fakeLlvmConfig :: LlvmConfig
+fakeLlvmConfig = LlvmConfig [] []
+#else
 fakeLlvmConfig :: (LlvmTargets, LlvmPasses)
 fakeLlvmConfig = ([], [])
+#endif
 
 parse :: String -> DynFlags -> String -> ParseResult (Located (HsModule GhcPs))
 parse filename flags str =
