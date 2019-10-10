@@ -382,15 +382,24 @@ mangleCSymbols _ = do
 -- See https://github.com/ndmitchell/hlint/issues/637 for an issue caused
 -- by using getOrSetLibHSghc for the FastString table.
 applyPatchStage :: GhcFlavor -> IO ()
-applyPatchStage _ =
-    forM_ [ "compiler/ghci/Linker.hs"
+applyPatchStage ghcFlavor =
+  -- On master, `ghcplatform.h` sets `GHC_STAGE` to `1` and we no
+  -- longer are required to pass `-DGHC_STAGE=2` to `cpp-options` to
+  -- get a build (`MachDeps.h` does not hide its contents from stages
+  -- below 2 anymore). All usages of `getOrSetLibHSghc*` require
+  -- `GHC_STAGE >= 2` . Thus, it's no longer neccessary to patch here.
+  when (ghcFlavor /= GhcMaster) $
+    forM_ ["compiler/ghci/Linker.hs"
           , "compiler/utils/FastString.hs"
           , "compiler/main/DynFlags.hs"] $
     \file ->
-        writeFile file .
-        replace "STAGE >= 2" "0" .
-        replace "STAGE < 2" "1"
-        =<< readFile' file
+      (if ghcFlavor == GhcMaster
+        then
+          writeFile file . replace "GHC_STAGE >= 2" "0" . replace "GHC_STAGE < 2" "1"
+        else
+          writeFile file . replace "STAGE >= 2" "0" . replace "STAGE < 2" "1"
+      )
+      =<< readFile' file
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
@@ -524,7 +533,7 @@ generateGhcLibCabal ghcFlavor = do
         indent2 (ghcLibIncludeDirs ghcFlavor) ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS " <> ghciDef ghcFlavor <> " -DGHC_IN_GHCI"
+        ,"    cpp-options: " <> ghcStageDef ghcFlavor <> " -DTHREADED_RTS " <> ghciDef ghcFlavor <> " -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
@@ -551,6 +560,10 @@ generateGhcLibCabal ghcFlavor = do
 ghciDef :: GhcFlavor -> String
 ghciDef GhcMaster = ""
 ghciDef _ = "-DGHCI"
+
+ghcStageDef :: GhcFlavor -> String
+ghcStageDef GhcMaster = ""
+ghcStageDef _ = "-DSTAGE=2"
 
 -- | Produces a ghc-lib-parser Cabal file.
 generateGhcLibParserCabal :: GhcFlavor -> IO ()
@@ -587,7 +600,7 @@ generateGhcLibParserCabal ghcFlavor = do
         ,"    include-dirs:"] ++ indent2 (ghcLibParserIncludeDirs ghcFlavor) ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
-        ,"    cpp-options: -DSTAGE=2 -DTHREADED_RTS " <> ghciDef ghcFlavor <> " -DGHC_IN_GHCI"
+        ,"    cpp-options: " <> ghcStageDef ghcFlavor <> " -DTHREADED_RTS " <> ghciDef ghcFlavor <> " -DGHC_IN_GHCI"
         ,"    if !os(windows)"
         ,"        build-depends: unix"
         ,"    else"
