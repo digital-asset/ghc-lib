@@ -383,7 +383,13 @@ mangleCSymbols _ = do
 -- by using getOrSetLibHSghc for the FastString table.
 applyPatchStage :: GhcFlavor -> IO ()
 applyPatchStage ghcFlavor =
-    forM_ [ "compiler/ghci/Linker.hs"
+  -- On master, `ghcplatform.h` sets `GHC_STAGE` to `1` and we no
+  -- longer are required to pass `-DGHC_STAGE=2` to `cpp-options` to
+  -- get a build (`MachDeps.h` does not hide its contents from stages
+  -- below 2 anymore). All usages of `getOrSetLibHSghc*` require
+  -- `GHC_STAGE >= 2` . Thus, it's no longer neccessary to patch here.
+  when (ghcFlavor /= GhcMaster) $
+    forM_ ["compiler/ghci/Linker.hs"
           , "compiler/utils/FastString.hs"
           , "compiler/main/DynFlags.hs"] $
     \file ->
@@ -556,7 +562,7 @@ ghciDef GhcMaster = ""
 ghciDef _ = "-DGHCI"
 
 ghcStageDef :: GhcFlavor -> String
-ghcStageDef GhcMaster = "-DGHC_STAGE=2"
+ghcStageDef GhcMaster = ""
 ghcStageDef _ = "-DSTAGE=2"
 
 -- | Produces a ghc-lib-parser Cabal file.
