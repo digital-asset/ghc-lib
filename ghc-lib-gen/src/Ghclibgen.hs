@@ -43,7 +43,7 @@ cabalFileLibraries =
 -- | C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: GhcFlavor -> [FilePath]
 ghcLibParserIncludeDirs ghcFlavor =
-  [ "includes" ] ++ -- ghcconfig.h, MachDeps.h, CodeGen.Platform.hs
+  [ "includes" ] ++ -- ghcconfig.h, MachDeps.h, MachRegs.h, CodeGen.Platform.hs
   (case ghcFlavor of
     GhcMaster ->   ["ghc-lib/stage0/lib"]
     _ -> ["ghc-lib/generated"]) ++
@@ -208,6 +208,7 @@ cHeaders :: GhcFlavor -> [String]
 cHeaders ghcFlavor =
   [ "includes/ghcconfig.h"
   , "includes/MachDeps.h"
+  , "includes/stg/MachRegs.h"
   , "includes/CodeGen.Platform.hs"
   , "compiler/HsVersions.h"
   , "compiler/Unique.h"
