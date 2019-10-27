@@ -44,7 +44,8 @@ data GhcFlavor = Ghc881 | DaGhc881 | GhcMaster String
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current =    "acedfc8b8706a92127c96f487e3e3b1636451704" -- 10/25/2019
+current =    "fa0d48094afb8025bd85356a5d62d2bc96eb2124" -- 10/27/2019
+          -- "acedfc8b8706a92127c96f487e3e3b1636451704" -- 10/25/2019
           -- "2d2cc76ffb781d01c800608cd8be05cca67ac4c0" -- 10/22/2019
           -- "c4c9904b324736dc5d190a91418e8d8f564d4104" -- 10/19/2019
           -- "d584e3f08cfee6e28b70bf53c573d86e44f326f8" -- 10/09/2019
