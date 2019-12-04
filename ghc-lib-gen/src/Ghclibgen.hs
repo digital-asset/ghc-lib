@@ -530,6 +530,7 @@ generateGhcLibCabal ghcFlavor = do
         ,"library"
         ,"    default-language:   Haskell2010"
         ,"    default-extensions: NoImplicitPrelude"
+        ,"    exposed: False"
         ,"    include-dirs:"] ++
         indent2 (ghcLibIncludeDirs ghcFlavor) ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
@@ -598,6 +599,7 @@ generateGhcLibParserCabal ghcFlavor = do
         ,"library"
         ,"    default-language:   Haskell2010"
         ,"    default-extensions: NoImplicitPrelude"
+        ,"    exposed: False"
         ,"    include-dirs:"] ++ indent2 (ghcLibParserIncludeDirs ghcFlavor) ++
         ["    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         ,"    cc-options: -DTHREADED_RTS"
