@@ -20,9 +20,9 @@ strategy:
   # Limit number of executors used so other pipelines can run too
   maxParallel: 10
   matrix:
-    # ghc-lib v8.8.1 (vanilla)
+    # -- compiler : ghc-8.4.4
 
-    # ghc-8.4.4
+    # ---- ghc-flavor : ghc-8.8.1
     linux-ghc-881-844:
       image: "Ubuntu 16.04"
       ghc-flavor: "ghc-8.8.1"
@@ -35,8 +35,16 @@ strategy:
       image: "macOS-10.13"
       ghc-flavor: "ghc-8.8.1"
       resolver: "lts-12.26"
+    # ---- ghc-flavor : ghc-8.10.1
+    # ghc-8.4 is no longer supported for bootstrapping as of
+    # https://gitlab.haskell.org/ghc/ghc/commit/24620182abdfcc65a0cfc0e2f3bc391d464d0ad5
+    # 09/29/2019. Subsequent removal of CPP guards in
+    # https://gitlab.haskell.org/ghc/ghc/commit/795986aaf33e2ffc233836b86a92a77366c91db2
+    # for 'InfoTable.hsc' break the compile.
 
-    # ghc-8.6.5
+    # -- compiler : ghc-8.6.5
+
+    # ---- ghc-flavor : ghc-8.8.1
     linux-ghc-881-865:
       image: "Ubuntu 16.04"
       ghc-flavor: "ghc-8.8.1"
@@ -49,8 +57,23 @@ strategy:
       image: "macOS-10.13"
       ghc-flavor: "ghc-8.8.1"
       resolver: "lts-14.3"
+    # ---- ghc-flavor : ghc-8.10.1
+    linux-ghc-8101-865:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "ghc-8.10.1"
+      resolver: "lts-14.3"
+    windows-ghc-8101-865:
+      image: "vs2017-win2016"
+      ghc-flavor: "ghc-8.10.1"
+      resolver: "lts-14.3"
+    mac-ghc-8101-865:
+      image: "macOS-10.13"
+      ghc-flavor: "ghc-8.10.1"
+      resolver: "lts-14.3"
 
-    # ghc-8.8.1
+    # -- compiler : ghc-8.8.1
+
+    # ---- ghc-flavor : ghc-8.8.1
     linux-ghc-881-881:
       image: "Ubuntu 16.04"
       ghc-flavor: "ghc-8.8.1"
@@ -63,24 +86,27 @@ strategy:
       image: "macOS-10.13"
       ghc-flavor: "ghc-8.8.1"
       resolver: "nightly-2019-09-26"
+    # ---- ghc-flavor : ghc-8.10.1
+    linux-ghc-8101-881:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "ghc-8.10.1"
+      resolver: "nightly-2019-09-26"
+    mac-ghc-8101-881:
+      image: "macOS-10.13"
+      ghc-flavor: "ghc-8.10.1"
+      resolver: "nightly-2019-09-26"
+    # windows-ghc-8101-881:
+    #   image: "vs2017-win2016"
+    #   ghc-flavor: "ghc-8.10.1"
+    #   resolver: "nightly-2019-09-26"
 
     # ghc-lib v8.8.1 (DA)
 
-    # #ghc-8.4.4 (not useful - skipped)
-    # linux-da-ghc-881-844:
-    #   image: "Ubuntu 16.04"
-    #   ghc-flavor: "da-ghc-8.8.1"
-    #   resolver: "lts-12.26"
-    # windows-da-ghc-881-844:
-    #   image: "vs2017-win2016"
-    #   ghc-flavor: "da-ghc-8.8.1"
-    #   resolver: "lts-12.26"
-    # mac-da-ghc-881-844:
-    #   image: "macOS-10.13"
-    #   ghc-flavor: "da-ghc-8.8.1"
-    #   resolver: "lts-12.26"
+    # -- compiler : ghc-8.4.4 (not useful - skipped)
 
-    # ghc-8.6.5
+    # -- compiler : ghc-8.6.5
+
+    # ---- ghc-flavor : da-ghc-8.8.1
     linux-da-ghc-881-865:
       image: "Ubuntu 16.04"
       ghc-flavor: "da-ghc-8.8.1"
@@ -93,8 +119,11 @@ strategy:
       image: "macOS-10.13"
       ghc-flavor: "da-ghc-8.8.1"
       resolver: "lts-14.3"
+    # ---- ghc-flavor : da-ghc-8.10.1 (doesn't exist)
 
-    # ghc-8.8.1
+    # -- compiler : ghc-8.8.1
+
+    # ---- ghc-flavor : da-ghc-8.8.1
     linux-da-ghc-881-881:
       image: "Ubuntu 16.04"
       ghc-flavor: "da-ghc-8.8.1"
@@ -103,6 +132,7 @@ strategy:
     #   image: "vs2017-win2016"
     #   ghc-flavor: "da-ghc-8.8.1"
     #   resolver: "nightly-2019-09-26"
+    # ---- ghc-flavor : da-ghc-8.10.1 (doesn't exist)
     mac-da-ghc-881-881:
       image: "macOS-10.13"
       ghc-flavor: "da-ghc-8.8.1"
@@ -128,7 +158,9 @@ strategy:
     #   ghc-flavor: "ghc-master"
     #   resolver: "lts-12.26"
 
-    # ghc-8.6.5
+    # -- compiler : ghc-8.6.5
+
+    # ---- ghc-flavor : ghc-master
     linux-ghc-master-865:
       image: "Ubuntu 16.04"
       ghc-flavor: "ghc-master"
@@ -142,7 +174,8 @@ strategy:
       ghc-flavor: "ghc-master"
       resolver: "lts-14.3"
 
-    # ghc-8.8.1
+    # -- compiler : ghc-8.6.5
+    # ---- ghc-flavor : ghc-master
     linux-ghc-master-881:
       image: "Ubuntu 16.04"
       ghc-flavor: "ghc-master"

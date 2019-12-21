@@ -45,12 +45,14 @@ ghcLibParserIncludeDirs :: GhcFlavor -> [FilePath]
 ghcLibParserIncludeDirs ghcFlavor =
   [ "includes" ] ++ -- ghcconfig.h, MachDeps.h, MachRegs.h, CodeGen.Platform.hs
   (case ghcFlavor of
-    GhcMaster ->   ["ghc-lib/stage0/lib"]
-    _ -> ["ghc-lib/generated"]) ++
+    GhcMaster -> ["ghc-lib/stage0/lib"]
+    Ghc8101   -> ["ghc-lib/stage0/lib"]
+    _         ->  ["ghc-lib/generated"]
+  ) ++
   [ "ghc-lib/stage0/compiler/build"
   , "compiler"
   ] ++
-  ["compiler/utils" | ghcFlavor /= GhcMaster]
+  ["compiler/utils" | ghcFlavor `notElem` [GhcMaster, Ghc8101]]
 
 -- Sort by length so the longest paths are at the front. We do this
 -- so that in 'calcParserModules', longer substituions are performed
@@ -86,7 +88,7 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         -- This next conditional just smooths over a 'master'
         -- vs. '8.8.1' branch difference (relating to a file
         -- 'GhcVersion.hs' IIRC).
-        ++ [ "ghc-lib/stage0/libraries/ghc-boot/build" | ghcFlavor == GhcMaster ]
+        ++ [ "ghc-lib/stage0/libraries/ghc-boot/build" | ghcFlavor `elem` [GhcMaster, Ghc8101] ]
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
 
@@ -99,7 +101,7 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         , "compiler/stranal"
         , "compiler/nativeGen"
         ] ++
-        [ "compiler/deSugar" | ghcFlavor == GhcMaster && not forParserDepends]
+        [ "compiler/deSugar" | ghcFlavor `elem` [GhcMaster, Ghc8101] && not forParserDepends]
   in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
 
 -- | C-preprocessor "include dirs" for 'ghc-lib'.
@@ -111,7 +113,7 @@ ghcLibHsSrcDirs :: GhcFlavor -> [Cabal] -> [FilePath]
 ghcLibHsSrcDirs ghcFlavor lib =
   let all = Set.fromList $
         [ "ghc-lib/stage0/compiler/build"]
-        ++ [ "ghc-lib/stage0/libraries/ghc-boot/build" | ghcFlavor == GhcMaster ] -- 'GHC.Platform' is in 'ghc-lib-parser', 'GHC.Platform.Host' is not.
+        ++ [ "ghc-lib/stage0/libraries/ghc-boot/build" | ghcFlavor `elem` [GhcMaster, Ghc8101] ] -- 'GHC.Platform' is in 'ghc-lib-parser', 'GHC.Platform.Host' is not.
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
       excludes = Set.fromList
@@ -157,6 +159,7 @@ includesDependencies ghcFlavor =
    where
       root = (case ghcFlavor of
                 GhcMaster -> stage0LibPath
+                Ghc8101 -> stage0LibPath
                 _ -> "ghc-lib/generated") ++ "/"
 
 derivedConstantsDependencies :: GhcFlavor -> [FilePath]
@@ -170,6 +173,7 @@ derivedConstantsDependencies ghcFlavor =
    where
       root = (case ghcFlavor of
                 GhcMaster -> stage0LibPath
+                Ghc8101 -> stage0LibPath
                 _ -> "ghc-lib/generated") ++ "/"
 
 compilerDependencies :: GhcFlavor -> [FilePath]
@@ -192,15 +196,15 @@ compilerDependencies _ =
     ]
 
 platformH :: GhcFlavor -> [FilePath]
-platformH ghcFlavor = ["ghc-lib/stage0/compiler/build/ghc_boot_platform.h" | ghcFlavor /= GhcMaster]
+platformH ghcFlavor = ["ghc-lib/stage0/compiler/build/ghc_boot_platform.h" | ghcFlavor `notElem` [GhcMaster, Ghc8101]]
 
 packageCode :: GhcFlavor -> [FilePath]
 packageCode ghcFlavor =
   "ghc-lib/stage0/compiler/build/Config.hs" :
-  [ "ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs" | ghcFlavor == GhcMaster ]
+  [ "ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs" | ghcFlavor `elem` [GhcMaster, Ghc8101] ]
 
 fingerprint :: GhcFlavor -> [FilePath]
-fingerprint ghcFlavor = ["ghc-lib/stage0/compiler/build/Fingerprint.hs" | ghcFlavor /= GhcMaster]
+fingerprint ghcFlavor = ["ghc-lib/stage0/compiler/build/Fingerprint.hs" | ghcFlavor `notElem` [GhcMaster, Ghc8101]]
 
 -- | The C headers shipped with ghc-lib. These globs get glommed onto
 -- the 'extraFiles' above as 'extra-source-files'.
@@ -213,7 +217,7 @@ cHeaders ghcFlavor =
   , "compiler/HsVersions.h"
   , "compiler/Unique.h"
   ] ++
-  [ f | ghcFlavor /= GhcMaster
+  [ f | ghcFlavor `notElem` [GhcMaster, Ghc8101]
     , f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"]
   ]
 
@@ -303,6 +307,7 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
           "compiler/main/DynFlags.hs" :
           (case ghcFlavor of
             GhcMaster -> [ "compiler/GHC/Hs.hs" ]
+            Ghc8101 ->   [ "compiler/GHC/Hs.hs" ]
             _ ->         [ "compiler/hsSyn/HsInstances.hs" ])
     in
       forM_ files $
@@ -332,8 +337,8 @@ applyPatchRtsIncludePaths :: GhcFlavor -> IO ()
 applyPatchRtsIncludePaths flavor = do
   let files =
         [ "compiler/cmm/SMRep.hs"] ++
-        ["compiler/GHC/StgToCmm/Layout.hs"  | flavor == GhcMaster] ++
-        ["compiler/codeGen/StgCmmLayout.hs" | flavor /= GhcMaster]
+        ["compiler/GHC/StgToCmm/Layout.hs"  | flavor `elem` [GhcMaster, Ghc8101]] ++
+        ["compiler/codeGen/StgCmmLayout.hs" | flavor `notElem` [GhcMaster, Ghc8101]]
   forM_ files $
     \file ->
         writeFile file .
@@ -389,12 +394,12 @@ applyPatchStage ghcFlavor =
   -- get a build (`MachDeps.h` does not hide its contents from stages
   -- below 2 anymore). All usages of `getOrSetLibHSghc*` require
   -- `GHC_STAGE >= 2` . Thus, it's no longer neccessary to patch here.
-  when (ghcFlavor /= GhcMaster) $
+  when (ghcFlavor `notElem` [GhcMaster, Ghc8101]) $
     forM_ ["compiler/ghci/Linker.hs"
           , "compiler/utils/FastString.hs"
           , "compiler/main/DynFlags.hs"] $
     \file ->
-      (if ghcFlavor == GhcMaster
+      (if ghcFlavor `elem` [GhcMaster, Ghc8101]
         then
           writeFile file . replace "GHC_STAGE >= 2" "0" . replace "GHC_STAGE < 2" "1"
         else
@@ -561,10 +566,12 @@ generateGhcLibCabal ghcFlavor = do
 
 ghciDef :: GhcFlavor -> String
 ghciDef GhcMaster = ""
+ghciDef Ghc8101 = ""
 ghciDef _ = "-DGHCI"
 
 ghcStageDef :: GhcFlavor -> String
 ghcStageDef GhcMaster = ""
+ghcStageDef Ghc8101 = ""
 ghcStageDef _ = "-DSTAGE=2"
 
 -- | Produces a ghc-lib-parser Cabal file.
@@ -650,5 +657,5 @@ generatePrerequisites ghcFlavor = do
   -- of the way.
   removeFile "compiler/parser/Lexer.x"
   removeFile "compiler/parser/Parser.y"
-  when (ghcFlavor /= GhcMaster) $
+  when (ghcFlavor `notElem` [GhcMaster, Ghc8101]) $
     removeFile "compiler/utils/Fingerprint.hsc" -- Favor the generated .hs file here too.

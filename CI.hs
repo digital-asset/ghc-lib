@@ -39,7 +39,7 @@ data Options = Options
     , resolver :: Maybe String -- If 'Just _', override stack.yaml.
     } deriving (Show)
 
-data GhcFlavor = Ghc881 | DaGhc881 | GhcMaster String
+data GhcFlavor = Ghc8101 | Ghc881 | DaGhc881 | GhcMaster String
   deriving (Eq, Show)
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
@@ -76,6 +76,7 @@ stackResolverOpt = \case
 
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
+    Ghc8101 -> "--ghc-flavor ghc-8.10.1"
     Ghc881 -> "--ghc-flavor ghc-8.8.1"
     DaGhc881 -> "--ghc-flavor da-ghc-8.8.1"
     GhcMaster _hash -> "--ghc-flavor ghc-master"
@@ -84,8 +85,9 @@ ghcFlavorOpt = \case
 -- Calculate a version string based on a date and a ghc flavor.
 genVersionStr :: GhcFlavor -> (Day -> String)
 genVersionStr = \case
-  GhcMaster _ -> \day -> "0." ++ replace "-" "" (showGregorian day)
-  _           -> \day -> "8.8.1." ++ replace "-" "" (showGregorian day)
+   GhcMaster _ -> \day -> "0." ++ replace "-" "" (showGregorian day)
+   Ghc8101     -> \day -> "8.10.1." ++ replace "-" "" (showGregorian day)
+   _           -> \day -> "8.8.1." ++ replace "-" "" (showGregorian day)
 
 parseOptions :: Opts.Parser Options
 parseOptions = Options
@@ -103,6 +105,7 @@ parseOptions = Options
  where
    readFlavor :: Opts.ReadM GhcFlavor
    readFlavor = Opts.eitherReader $ \case
+       "ghc-8.10.1" -> Right Ghc8101
        "ghc-8.8.1" -> Right Ghc881
        "da-ghc-8.8.1" -> Right DaGhc881
        "ghc-master" -> Right (GhcMaster current)
@@ -164,6 +167,7 @@ buildDists ghcFlavor resolver = do
     -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
     case ghcFlavor of
+        Ghc8101 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.1-alpha2"
         Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
         DaGhc881 -> do
             cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"

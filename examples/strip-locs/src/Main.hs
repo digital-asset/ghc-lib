@@ -13,7 +13,11 @@ module Main (main) where
 #  define GHC_MASTER
 #endif
 
-#ifdef GHC_MASTER
+#if MIN_VERSION_ghc_lib_parser(8,10,1)
+#  define GHC_8101
+#endif
+
+#if defined (GHC_MASTER) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Hs
 #else
 import "ghc-lib-parser" HsSyn
@@ -34,7 +38,7 @@ import "ghc-lib-parser" HscTypes
 import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" ApiAnnotation
 
-#ifdef GHC_MASTER
+#if defined (GHC_MASTER) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Platform
 import "ghc-lib-parser" ToolSettings
 #else
@@ -42,7 +46,7 @@ import "ghc-lib-parser" Bag
 import "ghc-lib-parser" Platform
 #endif
 
-#ifdef GHC_MASTER
+#if defined (GHC_MASTER) || defined (GHC_8101)
 import "ghc-lib" GHC.Hs.Dump
 #else
 import "ghc-lib" HsDumpAst
@@ -58,7 +62,7 @@ import Data.Generics.Uniplate.Data
 
 fakeSettings :: Settings
 fakeSettings = Settings
-#ifdef GHC_MASTER
+#if defined (GHC_MASTER) || defined (GHC_8101)
   { sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
@@ -76,7 +80,7 @@ fakeSettings = Settings
 #endif
   where
 
-#ifdef GHC_MASTER
+#if defined (GHC_MASTER) || defined (GHC_8101)
     toolSettings = ToolSettings {
       toolSettings_opt_P_fingerprint=fingerprint0
       }
@@ -89,7 +93,7 @@ fakeSettings = Settings
 #endif
     platform =
       Platform {
-#ifdef GHC_MASTER
+#if defined (GHC_MASTER) || defined (GHC_8101)
              platformWordSize=PW8
              , platformMini = PlatformMini {platformMini_os=OSUnknown}
              , platformUnregisterised=True
@@ -102,7 +106,7 @@ fakeSettings = Settings
     platformConstants =
       PlatformConstants{pc_DYNAMIC_BY_DEFAULT=False,pc_WORD_SIZE=8}
 
-#ifdef GHC_MASTER
+#if defined (GHC_MASTER) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
 fakeLlvmConfig = LlvmConfig [] []
 #else
@@ -148,7 +152,7 @@ main = do
           (defaultDynFlags fakeSettings fakeLlvmConfig) file s
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
-#ifdef GHC_MASTER
+#if defined (GHC_MASTER) || defined (GHC_8101)
             PFailed s ->
               report flags $ snd (getMessages s flags)
 #else

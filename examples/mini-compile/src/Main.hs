@@ -12,6 +12,10 @@ module Main (main) where
 #  define GHC_MASTER
 #endif
 
+#if MIN_VERSION_ghc_lib(8,10,1)
+#  define GHC_8101
+#endif
+
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
 import "ghc-lib-parser" HeaderInfo
@@ -22,7 +26,7 @@ import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Outputable
 
-#ifdef GHC_MASTER
+#if defined (GHC_MASTER) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Platform
 import "ghc-lib-parser" ToolSettings
 #else
@@ -83,7 +87,7 @@ mkDynFlags filename s = do
       (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
       return dflags
 
-#ifdef GHC_MASTER
+#if defined (GHC_MASTER) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
 fakeLlvmConfig = LlvmConfig [] []
 #else
@@ -93,7 +97,7 @@ fakeLlvmConfig = ([], [])
 
 fakeSettings :: Settings
 fakeSettings = Settings
-#ifndef GHC_MASTER
+#if !defined (GHC_MASTER) && !defined (GHC_8101)
   { sTargetPlatform=platform
   , sPlatformConstants=platformConstants
   , sProjectVersion=cProjectVersion
@@ -111,7 +115,7 @@ fakeSettings = Settings
   }
 #endif
   where
-#ifdef GHC_MASTER
+#if defined (GHC_MASTER) || defined (GHC_8101)
     fileSettings = FileSettings {
         fileSettings_tmpDir="."
       }
@@ -129,7 +133,7 @@ fakeSettings = Settings
 #endif
     platform =
       Platform{
-#ifdef GHC_MASTER
+#if defined (GHC_MASTER) || defined (GHC_8101)
         platformWordSize = PW8
       , platformMini = PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
 #else
