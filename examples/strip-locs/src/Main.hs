@@ -132,7 +132,11 @@ parsePragmasIntoDynFlags flags filepath str =
 
 dumpParseTree :: DynFlags -> Located (HsModule GhcPs) -> IO ()
 dumpParseTree flags m =
+#if defined (GHC_MASTER)
+  dumpAction flags (mkDumpStyle flags alwaysQualify) (dumpOptionsFromFlag Opt_D_dump_parsed_ast) "" FormatText $ showAstData NoBlankSrcSpan m
+#else
   dumpSDoc flags alwaysQualify Opt_D_dump_parsed_ast "" $ showAstData NoBlankSrcSpan m
+#endif
 
 stripLocs :: Located (HsModule GhcPs) -> Located (HsModule GhcPs)
 stripLocs = transformBi $ const noSrcSpan

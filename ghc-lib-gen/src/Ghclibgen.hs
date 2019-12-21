@@ -4,6 +4,7 @@
 
 module Ghclibgen (
     applyPatchHeapClosures
+  , applyPatchGhcPrim
   , applyPatchDisableCompileTimeOptimizations
   , applyPatchRtsIncludePaths
   , applyPatchStage
@@ -324,6 +325,45 @@ applyPatchHeapClosures _ = do
             "foreign import prim \"reallyUnsafePtrEqualityUpToTag\"\n    reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#"
             "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
         =<< readFile' file
+
+-- Workaround lack of newer ghc-prim 12/3/2019
+-- (https://gitlab.haskell.org/ghc/ghc/commit/705a16df02411ec2445c9a254396a93cabe559ef)
+applyPatchGhcPrim :: GhcFlavor -> IO ()
+applyPatchGhcPrim ghcFlavor = do
+    let tysPrim = "compiler/prelude/TysPrim.hs"
+    when (ghcFlavor == GhcMaster) (
+      writeFile tysPrim .
+          replace
+              "bcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep"
+              "bcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName UnliftedRep" .
+          replace
+              "bcoPrimTyConName              = mkPrimTc (fsLit \"BCO\") bcoPrimTyConKey bcoPrimTyCon"
+              "bcoPrimTyConName              = mkPrimTc (fsLit \"BCO#\") bcoPrimTyConKey bcoPrimTyCon"
+        =<< readFile' tysPrim
+        )
+    let createBCO = "libraries/ghci/GHCi/CreateBCO.hs"
+    when (ghcFlavor == GhcMaster) (
+      writeFile createBCO .
+          replace
+              "do linked_bco <- linkBCO' arr bco"
+              "do BCO bco# <- linkBCO' arr bco" .
+          replace
+              "then return (HValue (unsafeCoerce linked_bco))\n           else case mkApUpd0# linked_bco of { (# final_bco #) ->"
+              "then return (HValue (unsafeCoerce# bco#))\n           else case mkApUpd0# bco# of { (# final_bco #) ->" .
+          replace
+              "bco <- linkBCO' arr bco\n      writePtrsArrayBCO i bco marr"
+              "BCO bco# <- linkBCO' arr bco\n      writePtrsArrayBCO i bco# marr" .
+          replace
+              "writePtrsArrayBCO :: Int -> BCO -> PtrsArr -> IO ()"
+              "writePtrsArrayBCO :: Int -> BCO# -> PtrsArr -> IO ()" .
+          replace
+              "writePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()"
+              "data BCO = BCO BCO#\nwritePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()" .
+          replace
+              "newBCO# instrs lits ptrs arity bitmap s"
+              "case newBCO# instrs lits ptrs arity bitmap s of\n    (# s1, bco #) -> (# s1, BCO bco #)"
+        =<< readFile' createBCO
+        )
 
 -- | Fix up these rts include paths. We don't ship rts headers since
 -- we run ghc-lib using the RTS of the compiler we build with - we go
