@@ -37,6 +37,7 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
     init ghcFlavor = do
         applyPatchRtsIncludePaths ghcFlavor
         applyPatchHeapClosures ghcFlavor
+        applyPatchGhcPrim ghcFlavor
         applyPatchDisableCompileTimeOptimizations ghcFlavor
         -- This invokes 'stack' strictly configured by
         -- 'hadrian/stack.yaml'.
