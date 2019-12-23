@@ -1,4 +1,3 @@
-#!/usr/bin/env stack --resolver lts-14.3 runhaskell --package extra --package optparse-applicative --
 -- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
 -- affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
@@ -6,6 +5,7 @@
 -- CI script, compatible with all of Travis, Appveyor and Azure.
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE CPP #-}
 import Control.Monad.Extra
 import System.Directory
 import System.FilePath
@@ -259,10 +259,15 @@ buildDists ghcFlavor resolver = do
     stack "--no-terminal exec -- strip-locs examples/mini-compile/test/MiniCompileTest.hs"
     stack "--no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
 
+#if __GLASGOW_HASKELL__ >= 808 && defined (mingw32_HOST_OS)
+    -- Skip these tests on ghc-8.8.1 (and greater) for now. See
+    -- https://gitlab.haskell.org/ghc/ghc/issues/17599.
+#else
     -- Test everything loads in GHCi, see
     -- https://github.com/digital-asset/ghc-lib/issues/27
     stack "--no-terminal exec -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
     stack "--no-terminal exec -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
+#endif
 
     -- Something like, "8.8.1.20190828".
     tag  -- The return value of type 'IO string'.
