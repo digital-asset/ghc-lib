@@ -174,16 +174,17 @@ strategy:
       ghc-flavor: "ghc-master"
       resolver: "lts-14.3"
 
-    # -- compiler : ghc-8.6.5
+    # -- compiler : ghc-8.8.1
+
     # ---- ghc-flavor : ghc-master
     linux-ghc-master-881:
       image: "Ubuntu 16.04"
       ghc-flavor: "ghc-master"
       resolver: "nightly-2019-09-26"
-    # windows-ghc-master-881:
-    #   image: "vs2017-win2016"
-    #   ghc-flavor: "ghc-master"
-    #   resolver: "nightly-2019-09-26"
+    windows-ghc-master-881:
+      image: "vs2017-win2016"
+      ghc-flavor: "ghc-master"
+      resolver: "nightly-2019-09-26"
     mac-ghc-master-881:
       image: "macOS-10.13"
       ghc-flavor: "ghc-master"
