@@ -376,7 +376,7 @@ applyPatchGhcPrim ghcFlavor = do
 applyPatchRtsIncludePaths :: GhcFlavor -> IO ()
 applyPatchRtsIncludePaths flavor = do
   let files =
-        [ "compiler/cmm/SMRep.hs"] ++
+        ["compiler/cmm/SMRep.hs"] ++
         ["compiler/GHC/StgToCmm/Layout.hs"  | flavor `elem` [GhcMaster, Ghc8101]] ++
         ["compiler/codeGen/StgCmmLayout.hs" | flavor `notElem` [GhcMaster, Ghc8101]]
   forM_ files $
@@ -390,7 +390,7 @@ applyPatchRtsIncludePaths flavor = do
 -- | Mangle exported C symbols to avoid collisions between the symbols
 -- in ghc-lib-parser and ghc.
 mangleCSymbols :: GhcFlavor -> IO ()
-mangleCSymbols _ = do
+mangleCSymbols ghcFlavor = do
     let ghcLibParserPrefix = "ghc_lib_parser_"
     let prefixSymbol s = replace s (ghcLibParserPrefix <> s)
     let prefixForeignImport s =
@@ -410,7 +410,12 @@ mangleCSymbols _ = do
         prefixForeignImport genSym .
         prefixForeignImport initGenSym
         =<< readFile' file
-    forM_ ["compiler/parser/cutils.c", "compiler/parser/cutils.h"] $ \file ->
+    let cUtils =
+          if ghcFlavor == GhcMaster then
+            ["compiler/cbits/cutils.c"]
+          else
+            ["compiler/parser/cutils.c", "compiler/parser/cutils.h"]
+    forM_ cUtils $ \file ->
         writeFile file .
         prefixSymbol enableTimingStats .
         prefixSymbol setHeapSize
@@ -433,18 +438,13 @@ applyPatchStage ghcFlavor =
   -- longer are required to pass `-DGHC_STAGE=2` to `cpp-options` to
   -- get a build (`MachDeps.h` does not hide its contents from stages
   -- below 2 anymore). All usages of `getOrSetLibHSghc*` require
-  -- `GHC_STAGE >= 2` . Thus, it's no longer neccessary to patch here.
+  -- `GHC_STAGE >= 2`. Thus, it's no longer neccessary to patch here.
   when (ghcFlavor `notElem` [GhcMaster, Ghc8101]) $
     forM_ ["compiler/ghci/Linker.hs"
           , "compiler/utils/FastString.hs"
           , "compiler/main/DynFlags.hs"] $
     \file ->
-      (if ghcFlavor `elem` [GhcMaster, Ghc8101]
-        then
-          writeFile file . replace "GHC_STAGE >= 2" "0" . replace "GHC_STAGE < 2" "1"
-        else
-          writeFile file . replace "STAGE >= 2" "0" . replace "STAGE < 2" "1"
-      )
+      (writeFile file . replace "STAGE >= 2" "0" . replace "STAGE < 2" "1")
       =<< readFile' file
 
 -- | Data type representing an approximately parsed Cabal file.
@@ -662,7 +662,8 @@ generateGhcLibParserCabal ghcFlavor = do
         -- We hardcode these because the inclusion of 'keepCAFsForGHCi'
         -- causes issues in ghci see
         -- https://github.com/digital-asset/ghc-lib/issues/27
-        indent2 ["compiler/cbits/genSym.c","compiler/parser/cutils.c"] ++
+        indent2 ["compiler/cbits/genSym.c"] ++
+        indent2 [if ghcFlavor == GhcMaster then "compiler/cbits/cutils.c" else "compiler/parser/cutils.c"] ++
         ["    hs-source-dirs:"] ++
         indent2 (ghcLibParserHsSrcDirs False ghcFlavor lib) ++
         ["    autogen-modules:"
