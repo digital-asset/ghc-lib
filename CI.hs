@@ -260,7 +260,7 @@ buildDists ghcFlavor resolver = do
     stack "--no-terminal exec -- strip-locs examples/mini-compile/test/MiniCompileTest.hs"
     stack "--no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
 
-#if __GLASGOW_HASKELL__ >= 808 && defined (mingw32_HOST_OS)
+#if 0
     -- Skip these tests on ghc-8.8.1 (and greater) for now. See
     -- https://gitlab.haskell.org/ghc/ghc/issues/17599.
 #else
