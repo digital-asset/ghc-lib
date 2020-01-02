@@ -44,30 +44,7 @@ data GhcFlavor = Ghc8101 | Ghc881 | DaGhc881 | GhcMaster String
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current =    "d03dec8ff7681423b9cafa2ce1b5b5f624e664c7" -- 12/27/2019
-          -- "70e56b272492b65e41a149ec39a939e794fea66b" -- 12/20/2019
-          -- "2b113fc957a3fb6eafd10ad41a7caf11009ef4eb" -- 12/01/2019
-          -- "c2991f16cb6f5b4e7cff46a394dda4247d973f44" -- 11/17/2019
-          -- "73d6e508e6ce0b66bd082419effc0010b1dc9668" -- 10/31/2019
-          -- "4898df1cc25132dc9e2599d4fa4e1bbc9423cda5" -- 10/30/2019
-          -- "fa0d48094afb8025bd85356a5d62d2bc96eb2124" -- 10/27/2019
-          -- "acedfc8b8706a92127c96f487e3e3b1636451704" -- 10/25/2019
-          -- "2d2cc76ffb781d01c800608cd8be05cca67ac4c0" -- 10/22/2019
-          -- "c4c9904b324736dc5d190a91418e8d8f564d4104" -- 10/19/2019
-          -- "d584e3f08cfee6e28b70bf53c573d86e44f326f8" -- 10/09/2019
-          -- "9402608ea5955c70fee51f8b892d418252846a9b" -- 10/08/2019
-          -- "31a29a7a626ca0004c54bff4e087ea3894753410" -- 10/07/2019
-          -- "241921a0c238a047326b0c0f599f1c24222ff66c" -- 10/05/2019
-          -- "8039b6257ce5288e9e38c2593ff2d5d6d316efd4" -- 10/05/2019
-          -- "822481d5658280fa76f648c3d56dc6a456b8d3a3" -- 10/01/2019
-          -- "6f9fa0be8d43a7c9618f6e27e3190dc08bf86bfa" -- 09/28/2019
-          -- "68ddb43c44065d0d3a8a6893f7f8e87f15ee9c1e" -- 09/23/2019
-          -- "1b7e1d31fee4176608e46d45ddc195e313eed978" -- 09/20/2019
-          -- "521739900fe993ff73ec0da2215bc7572a15826d" -- 09/19/2019
-          -- "7208160d2caae125479e8dd39a263620ea7e0ffe" -- 09/16/2019
-          -- "270fbe8512f04b6107755fa22bdec62205c0a567" -- 09/09/2019
-          -- "b55ee979d32df938eee9c4c02c189f8be267e8a1" -- 09/06/2019
-          -- "11679e5bec1994775072e8e60f24b4ce104af0a7" -- 09/03/2019
+current =    "b84c09d533faf576c406ce9f7163efecf3037787" -- 12/01/2020
 
 -- ghc-lib-gen argument generators.
 
