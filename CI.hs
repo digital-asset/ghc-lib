@@ -164,7 +164,7 @@ buildDists ghcFlavor resolver = do
     -- Building of hadrian dependencies that result from the
     -- invocations of ghc-lib-gen can require some versions of these
     -- have been installed.
-    stack "build alex happy"
+    stack $ "build alex happy"
 
     -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
@@ -247,18 +247,18 @@ buildDists ghcFlavor resolver = do
     -- Separate the two library build commands so they are
     -- independently timed. Note that optimizations in these builds
     -- are disabled in stack.yaml via `ghc-options: -O0`.
-    stack $ "--no-terminal --interleaved-output " ++ "build ghc-lib-parser"
-    stack $ "--no-terminal --interleaved-output " ++ "build ghc-lib"
-    stack $ "--no-terminal --interleaved-output build mini-hlint mini-compile strip-locs"
+    stack $ "--no-terminal --interleaved-output " ++ "build " ++ "--ghc-options=\"-v3\" " ++ "ghc-lib-parser"
+    stack $ "--no-terminal --interleaved-output " ++ "build " ++ "--ghc-options=\"-v3\" " ++ "ghc-lib"
+    stack $ "--no-terminal --interleaved-output build " ++ "--ghc-options=\"-v3\" " ++ "mini-hlint mini-compile strip-locs"
 
     -- Run tests.
-    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
-    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fatal_error.hs"
-    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
-    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs"
-    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
-    stack "--no-terminal exec -- strip-locs examples/mini-compile/test/MiniCompileTest.hs"
-    stack "--no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
+    -- stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
+    -- stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fatal_error.hs"
+    -- stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
+    -- stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs"
+    -- stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
+    -- stack "--no-terminal exec -- strip-locs examples/mini-compile/test/MiniCompileTest.hs"
+    -- stack "--no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
 
 #if 0
     -- Skip these tests on ghc-8.8.1 (and greater) for now. See
@@ -278,7 +278,7 @@ buildDists ghcFlavor resolver = do
       resolverFlag = stackResolverOpt resolver
 
       stack :: String -> IO ()
-      stack action = cmd $ "stack " ++ resolverFlag ++ " " ++ action
+      stack action = cmd $ "stack  " ++ resolverFlag ++ " " ++ action
 
       cmd :: String -> IO ()
       cmd x = do
