@@ -1,10 +1,8 @@
-# Use the same resolver as GHC/Hadrian to increase caching
+# Use the same resolver (in the default case) as GHC/Hadrian to
+# increase caching.
 resolver: lts-14.3
 
-ghc-options:
-  # try and speed up recompilation on the CI server
-  "$everything": -O0 -j
-
-# Packages MUST go at the end, since we append to it during the CI.hs script
+# Packages MUST go at the end, since we append to it during the CI.hs
+# script.
 packages:
 - .

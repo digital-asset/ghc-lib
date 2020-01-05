@@ -1,5 +1,5 @@
--- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
--- affiliates. All rights reserved.  SPDX-License-Identifier:
+-- Copyright (c) 2019-2020, Digital Asset (Switzerland) GmbH and/or
+-- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
 -- CI script, compatible with all of Travis, Appveyor and Azure.
@@ -174,7 +174,6 @@ buildDists ghcFlavor resolver = do
 
     -- Make and extract an sdist of ghc-lib-parser.
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-    -- Feedback on the compiler used for ghc-lib-gen.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser resolverFlag
@@ -185,7 +184,6 @@ buildDists ghcFlavor resolver = do
     -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-    -- Feedback on the compiler used for ghc-lib-gen.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraint version "ghc/ghc-lib.cabal"
@@ -222,11 +220,11 @@ buildDists ghcFlavor resolver = do
     stack "exec -- ghc --version"
 
     -- Separate the two library build commands so they are
-    -- independently timed. Note that optimizations in these builds
-    -- are disabled in stack.yaml via `ghc-options: -O0`.
-    stack $ "--no-terminal --interleaved-output " ++ "build ghc-lib-parser"
-    stack $ "--no-terminal --interleaved-output " ++ "build ghc-lib"
-    stack $ "--no-terminal --interleaved-output build mini-hlint mini-compile strip-locs"
+    -- independently timed. Note that optimizations are disabled here
+    -- by '--fast'.
+    stack $ "--no-terminal --interleaved-output build ghc-lib-parser --fast"
+    stack $ "--no-terminal --interleaved-output build ghc-lib --fast"
+    stack $ "--no-terminal --interleaved-output build mini-hlint mini-compile strip-locs --fast"
 
     -- Run tests.
     stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
