@@ -100,7 +100,7 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         , "compiler/rename"
         , "compiler/stgSyn"
         , "compiler/stranal" ] ++
-        [ "compiler/nativeGen" | ghcFlavor /= GhcMaster] ++ -- Since 1/4/2020. See https://gitlab.haskell.org/ghc/ghc/commit/d561c8f6244f8280a2483e8753c38e39d34c1f01.
+        [ "compiler/nativeGen" | ghcFlavor /= GhcMaster] ++ -- Since 2020-01-04. See https://gitlab.haskell.org/ghc/ghc/commit/d561c8f6244f8280a2483e8753c38e39d34c1f01.
         [ "compiler/deSugar"   | ghcFlavor `elem` [GhcMaster, Ghc8101] && not forParserDepends]
   in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
 
