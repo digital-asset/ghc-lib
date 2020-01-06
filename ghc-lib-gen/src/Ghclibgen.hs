@@ -1,5 +1,5 @@
--- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
--- affiliates. All rights reserved.  SPDX-License-Identifier:
+-- Copyright (c) 2019-2020, Digital Asset (Switzerland) GmbH and/or
+-- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
 module Ghclibgen (
@@ -99,10 +99,9 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         , "compiler/llvmGen"
         , "compiler/rename"
         , "compiler/stgSyn"
-        , "compiler/stranal"
-        , "compiler/nativeGen"
-        ] ++
-        [ "compiler/deSugar" | ghcFlavor `elem` [GhcMaster, Ghc8101] && not forParserDepends]
+        , "compiler/stranal" ] ++
+        [ "compiler/nativeGen" | ghcFlavor /= GhcMaster] ++ -- Since 2020-01-04. See https://gitlab.haskell.org/ghc/ghc/commit/d561c8f6244f8280a2483e8753c38e39d34c1f01.
+        [ "compiler/deSugar"   | ghcFlavor `elem` [GhcMaster, Ghc8101] && not forParserDepends]
   in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
 
 -- | C-preprocessor "include dirs" for 'ghc-lib'.
@@ -561,9 +560,6 @@ generateGhcLibCabal ghcFlavor = do
         ,"description: A package equivalent to the @ghc@ package, but which can be loaded on many compiler versions."
         ,"homepage: https://github.com/digital-asset/ghc-lib"
         ,"bug-reports: https://github.com/digital-asset/ghc-lib/issues"
-        -- This is a nice idea but requires a very modern cabal which
-        -- hinders uploading to hackage.
-        -- ,"exposed: False" -- automatically hide `ghc-lib` (thanks Ed Kmett!)
         ,"data-dir: " ++ dataDir
         ,"data-files:"] ++ indent dataFiles ++
         ["extra-source-files:"] ++ indent (ghcLibExtraFiles ghcFlavor) ++
@@ -632,9 +628,6 @@ generateGhcLibParserCabal ghcFlavor = do
         ,"description: A package equivalent to the @ghc@ package, but which can be loaded on many compiler versions."
         ,"homepage: https://github.com/digital-asset/ghc-lib"
         ,"bug-reports: https://github.com/digital-asset/ghc-lib/issues"
-        -- This is a nice idea but requires a very modern cabal which
-        -- hinders uploading to hackage.
-        -- ,"exposed: False" -- automatically hide `ghc-lib` (thanks Ed Kmett!)
         ,"data-dir: " ++ dataDir
         ,"data-files:"] ++ indent dataFiles ++
         ["extra-source-files:"] ++ indent (ghcLibParserExtraFiles ghcFlavor) ++

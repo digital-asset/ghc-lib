@@ -20,8 +20,6 @@ strategy:
   # Limit number of executors used so other pipelines can run too
   maxParallel: 10
   matrix:
-    # -- compiler : ghc-8.4.4
-
     # ---- ghc-flavor : ghc-8.8.1
     linux-ghc-881-844:
       image: "Ubuntu 16.04"
