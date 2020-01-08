@@ -106,7 +106,11 @@ fakeLlvmConfig :: (LlvmTargets, LlvmPasses)
 fakeLlvmConfig = ([], [])
 #endif
 
+#if defined (GHC_MASTER)
+parse :: String -> DynFlags -> String -> ParseResult (Located HsModule)
+#else
 parse :: String -> DynFlags -> String -> ParseResult (Located (HsModule GhcPs))
+#endif
 parse filename flags str =
   unP Parser.parseModule parseState
   where
@@ -144,7 +148,11 @@ analyzeExpr flags (L loc expr) =
                       ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
     _ -> return ()
 
+#if defined(GHC_MASTER)
+analyzeModule :: DynFlags -> Located HsModule -> ApiAnns -> IO ()
+#else
 analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> ApiAnns -> IO ()
+#endif
 analyzeModule flags (L _ modu) _ =
   sequence_ [analyzeExpr flags e | e <- universeBi modu]
 
