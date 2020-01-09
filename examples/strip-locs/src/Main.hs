@@ -114,7 +114,11 @@ fakeLlvmConfig :: (LlvmTargets, LlvmPasses)
 fakeLlvmConfig = ([], [])
 #endif
 
+#if defined(GHC_MASTER)
+parse :: String -> DynFlags -> String -> ParseResult (Located HsModule)
+#else
 parse :: String -> DynFlags -> String -> ParseResult (Located (HsModule GhcPs))
+#endif
 parse filename flags str =
   unP Parser.parseModule parseState
   where
@@ -134,7 +138,11 @@ parsePragmasIntoDynFlags flags filepath str =
                         (handleSourceError reportErr act)
     reportErr e = do putStrLn $ "error : " ++ show e; return Nothing
 
+#if defined(GHC_MASTER)
+dumpParseTree :: DynFlags -> Located HsModule -> IO ()
+#else
 dumpParseTree :: DynFlags -> Located (HsModule GhcPs) -> IO ()
+#endif
 dumpParseTree flags m =
 #if defined (GHC_MASTER)
   dumpAction flags (mkDumpStyle flags alwaysQualify) (dumpOptionsFromFlag Opt_D_dump_parsed_ast) "" FormatText $ showAstData NoBlankSrcSpan m
@@ -142,7 +150,11 @@ dumpParseTree flags m =
   dumpSDoc flags alwaysQualify Opt_D_dump_parsed_ast "" $ showAstData NoBlankSrcSpan m
 #endif
 
+#if defined(GHC_MASTER)
+stripLocs :: Located HsModule -> Located HsModule
+#else
 stripLocs :: Located (HsModule GhcPs) -> Located (HsModule GhcPs)
+#endif
 stripLocs = transformBi $ const noSrcSpan
 
 main :: IO ()
