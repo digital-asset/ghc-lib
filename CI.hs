@@ -1,5 +1,5 @@
--- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
--- affiliates. All rights reserved.  SPDX-License-Identifier:
+-- Copyright (c) 2019-2020, Digital Asset (Switzerland) GmbH and/or
+-- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
 -- CI script, compatible with all of Travis, Appveyor and Azure.
@@ -29,14 +29,21 @@ main = do
             <> Opts.progDesc "Build (and possibly upload) ghc-lib and ghc-lib-parser tarballs."
             <> Opts.header "CI - CI script for ghc-lib"
           )
-    Options { upload, ghcFlavor, resolver } <- Opts.execParser opts
-    version <- buildDists ghcFlavor resolver
+    Options { upload, ghcFlavor, stackOptions } <- Opts.execParser opts
+    version <- buildDists ghcFlavor stackOptions
     when upload $ bintrayUpload version
 
 data Options = Options
     { upload :: Bool
     , ghcFlavor :: GhcFlavor
-    , resolver :: Maybe String -- If 'Just _', override stack.yaml.
+    , stackOptions :: StackOptions
+    } deriving (Show)
+
+data StackOptions = StackOptions
+    { resolver :: Maybe String  -- If 'Just _', override stack.yaml.
+    , verbosity :: Maybe String -- If provided, pass '--verbosity=xxx' to 'stack build'. Valid values are "silent",  "error", "warn", "info" or "debug".
+    , cabalVerbose :: Bool -- If enabled, pass '--cabal-verbose' to 'stack build'.
+    , ghcOptions :: Maybe String -- If 'Just _', pass '--ghc-options="xxx"' to 'stack build' (for ghc verbose, try 'v3').
     } deriving (Show)
 
 data GhcFlavor = Ghc8101 | Ghc881 | DaGhc881 | GhcMaster String
@@ -44,9 +51,9 @@ data GhcFlavor = Ghc8101 | Ghc881 | DaGhc881 | GhcMaster String
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "923a127205dd60147453f4420614efd1be29f070" -- 2020-01-08
+current = "923a127205dd60147453f4420614efd1be29f070" -- 2020-01-11
 
--- ghc-lib-gen argument generators.
+-- Command line argument generators.
 
 stackResolverOpt :: Maybe String -> String
 stackResolverOpt = \case
@@ -60,6 +67,19 @@ ghcFlavorOpt = \case
     DaGhc881 -> "--ghc-flavor da-ghc-8.8.1"
     GhcMaster _hash -> "--ghc-flavor ghc-master"
       -- The git SHA1 hash is not passed to ghc-lib-gen at this time.
+
+stackVerbosityOpt :: Maybe String -> String
+stackVerbosityOpt = \case
+  Just verbosity -> "--verbosity=" ++ verbosity
+  Nothing -> ""
+
+cabalVerboseOpt :: Bool -> String
+cabalVerboseOpt True = "--cabal-verbose"; cabalVerboseOpt False = ""
+
+ghcOptionsOpt :: Maybe String -> String
+ghcOptionsOpt = \case
+  Just options -> "--ghc-options=\"" ++ options ++ "\""
+  Nothing -> ""
 
 -- Calculate a version string based on a date and a ghc flavor.
 genVersionStr :: GhcFlavor -> (Day -> String)
@@ -77,10 +97,7 @@ parseOptions = Options
         ( Opts.long "ghc-flavor"
        <> Opts.help "The ghc-flavor to test against"
         )
-    <*> Opts.optional ( Opts.strOption
-        ( Opts.long "resolver"
-       <> Opts.help "If specified, the stack resolver to use"
-        ))
+    <*> parseStackOptions
  where
    readFlavor :: Opts.ReadM GhcFlavor
    readFlavor = Opts.eitherReader $ \case
@@ -89,6 +106,25 @@ parseOptions = Options
        "da-ghc-8.8.1" -> Right DaGhc881
        "ghc-master" -> Right (GhcMaster current)
        hash -> Right (GhcMaster hash)
+
+parseStackOptions :: Opts.Parser StackOptions
+parseStackOptions = StackOptions
+    <$> Opts.optional ( Opts.strOption
+        ( Opts.long "resolver"
+       <> Opts.help "If specified, pass '--resolver=xxx' to stack"
+        ))
+    <*> Opts.optional ( Opts.strOption
+        ( Opts.long "verbosity"
+       <> Opts.help "If specified, pass '--verbosity=xxx' to stack"
+        ))
+    <*> Opts.switch
+        ( Opts.long "cabal-verbose"
+       <> Opts.help "If specified, pass '--cabal-verbose' to stack"
+        )
+    <*> Opts.optional ( Opts.strOption
+        ( Opts.long "ghc-options"
+       <> Opts.help "If specified, pass '--ghc-options=\"xxx\"' to stack"
+        ))
 
 bintrayUpload :: String -> IO ()
 bintrayUpload version = do
@@ -127,8 +163,10 @@ bintrayUpload version = do
             putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ c ++ "\n"
             hFlush stdout
 
-buildDists :: GhcFlavor -> Maybe String -> IO String
-buildDists ghcFlavor resolver = do
+buildDists :: GhcFlavor -> StackOptions -> IO String
+buildDists ghcFlavor
+  StackOptions {resolver, verbosity, cabalVerbose, ghcOptions} =
+  do
     -- Clear up any detritus left over from previous runs.
     toDelete <- (["ghc", "ghc-lib", "ghc-lib-parser"] ++) .
       filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
@@ -177,7 +215,7 @@ buildDists ghcFlavor resolver = do
     -- Feedback on the compiler used for ghc-lib-gen.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
-    mkTarball pkg_ghclib_parser resolverFlag
+    mkTarball pkg_ghclib_parser
     renameDirectory pkg_ghclib_parser "ghc-lib-parser"
     removeFile "ghc/ghc-lib-parser.cabal"
     cmd "git checkout stack.yaml"
@@ -189,7 +227,7 @@ buildDists ghcFlavor resolver = do
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraint version "ghc/ghc-lib.cabal"
-    mkTarball pkg_ghclib resolverFlag
+    mkTarball pkg_ghclib
     renameDirectory pkg_ghclib "ghc-lib"
     removeFile "ghc/ghc-lib.cabal"
     cmd "git checkout stack.yaml"
@@ -224,9 +262,9 @@ buildDists ghcFlavor resolver = do
     -- Separate the two library build commands so they are
     -- independently timed. Note that optimizations in these builds
     -- are disabled in stack.yaml via `ghc-options: -O0`.
-    stack $ "--no-terminal --interleaved-output " ++ "build ghc-lib-parser"
-    stack $ "--no-terminal --interleaved-output " ++ "build ghc-lib"
-    stack $ "--no-terminal --interleaved-output build mini-hlint mini-compile strip-locs"
+    stack $ "--no-terminal --interleaved-output " ++ "build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib-parser"
+    stack $ "--no-terminal --interleaved-output " ++ "build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib"
+    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions  ++ " mini-hlint mini-compile strip-locs"
 
     -- Run tests.
     stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
@@ -253,11 +291,14 @@ buildDists ghcFlavor resolver = do
     tag  -- The return value of type 'IO string'.
 
     where
-      resolverFlag :: String -- One of "" or, "--resolver=xxx".
-      resolverFlag = stackResolverOpt resolver
-
       stack :: String -> IO ()
-      stack action = cmd $ "stack " ++ resolverFlag ++ " " ++ action
+      stack action = cmd $ "stack " ++
+        concatMap (<> " ")
+                 [ stackResolverOpt resolver
+                 , stackVerbosityOpt verbosity
+                 , cabalVerboseOpt cabalVerbose
+                 ] ++
+        action
 
       cmd :: String -> IO ()
       cmd x = do
@@ -267,10 +308,10 @@ buildDists ghcFlavor resolver = do
         putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ x ++ "\n"
         hFlush stdout
 
-      mkTarball :: String -> String -> IO ()
-      mkTarball target resolverFlag = do
+      mkTarball :: String -> IO ()
+      mkTarball target = do
         writeFile "stack.yaml" . (++ "- ghc\n") =<< readFile' "stack.yaml"
-        cmd $ "stack " ++ resolverFlag ++ " sdist ghc --tar-dir=."
+        stack "sdist ghc --tar-dir=."
         cmd $ "tar -xvf " ++ target ++ ".tar.gz"
 
       tag :: IO String
