@@ -46,7 +46,7 @@ data StackOptions = StackOptions
     , ghcOptions :: Maybe String -- If 'Just _', pass '--ghc-options="xxx"' to 'stack build' (for ghc verbose, try 'v3').
     } deriving (Show)
 
-data GhcFlavor = Ghc8101 | Ghc881 | DaGhc881 | GhcMaster String
+data GhcFlavor = Ghc8101 | Ghc881 | Ghc882 | DaGhc881 | GhcMaster String
   deriving (Eq, Show)
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
@@ -64,6 +64,7 @@ ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
     Ghc8101 -> "--ghc-flavor ghc-8.10.1"
     Ghc881 -> "--ghc-flavor ghc-8.8.1"
+    Ghc882 -> "--ghc-flavor ghc-8.8.2"
     DaGhc881 -> "--ghc-flavor da-ghc-8.8.1"
     GhcMaster _hash -> "--ghc-flavor ghc-master"
       -- The git SHA1 hash is not passed to ghc-lib-gen at this time.
@@ -86,6 +87,7 @@ genVersionStr :: GhcFlavor -> (Day -> String)
 genVersionStr = \case
    GhcMaster _ -> \day -> "0." ++ replace "-" "" (showGregorian day)
    Ghc8101     -> \day -> "8.10.1." ++ replace "-" "" (showGregorian day)
+   Ghc882      -> \day -> "8.8.2." ++ replace "-" "" (showGregorian day)
    _           -> \day -> "8.8.1." ++ replace "-" "" (showGregorian day)
 
 parseOptions :: Opts.Parser Options
@@ -103,6 +105,7 @@ parseOptions = Options
    readFlavor = Opts.eitherReader $ \case
        "ghc-8.10.1" -> Right Ghc8101
        "ghc-8.8.1" -> Right Ghc881
+       "ghc-8.8.2" -> Right Ghc882
        "da-ghc-8.8.1" -> Right DaGhc881
        "ghc-master" -> Right (GhcMaster current)
        hash -> Right (GhcMaster hash)
@@ -186,6 +189,7 @@ buildDists ghcFlavor
     case ghcFlavor of
         Ghc8101 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.1-alpha2"
         Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
+        Ghc882 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.2-release"
         DaGhc881 -> do
             cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
             -- Apply Digital Asset extensions.
