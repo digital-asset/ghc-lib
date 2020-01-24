@@ -39,7 +39,7 @@ strategy:
       ghc-flavor: "ghc-8.8.2"
       resolver: "lts-12.26"
     mac-ghc-882-844:
-      image: "macOS-10.13"
+      image: "macOS-10.14"
       ghc-flavor: "ghc-8.8.2"
       resolver: "lts-12.26"
 
@@ -55,7 +55,7 @@ strategy:
       ghc-flavor: "ghc-8.8.2"
       resolver: "lts-14.3"
     mac-ghc-882-865:
-      image: "macOS-10.13"
+      image: "macOS-10.14"
       ghc-flavor: "ghc-8.8.2"
       resolver: "lts-14.3"
     # ---- ghc-flavor : ghc-8.10.1
@@ -68,7 +68,7 @@ strategy:
       ghc-flavor: "ghc-8.10.1"
       resolver: "lts-14.3"
     mac-ghc-8101-865:
-      image: "macOS-10.13"
+      image: "macOS-10.14"
       ghc-flavor: "ghc-8.10.1"
       resolver: "lts-14.3"
 
@@ -84,7 +84,7 @@ strategy:
       ghc-flavor: "ghc-8.8.2"
       resolver: "nightly-2019-09-26"
     mac-ghc-882-881:
-      image: "macOS-10.13"
+      image: "macOS-10.14"
       ghc-flavor: "ghc-8.8.2"
       resolver: "nightly-2019-09-26"
     # ---- ghc-flavor : ghc-8.10.1
@@ -93,7 +93,7 @@ strategy:
       ghc-flavor: "ghc-8.10.1"
       resolver: "nightly-2019-09-26"
     mac-ghc-8101-881:
-      image: "macOS-10.13"
+      image: "macOS-10.14"
       ghc-flavor: "ghc-8.10.1"
       resolver: "nightly-2019-09-26"
     windows-ghc-8101-881:
@@ -113,7 +113,7 @@ strategy:
       ghc-flavor: "da-ghc-8.8.1"
       resolver: "lts-14.3"
     mac-da-ghc-881-865:
-      image: "macOS-10.13"
+      image: "macOS-10.14"
       ghc-flavor: "da-ghc-8.8.1"
       resolver: "lts-14.3"
     # ---- ghc-flavor : da-ghc-8.10.1 (doesn't exist)
@@ -130,7 +130,7 @@ strategy:
       ghc-flavor: "da-ghc-8.8.1"
       resolver: "nightly-2019-09-26"
     mac-da-ghc-881-881:
-      image: "macOS-10.13"
+      image: "macOS-10.14"
       ghc-flavor: "da-ghc-8.8.1"
       resolver: "nightly-2019-09-26"
 
@@ -146,7 +146,7 @@ strategy:
       ghc-flavor: "ghc-master"
       resolver: "lts-14.3"
     mac-ghc-master-865:
-      image: "macOS-10.13"
+      image: "macOS-10.14"
       ghc-flavor: "ghc-master"
       resolver: "lts-14.3"
 
@@ -162,7 +162,7 @@ strategy:
       ghc-flavor: "ghc-master"
       resolver: "nightly-2019-09-26"
     mac-ghc-master-881:
-      image: "macOS-10.13"
+      image: "macOS-10.14"
       ghc-flavor: "ghc-master"
       resolver: "nightly-2019-09-26"
 
