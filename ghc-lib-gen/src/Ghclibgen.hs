@@ -100,6 +100,7 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         , "compiler/rename"
         , "compiler/stgSyn"
         , "compiler/stranal" ] ++
+        [ "compiler/cmm" | ghcFlavor == GhcMaster] ++
         [ "compiler/nativeGen" | ghcFlavor /= GhcMaster] ++ -- Since 2020-01-04. See https://gitlab.haskell.org/ghc/ghc/commit/d561c8f6244f8280a2483e8753c38e39d34c1f01.
         [ "compiler/deSugar"   | ghcFlavor `elem` [GhcMaster, Ghc8101] && not forParserDepends]
   in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
@@ -116,13 +117,15 @@ ghcLibHsSrcDirs ghcFlavor lib =
         ++ [ "ghc-lib/stage0/libraries/ghc-boot/build" | ghcFlavor `elem` [GhcMaster, Ghc8101] ] -- 'GHC.Platform' is in 'ghc-lib-parser', 'GHC.Platform.Host' is not.
         ++ map takeDirectory cabalFileLibraries
         ++ askFiles lib "hs-source-dirs:"
-      excludes = Set.fromList
+      excludes = Set.fromList $
         [ "compiler/basicTypes"
         , "compiler/parser"
         , "compiler/types"
         , "libraries/ghc-boot-th"
         , "libraries/ghc-heap"
-        ]
+        ] ++
+        [ "compiler/cmm" | ghcFlavor == GhcMaster]
+
   in sortDiffListByLength all excludes -- Not so important. Here for symmetry with 'ghcLibParserHsSrcDirs' I think.
 
 -- | Cabal file for the GHC binary.
@@ -375,7 +378,8 @@ applyPatchGhcPrim ghcFlavor = do
 applyPatchRtsIncludePaths :: GhcFlavor -> IO ()
 applyPatchRtsIncludePaths flavor = do
   let files =
-        ["compiler/cmm/SMRep.hs"] ++
+        ["compiler/GHC/Runtime/Layout.hs" | flavor == GhcMaster] ++
+        ["compiler/cmm/SMRep.hs" | flavor /= GhcMaster] ++
         ["compiler/GHC/StgToCmm/Layout.hs"  | flavor `elem` [GhcMaster, Ghc8101]] ++
         ["compiler/codeGen/StgCmmLayout.hs" | flavor `notElem` [GhcMaster, Ghc8101]]
   forM_ files $
