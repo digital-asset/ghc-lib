@@ -51,7 +51,7 @@ data GhcFlavor = Ghc8101 | Ghc881 | Ghc882 | DaGhc881 | GhcMaster String
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "923a127205dd60147453f4420614efd1be29f070" -- 2020-01-11
+current = "b3e5c678851ed73897b0eb337e656ff377d242c9" -- 2020-01-25
 
 -- Command line argument generators.
 
