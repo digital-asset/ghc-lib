@@ -160,4 +160,4 @@ steps:
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
       curl -sSL https://get.haskellstack.org/ | sh
       stack --resolver $(resolver) setup > /dev/null
-      stack runhaskell --resolver $(resolver) --package extra --package optparse-applicative -- CI.hs --ghc-flavor $(ghc-flavor) --verbosity=debug --cabal-verbose --resolver $(resolver)
+      stack runhaskell --resolver $(resolver) --package extra --package optparse-applicative -- CI.hs --ghc-flavor $(ghc-flavor) --resolver $(resolver)
