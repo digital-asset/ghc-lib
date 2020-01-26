@@ -71,52 +71,19 @@ strategy:
       image: "macOS-10.14"
       ghc-flavor: "ghc-8.10.1"
       resolver: "lts-14.3"
-
-    # -- compiler : ghc-8.8.1
-
-    # ---- ghc-flavor : ghc-8.8.2
-    linux-ghc-882-881:
+    # ---- ghc-flavor : ghc-master
+    linux-ghc-master-865:
       image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-8.8.2"
-      resolver: "nightly-2019-09-26"
-    windows-ghc-882-881:
-      image: "vs2017-win2016"
-      ghc-flavor: "ghc-8.8.2"
-      resolver: "nightly-2019-09-26"
-    mac-ghc-882-881:
-      image: "macOS-10.14"
-      ghc-flavor: "ghc-8.8.2"
-      resolver: "nightly-2019-09-26"
-    # ---- ghc-flavor : ghc-8.10.1
-    linux-ghc-8101-881:
-      image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-8.10.1"
-      resolver: "nightly-2019-09-26"
-    mac-ghc-8101-881:
-      image: "macOS-10.14"
-      ghc-flavor: "ghc-8.10.1"
-      resolver: "nightly-2019-09-26"
-    windows-ghc-8101-881:
-      image: "vs2017-win2016"
-      ghc-flavor: "ghc-8.10.1"
-      resolver: "nightly-2019-09-26"
-
-    # -- compiler : ghc-8.6.5
-
-    # ---- ghc-flavor : da-ghc-8.8.1
-    linux-da-ghc-881-865:
-      image: "Ubuntu 16.04"
-      ghc-flavor: "da-ghc-8.8.1"
+      ghc-flavor: "ghc-master"
       resolver: "lts-14.3"
-    windows-da-ghc-881-865:
+    windows-ghc-master-865:
       image: "vs2017-win2016"
-      ghc-flavor: "da-ghc-8.8.1"
+      ghc-flavor: "ghc-master"
       resolver: "lts-14.3"
-    mac-da-ghc-881-865:
+    mac-ghc-master-865:
       image: "macOS-10.14"
-      ghc-flavor: "da-ghc-8.8.1"
+      ghc-flavor: "ghc-master"
       resolver: "lts-14.3"
-    # ---- ghc-flavor : da-ghc-8.10.1 (doesn't exist)
 
     # -- compiler : ghc-8.8.1
 
@@ -134,37 +101,48 @@ strategy:
       ghc-flavor: "da-ghc-8.8.1"
       resolver: "nightly-2019-09-26"
 
-    # -- compiler : ghc-8.6.5
+    # -- compiler : ghc-8.8.2
 
+    # ---- ghc-flavor : ghc-8.8.2
+    linux-ghc-882-882:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "ghc-8.8.2"
+      resolver: "nightly-2020-01-25"
+    windows-ghc-882-882:
+      image: "vs2017-win2016"
+      ghc-flavor: "ghc-8.8.2"
+      resolver: "nightly-2020-01-25"
+    mac-ghc-882-882:
+      image: "macOS-10.14"
+      ghc-flavor: "ghc-8.8.2"
+      resolver: "nightly-2020-01-25"
+    # ---- ghc-flavor : ghc-8.10.1
+    linux-ghc-8101-882:
+      image: "Ubuntu 16.04"
+      ghc-flavor: "ghc-8.10.1"
+      resolver: "nightly-2020-01-25"
+    mac-ghc-8101-882:
+      image: "macOS-10.14"
+      ghc-flavor: "ghc-8.10.1"
+      resolver: "nightly-2020-01-25"
+    windows-ghc-8101-882:
+      image: "vs2017-win2016"
+      ghc-flavor: "ghc-8.10.1"
+      resolver: "nightly-2020-01-25"
     # ---- ghc-flavor : ghc-master
-    linux-ghc-master-865:
+    linux-ghc-master-882:
       image: "Ubuntu 16.04"
       ghc-flavor: "ghc-master"
-      resolver: "lts-14.3"
-    windows-ghc-master-865:
+      resolver: "nightly-2020-01-25"
+    windows-ghc-master-882:
       image: "vs2017-win2016"
       ghc-flavor: "ghc-master"
-      resolver: "lts-14.3"
-    mac-ghc-master-865:
+      resolver: "nightly-2020-01-25"
+    mac-ghc-master-882:
       image: "macOS-10.14"
       ghc-flavor: "ghc-master"
-      resolver: "lts-14.3"
+      resolver: "nightly-2020-01-25"
 
-    # -- compiler : ghc-8.8.1
-
-    # ---- ghc-flavor : ghc-master
-    linux-ghc-master-881:
-      image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-master"
-      resolver: "nightly-2019-09-26"
-    windows-ghc-master-881:
-      image: "vs2017-win2016"
-      ghc-flavor: "ghc-master"
-      resolver: "nightly-2019-09-26"
-    mac-ghc-master-881:
-      image: "macOS-10.14"
-      ghc-flavor: "ghc-master"
-      resolver: "nightly-2019-09-26"
 
 pool: {vmImage: '$(image)'}
 
