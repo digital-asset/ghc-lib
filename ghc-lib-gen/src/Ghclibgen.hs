@@ -567,7 +567,7 @@ generateGhcLibCabal ghcFlavor = do
         ,"data-dir: " ++ dataDir
         ,"data-files:"] ++ indent dataFiles ++
         ["extra-source-files:"] ++ indent (ghcLibExtraFiles ghcFlavor) ++
-        ["tested-with: GHC==8.8.1, GHC==8.6.5, GHC==8.4.3"
+        ["tested-with: GHC==8.8.2, GHC==8.6.5, GHC==8.4.4"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git@github.com:digital-asset/ghc-lib.git"
@@ -635,7 +635,7 @@ generateGhcLibParserCabal ghcFlavor = do
         ,"data-dir: " ++ dataDir
         ,"data-files:"] ++ indent dataFiles ++
         ["extra-source-files:"] ++ indent (ghcLibParserExtraFiles ghcFlavor) ++
-        ["tested-with: GHC==8.8.1, GHC==8.6.5, GHC==8.4.3"
+        ["tested-with: GHC==8.8.2, GHC==8.6.5, GHC==8.4.4"
         ,"source-repository head"
         ,"    type: git"
         ,"    location: git@github.com:digital-asset/ghc-lib.git"
