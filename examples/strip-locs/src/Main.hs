@@ -47,9 +47,9 @@ import "ghc-lib-parser" Platform
 #endif
 
 #if defined (GHC_MASTER) || defined (GHC_8101)
-import "ghc-lib" GHC.Hs.Dump
+import "ghc-lib-parser" GHC.Hs.Dump
 #else
-import "ghc-lib" HsDumpAst
+import "ghc-lib-parser" HsDumpAst
 #endif
 
 import Control.Monad
