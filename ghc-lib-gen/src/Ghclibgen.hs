@@ -295,10 +295,13 @@ calcParserModules ghcFlavor = do
       -- Lastly, manipulate text like 'GHC/Exts/Heap/Constants.hs'
       -- into 'GHC.Exts.Heap.Constants'.
       modules = map (replace "/" "." . dropSuffix ".hs") strippedModulePaths
-  -- We put 'HeaderInfo' here because doing so means clients who
-  -- just want to do parsing don't need 'ghc-lib' (this module
-  -- is needed for parsing in the presence of dynamic pragmas).
-  return $ nubSort (modules ++ ["HeaderInfo"])
+      -- The modules in this list would by default end up in
+      -- ghc-lib. We intervene so that rather, they go into
+      -- ghc-lib-parser.
+      extraModules =
+        ["HeaderInfo"] ++
+        [ if ghcFlavor `elem` [ GhcMaster, Ghc8101 ] then "GHC.Hs.Dump" else "HsDumpAst"]
+  return $ nubSort (modules ++ extraModules)
 
 -- | Selectively disable optimizations in some particular files so as
 -- to reduce (user) compile times. The files we apply this to were
