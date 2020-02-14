@@ -381,7 +381,7 @@ applyPatchGhcPrim ghcFlavor = do
 applyPatchRtsIncludePaths :: GhcFlavor -> IO ()
 applyPatchRtsIncludePaths flavor = do
   let files =
-        ["compiler/GHC/Runtime/Layout.hs" | flavor == GhcMaster] ++
+        ["compiler/GHC/Runtime/Heap/Layout.hs" | flavor == GhcMaster] ++
         ["compiler/cmm/SMRep.hs" | flavor /= GhcMaster] ++
         ["compiler/GHC/StgToCmm/Layout.hs"  | flavor `elem` [GhcMaster, Ghc8101]] ++
         ["compiler/codeGen/StgCmmLayout.hs" | flavor `notElem` [GhcMaster, Ghc8101]]
