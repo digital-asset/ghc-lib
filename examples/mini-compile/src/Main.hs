@@ -21,7 +21,11 @@ import "ghc-lib" Paths_ghc_lib
 import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" Module
 import "ghc-lib-parser" Config
+#if defined(GHC_MASTER)
+import "ghc-lib-parser" GHC.Driver.Session
+#else
 import "ghc-lib-parser" DynFlags
+#endif
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Outputable

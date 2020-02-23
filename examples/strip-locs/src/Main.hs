@@ -23,7 +23,11 @@ import "ghc-lib-parser" GHC.Hs
 import "ghc-lib-parser" HsSyn
 #endif
 import "ghc-lib-parser" Config
+#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Driver.Session
+#else
 import "ghc-lib-parser" DynFlags
+#endif
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Lexer
@@ -34,7 +38,11 @@ import "ghc-lib-parser" FastString
 import "ghc-lib-parser" Outputable
 import "ghc-lib-parser" SrcLoc
 import "ghc-lib-parser" Panic
+#if defined(GHC_MASTER)
+import "ghc-lib-parser" GHC.Driver.Types
+#else
 import "ghc-lib-parser" HscTypes
+#endif
 import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" ApiAnnotation
 
@@ -52,7 +60,6 @@ import "ghc-lib-parser" GHC.Hs.Dump
 import "ghc-lib-parser" HsDumpAst
 #endif
 
-import Control.Monad
 import Control.Monad.Extra
 import System.Environment
 import System.IO.Extra
@@ -188,6 +195,14 @@ main = do
         | msg <- pprErrMsgBagWithLoc msgs
         ]
     harvestAnns pst =
+#if defined(GHC_MASTER)
+      ApiAnns
+        (Map.fromListWith (++) $ annotations pst)
+        Nothing
+        (Map.fromList ((realSrcLocSpan (mkRealSrcLoc (fsLit "<no location info>") 0 0), comment_q pst) :annotations_comments pst))
+        []
+#else
       ( Map.fromListWith (++) $ annotations pst
       , Map.fromList ((noSrcSpan, comment_q pst) : annotations_comments pst)
       )
+#endif
