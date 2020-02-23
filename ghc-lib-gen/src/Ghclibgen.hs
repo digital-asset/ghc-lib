@@ -310,11 +310,10 @@ calcParserModules ghcFlavor = do
 applyPatchDisableCompileTimeOptimizations :: GhcFlavor -> IO ()
 applyPatchDisableCompileTimeOptimizations ghcFlavor =
     let files =
-          "compiler/main/DynFlags.hs" :
-          (case ghcFlavor of
-            GhcMaster -> [ "compiler/GHC/Hs.hs" ]
-            Ghc8101 ->   [ "compiler/GHC/Hs.hs" ]
-            _ ->         [ "compiler/hsSyn/HsInstances.hs" ])
+          case ghcFlavor of
+            GhcMaster -> [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
+            Ghc8101 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
+            _ ->         [ "compiler/main/DynFlags.hs", "compiler/hsSyn/HsInstances.hs" ]
     in
       forM_ files $
         \file ->
@@ -426,15 +425,20 @@ mangleCSymbols ghcFlavor = do
         prefixSymbol enableTimingStats .
         prefixSymbol setHeapSize
         =<< readFile' file
-    let file = "compiler/main/DynFlags.hs" in
+    let file =
+          case ghcFlavor of
+            GhcMaster -> "compiler/GHC/Driver/Session.hs"
+            _ -> "compiler/main/DynFlags.hs"
+      in
         writeFile file .
         prefixForeignImport enableTimingStats .
         prefixForeignImport setHeapSize
         =<< readFile' file
 
--- Setting DSTAGE=2 will cause GHC to use getOrSetLibHSghc in FastString,
--- DynFlags and Linker so we patch away that usage while leaving -DSTAGE=2 on
--- since it is useful in other places, e.g., MachDeps.h.
+-- Setting DSTAGE=2 will cause GHC to use getOrSetLibHSghc in
+-- FastString, DynFlags and Linker so we patch away that usage while
+-- leaving -DSTAGE=2 on since it is useful in other places, e.g.,
+-- MachDeps.h.
 --
 -- See https://github.com/ndmitchell/hlint/issues/637 for an issue caused
 -- by using getOrSetLibHSghc for the FastString table.

@@ -150,7 +150,8 @@ steps:
   # macOS
   - bash: |
       /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-      brew install autoconf automake gmp
+      brew install automake
+      brew upgrade gmp
     condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: Install brew
 
