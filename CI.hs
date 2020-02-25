@@ -46,7 +46,7 @@ data StackOptions = StackOptions
     , ghcOptions :: Maybe String -- If 'Just _', pass '--ghc-options="xxx"' to 'stack build' (for ghc verbose, try 'v3').
     } deriving (Show)
 
-data GhcFlavor = Ghc8101 | Ghc881 | Ghc882 | DaGhc881 | GhcMaster String
+data GhcFlavor = Ghc8101 | Ghc881 | Ghc882 | Ghc883 | DaGhc881 | GhcMaster String
   deriving (Eq, Show)
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
@@ -65,6 +65,7 @@ ghcFlavorOpt = \case
     Ghc8101 -> "--ghc-flavor ghc-8.10.1"
     Ghc881 -> "--ghc-flavor ghc-8.8.1"
     Ghc882 -> "--ghc-flavor ghc-8.8.2"
+    Ghc883 -> "--ghc-flavor ghc-8.8.3"
     DaGhc881 -> "--ghc-flavor da-ghc-8.8.1"
     GhcMaster _hash -> "--ghc-flavor ghc-master"
       -- The git SHA1 hash is not passed to ghc-lib-gen at this time.
@@ -88,6 +89,7 @@ genVersionStr = \case
    GhcMaster _ -> \day -> "0." ++ replace "-" "" (showGregorian day)
    Ghc8101     -> \day -> "8.10.1." ++ replace "-" "" (showGregorian day)
    Ghc882      -> \day -> "8.8.2." ++ replace "-" "" (showGregorian day)
+   Ghc883      -> \day -> "8.8.3." ++ replace "-" "" (showGregorian day)
    _           -> \day -> "8.8.1." ++ replace "-" "" (showGregorian day)
 
 parseOptions :: Opts.Parser Options
@@ -106,6 +108,7 @@ parseOptions = Options
        "ghc-8.10.1" -> Right Ghc8101
        "ghc-8.8.1" -> Right Ghc881
        "ghc-8.8.2" -> Right Ghc882
+       "ghc-8.8.3" -> Right Ghc883
        "da-ghc-8.8.1" -> Right DaGhc881
        "ghc-master" -> Right (GhcMaster current)
        hash -> Right (GhcMaster hash)
@@ -190,6 +193,7 @@ buildDists ghcFlavor
         Ghc8101 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.1-rc1"
         Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
         Ghc882 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.2-release"
+        Ghc883 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.3-release"
         DaGhc881 -> do
             cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
             -- Apply Digital Asset extensions.
@@ -282,7 +286,7 @@ buildDists ghcFlavor
 #if __GLASGOW_HASKELL__ == 808 && \
     (__GLASGOW_HASKELL_PATCHLEVEL1__ == 1 || __GLASGOW_HASKELL_PATCHLEVEL1__ == 2) && \
     defined (mingw32_HOST_OS)
-    -- Skip these tests on ghc-8.8.1 (exclusively). See
+    -- Skip these tests on ghc-8.8.1 and ghc-8.8.2. See
     -- https://gitlab.haskell.org/ghc/ghc/issues/17599.
 #else
     -- Test everything loads in GHCi, see

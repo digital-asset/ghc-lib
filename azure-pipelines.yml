@@ -29,34 +29,34 @@ strategy:
 
     # -- compiler : ghc-8.4.4
 
-    # ---- ghc-flavor : ghc-8.8.2
-    linux-ghc-882-844:
+    # ---- ghc-flavor : ghc-8.8.3
+    linux-ghc-883-844:
       image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-8.8.2"
+      ghc-flavor: "ghc-8.8.3"
       resolver: "lts-12.26"
-    windows-ghc-882-844:
+    windows-ghc-883-844:
       image: "vs2017-win2016"
-      ghc-flavor: "ghc-8.8.2"
+      ghc-flavor: "ghc-8.8.3"
       resolver: "lts-12.26"
-    mac-ghc-882-844:
+    mac-ghc-883-844:
       image: "macOS-10.14"
-      ghc-flavor: "ghc-8.8.2"
+      ghc-flavor: "ghc-8.8.3"
       resolver: "lts-12.26"
 
     # -- compiler : ghc-8.6.5
 
-    # ---- ghc-flavor : ghc-8.8.2
-    linux-ghc-882-865:
+    # ---- ghc-flavor : ghc-8.8.3
+    linux-ghc-883-865:
       image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-8.8.2"
+      ghc-flavor: "ghc-8.8.3"
       resolver: "lts-14.3"
-    windows-ghc-882-865:
+    windows-ghc-883-865:
       image: "vs2017-win2016"
-      ghc-flavor: "ghc-8.8.2"
+      ghc-flavor: "ghc-8.8.3"
       resolver: "lts-14.3"
-    mac-ghc-882-865:
+    mac-ghc-883-865:
       image: "macOS-10.14"
-      ghc-flavor: "ghc-8.8.2"
+      ghc-flavor: "ghc-8.8.3"
       resolver: "lts-14.3"
     # ---- ghc-flavor : ghc-8.10.1
     linux-ghc-8101-865:
@@ -103,18 +103,18 @@ strategy:
 
     # -- compiler : ghc-8.8.2
 
-    # ---- ghc-flavor : ghc-8.8.2
-    linux-ghc-882-882:
+    # ---- ghc-flavor : ghc-8.8.3
+    linux-ghc-883-882:
       image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-8.8.2"
+      ghc-flavor: "ghc-8.8.3"
       resolver: "nightly-2020-01-25"
-    windows-ghc-882-882:
+    windows-ghc-883-882:
       image: "vs2017-win2016"
-      ghc-flavor: "ghc-8.8.2"
+      ghc-flavor: "ghc-8.8.3"
       resolver: "nightly-2020-01-25"
-    mac-ghc-882-882:
+    mac-ghc-883-882:
       image: "macOS-10.14"
-      ghc-flavor: "ghc-8.8.2"
+      ghc-flavor: "ghc-8.8.3"
       resolver: "nightly-2020-01-25"
     # ---- ghc-flavor : ghc-8.10.1
     linux-ghc-8101-882:
