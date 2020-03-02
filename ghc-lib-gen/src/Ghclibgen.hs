@@ -3,8 +3,7 @@
 -- (Apache-2.0 OR BSD-3-Clause)
 
 module Ghclibgen (
-    applyPatchHeapClosures
-  , applyPatchGhcPrim
+    applyPatchGhcPrim
   , applyPatchDisableCompileTimeOptimizations
   , applyPatchRtsIncludePaths
   , applyPatchStage
@@ -321,20 +320,6 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
           writeFile file .
           ("{-# OPTIONS_GHC -O0 #-}\n" ++)
           =<< readFile' file
-
--- | Stub out a couple of definitions in the ghc-heap library that
--- require CMM features, since Cabal doesn't work well with CMM files.
-applyPatchHeapClosures :: GhcFlavor -> IO ()
-applyPatchHeapClosures _ = do
-    let file = "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
-    writeFile file .
-        replace
-            "foreign import prim \"aToWordzh\" aToWord# :: Any -> Word#"
-            "aToWord# :: Any -> Word#\naToWord# _ = 0##\n" .
-        replace
-            "foreign import prim \"reallyUnsafePtrEqualityUpToTag\"\n    reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#"
-            "reallyUnsafePtrEqualityUpToTag# :: Any -> Any -> Int#\nreallyUnsafePtrEqualityUpToTag# _ _ = 0#\n"
-        =<< readFile' file
 
 -- Workaround lack of newer ghc-prim 12/3/2019
 -- (https://gitlab.haskell.org/ghc/ghc/commit/705a16df02411ec2445c9a254396a93cabe559ef)
@@ -664,6 +649,11 @@ generateGhcLibParserCabal ghcFlavor = do
         ["    build-tools: alex >= 3.1, happy >= 1.19.4"
         ,"    other-extensions:"] ++ indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
+        -- List CMM sources here. Go figure! (see
+        -- https://twitter.com/smdiehl/status/1231958702141431808?s=20
+        -- and
+        -- https://gist.github.com/sdiehl/0491596cd7faaf95503e4b7066cffe62).
+        indent2 ["libraries/ghc-heap/cbits/HeapPrim.cmm"] ++
         -- We hardcode these because the inclusion of 'keepCAFsForGHCi'
         -- causes issues in ghci see
         -- https://github.com/digital-asset/ghc-lib/issues/27
