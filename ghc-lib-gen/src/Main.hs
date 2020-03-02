@@ -36,7 +36,6 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do
         applyPatchRtsIncludePaths ghcFlavor
-        applyPatchHeapClosures ghcFlavor
         applyPatchGhcPrim ghcFlavor
         applyPatchDisableCompileTimeOptimizations ghcFlavor
         -- This invokes 'stack' strictly configured by
