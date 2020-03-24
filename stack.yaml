@@ -1,5 +1,4 @@
-# Use the same resolver as GHC/Hadrian to increase caching
-resolver: lts-14.3
+resolver: nightly-2020-03-14
 
 ghc-options:
   # try and speed up recompilation on the CI server

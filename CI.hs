@@ -190,7 +190,7 @@ buildDists ghcFlavor
     -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
     case ghcFlavor of
-        Ghc8101 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.1-rc1"
+        Ghc8101 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.1-release"
         Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
         Ghc882 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.2-release"
         Ghc883 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.3-release"
