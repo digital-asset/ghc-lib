@@ -19,7 +19,11 @@ module Main (main) where
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
 import "ghc-lib-parser" HeaderInfo
+#if defined(GHC_MASTER)
+import "ghc-lib-parser" GHC.Types.Module
+#else
 import "ghc-lib-parser" Module
+#endif
 import "ghc-lib-parser" Config
 #if defined(GHC_MASTER)
 import "ghc-lib-parser" GHC.Driver.Session

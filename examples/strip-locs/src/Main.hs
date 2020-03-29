@@ -31,12 +31,20 @@ import "ghc-lib-parser" DynFlags
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Lexer
+#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Types.Name.Reader
+#else
 import "ghc-lib-parser" RdrName
+#endif
 import "ghc-lib-parser" ErrUtils
 import qualified "ghc-lib-parser" Parser
 import "ghc-lib-parser" FastString
 import "ghc-lib-parser" Outputable
+#if defined(GHC_MASTER)
+import "ghc-lib-parser" GHC.Types.SrcLoc
+#else
 import "ghc-lib-parser" SrcLoc
+#endif
 import "ghc-lib-parser" Panic
 #if defined(GHC_MASTER)
 import "ghc-lib-parser" GHC.Driver.Types
