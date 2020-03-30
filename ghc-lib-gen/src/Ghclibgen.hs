@@ -397,7 +397,13 @@ mangleCSymbols ghcFlavor = do
         prefixSymbol genSym .
         prefixSymbol initGenSym
         =<< readFile' file
-    let file = "compiler/basicTypes/UniqSupply.hs" in writeFile file .
+    let file =
+          if ghcFlavor == GhcMaster
+          then
+            "compiler/GHC/Types/Unique/Supply.hs"
+          else
+            "compiler/basicTypes/UniqSupply.hs"
+      in writeFile file .
         prefixForeignImport genSym .
         prefixForeignImport initGenSym
         =<< readFile' file
