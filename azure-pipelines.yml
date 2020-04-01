@@ -20,6 +20,10 @@ strategy:
   # Limit number of executors used so other pipelines can run too
   maxParallel: 10
   matrix:
+    # --- ghc-flavor : ghc-8.11
+    # ghc-8.8 becomes the new minimum for bootstrapping as of
+    # https://gitlab.haskell.org/ghc/ghc/-/commit/57b888c0e90be7189285a6b078c30b26d0923809 2020/03/31
+
     # ---- ghc-flavor : ghc-8.10.1
     # ghc-8.4 is no longer supported for bootstrapping as of
     # https://gitlab.haskell.org/ghc/ghc/commit/24620182abdfcc65a0cfc0e2f3bc391d464d0ad5
