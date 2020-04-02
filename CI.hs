@@ -51,7 +51,7 @@ data GhcFlavor = Ghc8101 | Ghc881 | Ghc882 | Ghc883 | DaGhc881 | GhcMaster Strin
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "4b9c586472bf99425f7bbcf346472d7c54f05028" -- 2020-04-01
+current = "30a63e79c65b023497af4fe2347149382c71829d" -- 2020-04-02
 
 -- Command line argument generators.
 
@@ -218,13 +218,6 @@ buildDists ghcFlavor
     let pkg_ghclib = "ghc-lib-" ++ version
         pkg_ghclib_parser = "ghc-lib-parser-" ++ version
 
-    -- Make and extract an sdist of ghc-lib-parser.
-    -- Note (SF, 2020-04-01) : Temporary. See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/2963#note_262426.
-    case ghcFlavor of
-      GhcMaster _ -> do
-        patchHadrianCabal
-        patchHadrianStackYaml
-      _ -> pure ()
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     -- Feedback on the compiler used for ghc-lib-gen.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
@@ -236,12 +229,6 @@ buildDists ghcFlavor
 
     -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
-    -- Note (SF, 2020-04-01) : Temporary. See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/2963#note_262426.
-    case ghcFlavor of
-      GhcMaster _ -> do
-        patchHadrianCabal
-        patchHadrianStackYaml
-      _ -> pure ()
     appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
     -- Feedback on the compiler used for ghc-lib-gen.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor
@@ -344,23 +331,6 @@ buildDists ghcFlavor
         writeFile file .
           replace "version: 0.1.0" ("version: " ++ version)
           =<< readFile' file
-
-      -- Note (SF, 2020-04-01) : Temporary. See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/2963#note_262426.
-      patchHadrianCabal = do
-        putStrLn "Patching hadrian/hadrian.cabal"
-        writeFile "ghc/hadrian/hadrian.cabal" .
-          replace "shake                >= 0.18.3  && < 0.18.4" ("shake                >= 0.18.3  && < 0.18.6")
-          =<< readFile' "ghc/hadrian/hadrian.cabal"
-      patchHadrianStackYaml = do
-        putStrLn "Patching hadrian/stack.yaml"
-        writeFile "ghc/hadrian/stack.yaml" .
-          replace "extra-deps:" "" .
-          replace "resolver: lts-14.7" "resolver: lts-15.5" .
-          replace "- happy-1.19.12" "" .
-          replace "- Cabal-3.0.0.0@sha256:1ba37b8d80e89213b17db7b8b9ea0108da55ca65f8c0cbb7433881a284c5cf67" ""
-          =<< readFile' "ghc/hadrian/stack.yaml"
-
- --shake-0.18.3@sha256:12949a47f07915a4338291a0146158d18abdd04c0dfd813778231ed68b4758df"
 
       patchConstraint :: String -> FilePath -> IO ()
       patchConstraint version file =
