@@ -499,7 +499,7 @@ withCommas ms =
 -- | Common build dependencies.
 commonBuildDepends :: [String]
 commonBuildDepends =
-  [ "ghc-prim > 0.2 && < 0.6"
+  [ "ghc-prim > 0.2 && < 0.7"
   , "base >= 4.11 && < 4.15"
   , "containers >= 0.5 && < 0.7"
   , "bytestring >= 0.9 && < 0.11"
