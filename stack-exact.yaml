@@ -1,0 +1,64 @@
+# To use this, the command you want is:
+#  stack runhaskell \
+#    --stack-yaml stack-exact.yaml \
+#    --package extra --package optparse-applicative \
+#    CI.hs -- \
+#    --stack-yaml stack-exact.yaml --ghc-flavor xxx
+# You can add --resolver xxx to the above command to have the effet of
+# overriding the choice of compiler if desired.
+
+# Stack 8.10 builds generate a lot of warnings of this kind.
+#   Warning: Failed to decode module interface:
+#            some/path/to/Main.hi
+#            Decoding failure: Invalid magic: e49ceb0f
+# This is a known upstream issue (see
+# https://github.com/commercialhaskell/stack/issues/5134).
+
+resolver: ghc-8.10.1
+# No resolver, only packages shipped with the compiler
+# i.e. base-4.14.0.0, ghc-prim-0.6.1, hpc-0.6.1.0.
+
+ghc-options:
+  # Try to be quick.
+  "$everything": -O0 -j
+
+extra-deps:
+# Dependencies of ghc-lib-parser & ghc-lib:
+- alex-3.2.5
+- array-0.5.4.0
+- binary-0.8.8.0
+- bytestring-0.10.10.0
+- containers-0.6.2.1
+- deepseq-1.4.4.0
+- directory-1.3.6.0
+- filepath-1.4.2.1
+- happy-1.19.12
+- pretty-1.1.3.6
+- process-1.6.8.2
+- time-1.9.3
+- transformers-0.5.6.2
+- unix-2.7.2.2
+# Dependencies for ghc-lib examples:
+- hashable-1.3.0.0
+- syb-0.7.1
+- uniplate-1.6.12
+- unordered-containers-0.2.10.0
+# Additional dependencies for CI.hs & ghc-lib-gen:
+- ansi-terminal-0.10.3
+- ansi-wl-pprint-0.6.9
+- clock-0.8
+- colour-2.3.5
+- extra-1.7.1
+- mintty-0.1.2 # Windows specific (but it does no harm).
+- optparse-applicative-0.15.1.0
+- semigroups-0.19.1
+- transformers-compat-0.6.5
+
+flags:
+  transformers-compat:
+    five-three: true
+
+# Packages MUST go at the end, since we append to it during the CI.hs
+# script.
+packages:
+- .

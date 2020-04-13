@@ -13,6 +13,7 @@ import System.IO.Extra
 import System.Info.Extra
 import System.Process.Extra
 import System.Time.Extra
+import Data.Maybe
 import Data.List.Extra
 import Data.Time.Clock
 import Data.Time.Calendar
@@ -40,7 +41,8 @@ data Options = Options
     } deriving (Show)
 
 data StackOptions = StackOptions
-    { resolver :: Maybe String  -- If 'Just _', override stack.yaml.
+    { stackYaml :: Maybe String -- Optional config file
+    , resolver :: Maybe String  -- If 'Just _', override stack.yaml.
     , verbosity :: Maybe String -- If provided, pass '--verbosity=xxx' to 'stack build'. Valid values are "silent",  "error", "warn", "info" or "debug".
     , cabalVerbose :: Bool -- If enabled, pass '--cabal-verbose' to 'stack build'.
     , ghcOptions :: Maybe String -- If 'Just _', pass '--ghc-options="xxx"' to 'stack build' (for ghc verbose, try 'v3').
@@ -51,9 +53,14 @@ data GhcFlavor = Ghc8101 | Ghc881 | Ghc882 | Ghc883 | DaGhc881 | GhcMaster Strin
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "30a63e79c65b023497af4fe2347149382c71829d" -- 2020-04-02
+current = "e8029816fda7602a8163c4d2703ff02982a3e48c" -- 2020-04-13
 
 -- Command line argument generators.
+
+stackYamlOpt :: Maybe String -> String
+stackYamlOpt = \case
+  Just stackYaml -> "--stack-yaml " ++ stackYaml
+  Nothing -> ""
 
 stackResolverOpt :: Maybe String -> String
 stackResolverOpt = \case
@@ -116,6 +123,10 @@ parseOptions = Options
 parseStackOptions :: Opts.Parser StackOptions
 parseStackOptions = StackOptions
     <$> Opts.optional ( Opts.strOption
+        ( Opts.long "stack-yaml"
+       <> Opts.help "If specified, pass '--stack-yaml=xxx' to stack"
+        ))
+    <*> Opts.optional ( Opts.strOption
         ( Opts.long "resolver"
        <> Opts.help "If specified, pass '--resolver=xxx' to stack"
         ))
@@ -171,17 +182,22 @@ bintrayUpload version = do
 
 buildDists :: GhcFlavor -> StackOptions -> IO String
 buildDists ghcFlavor
-  StackOptions {resolver, verbosity, cabalVerbose, ghcOptions} =
+  StackOptions {stackYaml, resolver, verbosity, cabalVerbose, ghcOptions} =
   do
+    let stackConfig = fromMaybe "stack.yaml" stackYaml
+
     -- Clear up any detritus left over from previous runs.
-    toDelete <- (["ghc", "ghc-lib", "ghc-lib-parser"] ++) .
-      filter (isExtensionOf ".tar.gz") <$> getDirectoryContents "."
+    filesInDot <- getDirectoryContents "."
+    let lockFiles = filter (isExtensionOf ".lock") filesInDot
+        tarBalls  = filter (isExtensionOf ".tar.gz") filesInDot
+        ghcDirs   = ["ghc", "ghc-lib", "ghc-lib-parser"]
+        toDelete  = ghcDirs ++ tarBalls ++ lockFiles
     forM_ toDelete removePath
-    cmd "git checkout stack.yaml"
+    cmd $ "git checkout " ++ stackConfig
 
     -- Get packages missing on Windows needed by hadrian.
     when isWindows $
-        stack "exec -- pacman -S autoconf automake-wrapper make patch python tar --noconfirm"
+        stack "exec -- pacman -S autoconf automake-wrapper make patch python tar mintty --noconfirm"
     -- Building of hadrian dependencies that result from the
     -- invocations of ghc-lib-gen can require some versions of these
     -- have been installed.
@@ -239,9 +255,10 @@ buildDists ghcFlavor
     removeFile "ghc/ghc-lib.cabal"
     cmd "git checkout stack.yaml"
 
-    -- Append the libraries and examples to stack.yaml.
-    stackYaml <- readFile' "stack.yaml"
-    writeFile "stack.yaml" $
+    -- Append the libraries and examples to the prevailing stack
+    -- configuration file.
+    stackYaml <- readFile' stackConfig
+    writeFile stackConfig $
       stackYaml ++
       unlines [ "- ghc-lib-parser"
               , "- ghc-lib"
@@ -250,12 +267,17 @@ buildDists ghcFlavor
               , "- examples/strip-locs"
               ] ++
       case ghcFlavor of
+#if __GLASGOW_HASKELL__ == 804 && __GLASGOW_HASKELL_PATCHLEVEL1__ == 4
         GhcMaster _ ->
           -- Resolver 'lts-12.26' serves 'transformers-0.5.5.0' which
           -- lacks 'Control.Monad.Trans.RWS.CPS'. The need for that
-          -- module came in around around 09/20/2019. Putting this here
-          -- keeps the CI ghc-8.4.4 builds going.
+          -- module came in around around 09/20/2019. Putting this
+          -- here keeps the CI ghc-8.4.4 builds going (for 8.8.*
+          -- ghc-libs, there is no support for bootstrapping ghc-8.10
+          -- builds with ghc-8.4.4; see azure-pipelines.yml for an
+          -- explanation)
           unlines ["extra-deps: [transformers-0.5.6.2]"]
+#endif
         DaGhc881 ->
           unlines ["flags: {mini-compile: {daml-unit-ids: true}}"]
         _ -> ""
@@ -301,7 +323,8 @@ buildDists ghcFlavor
       stack :: String -> IO ()
       stack action = cmd $ "stack " ++
         concatMap (<> " ")
-                 [ stackResolverOpt resolver
+                 [ stackYamlOpt stackYaml
+                 , stackResolverOpt resolver
                  , stackVerbosityOpt verbosity
                  , cabalVerboseOpt cabalVerbose
                  ] ++
