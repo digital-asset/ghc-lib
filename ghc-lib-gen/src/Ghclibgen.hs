@@ -68,7 +68,7 @@ sortDiffListByLength all excludes =
 ghcLibParserHsSrcDirs :: Bool -> GhcFlavor -> [Cabal] -> [FilePath]
 ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
   let all = Set.fromList $
-        [ "ghc-lib/stage0/compiler/build"]
+        [ "ghc-lib/stage0/compiler/build" ]
         -- The subtlety here is that, when calculating parser modules
         -- (i.e. 'forParserDepends == True') via 'ghc -M' we need
         -- these directories poplulated with generated intermediate
@@ -82,8 +82,8 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         -- 'ghc-lib-parser.cabal' (i.e. 'forParserDepends == False'),
         -- we exclude these directories.
         ++ [dir | forParserDepends
-                , dir <- ["ghc-lib/stage0/libraries/ghci/build"
-                         ,"ghc-lib/stage0/libraries/ghc-heap/build"]
+                , dir <- [ "ghc-lib/stage0/libraries/ghci/build"
+                         , "ghc-lib/stage0/libraries/ghc-heap/build" ]
                 ]
         -- This next conditional just smooths over a 'master'
         -- vs. '8.8.1' branch difference (relating to a file
@@ -93,16 +93,21 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         ++ askFiles lib "hs-source-dirs:"
 
       excludes = Set.fromList $
-        [ "compiler/codeGen"
-        , "compiler/hieFile"
-        , "compiler/llvmGen"
-        , "compiler/rename"
-        , "compiler/stgSyn"
-        , "compiler/stranal" ] ++
-        [ "compiler/specialise" | ghcFlavor == GhcMaster] ++
-        [ "compiler/cmm" | ghcFlavor == GhcMaster] ++
-        [ "compiler/nativeGen" | ghcFlavor /= GhcMaster] ++ -- Since 2020-01-04. See https://gitlab.haskell.org/ghc/ghc/commit/d561c8f6244f8280a2483e8753c38e39d34c1f01.
-        [ "compiler/deSugar"   | ghcFlavor `elem` [GhcMaster, Ghc8101] && not forParserDepends]
+        map ("compiler/" ++) (
+          [ "codeGen"
+          , "hieFile"
+          , "llvmGen"
+          , "rename"
+          , "stgSyn"
+          , "stranal" ] ++
+          [ d | ghcFlavor == GhcMaster
+              , d <- [ "typecheck"
+                     , "specialise"
+                     , "cmm" ]
+          ] ++
+          [ "nativeGen" | ghcFlavor /= GhcMaster] ++ -- Since 2020-01-04. See https://gitlab.haskell.org/ghc/ghc/commit/d561c8f6244f8280a2483e8753c38e39d34c1f01.
+          [ "deSugar"   | ghcFlavor `elem` [GhcMaster, Ghc8101] && not forParserDepends]
+        )
   in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
 
 -- | C-preprocessor "include dirs" for 'ghc-lib'.
