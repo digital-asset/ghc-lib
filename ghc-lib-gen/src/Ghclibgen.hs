@@ -232,9 +232,14 @@ cHeaders ghcFlavor =
 -- | We generate the parser and lexer and ship those rather than their
 -- sources.
 generatedParser :: GhcFlavor -> [FilePath]
-generatedParser _ =
-    [ "ghc-lib/stage0/compiler/build/Parser.hs"
-    , "ghc-lib/stage0/compiler/build/Lexer.hs"]
+generatedParser ghcFlavor =
+  if ghcFlavor == GhcMaster
+    then
+      [ "ghc-lib/stage0/compiler/build/GHC/Parser.hs"
+      , "ghc-lib/stage0/compiler/build/GHC/Parser/Lexer.hs" ]
+    else
+      [ "ghc-lib/stage0/compiler/build/Parser.hs"
+      , "ghc-lib/stage0/compiler/build/Lexer.hs" ]
 
 -- | Cabal "extra-source-files" files for ghc-lib-parser.
 ghcLibParserExtraFiles :: GhcFlavor -> [FilePath]
@@ -277,7 +282,12 @@ calcParserModules ghcFlavor = do
            , "-package base"
            ]
         ++ hsSrcIncludes
-        ++ ["ghc-lib/stage0/compiler/build/Parser.hs"]
+        ++ (if ghcFlavor == GhcMaster
+              then
+                 ["ghc-lib/stage0/compiler/build/GHC/Parser.hs"]
+              else
+                 ["ghc-lib/stage0/compiler/build/Parser.hs"]
+           )
   putStrLn "# Generating 'ghc/.parser-depends'..."
   putStrLn $ "\n\n# Running: " ++ cmd
   system_ cmd
@@ -304,7 +314,7 @@ calcParserModules ghcFlavor = do
       -- ghc-lib. We intervene so that rather, they go into
       -- ghc-lib-parser.
       extraModules =
-        ["HeaderInfo"] ++
+        [ if ghcFlavor == GhcMaster then "GHC.Parser.Header" else "HeaderInfo"] ++
         [ if ghcFlavor `elem` [ GhcMaster, Ghc8101 ] then "GHC.Hs.Dump" else "HsDumpAst"]
   return $ nubSort (modules ++ extraModules)
 
@@ -330,7 +340,11 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
 -- (https://gitlab.haskell.org/ghc/ghc/commit/705a16df02411ec2445c9a254396a93cabe559ef)
 applyPatchGhcPrim :: GhcFlavor -> IO ()
 applyPatchGhcPrim ghcFlavor = do
-    let tysPrim = "compiler/prelude/TysPrim.hs"
+    let tysPrim =
+          "compiler/" ++
+          if ghcFlavor == GhcMaster
+            then "GHC/Builtin/Types/Prim.hs"
+            else "prelude/TysPrim.hs"
     when (ghcFlavor == GhcMaster) (
       writeFile tysPrim .
           replace
@@ -672,10 +686,17 @@ generateGhcLibParserCabal ghcFlavor = do
         indent2 [if ghcFlavor == GhcMaster then "compiler/cbits/cutils.c" else "compiler/parser/cutils.c"] ++
         ["    hs-source-dirs:"] ++
         indent2 (ghcLibParserHsSrcDirs False ghcFlavor lib) ++
-        ["    autogen-modules:"
-        ,"        Lexer"
-        ,"        Parser"
-        ] ++
+        ["    autogen-modules:" ] ++
+        (if  ghcFlavor == GhcMaster
+          then
+           [ "        GHC.Parser.Lexer"
+           , "        GHC.Parser"
+           ]
+          else
+           [ "        Lexer"
+           , "        Parser"
+           ]
+        ) ++
         ["    exposed-modules:"] ++ indent2 parserModules
     removeGeneratedIntermediateFiles
     putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
@@ -702,7 +723,9 @@ generatePrerequisites ghcFlavor = do
         map (dataDir </>) dataFiles
   -- We use the hadrian generated Lexer and Parser so get these out
   -- of the way.
-  removeFile "compiler/parser/Lexer.x"
-  removeFile "compiler/parser/Parser.y"
+  let lexer = if ghcFlavor == GhcMaster then "compiler/GHC/Parser/Lexer.x" else "compiler/parser/Lexer.x"
+  let parser = if ghcFlavor == GhcMaster then "compiler/GHC/Parser.y" else "compiler/parser/Parser.y"
+  removeFile lexer
+  removeFile parser
   when (ghcFlavor `notElem` [GhcMaster, Ghc8101]) $
     removeFile "compiler/utils/Fingerprint.hsc" -- Favor the generated .hs file here too.
