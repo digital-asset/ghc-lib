@@ -30,14 +30,22 @@ import "ghc-lib-parser" DynFlags
 #endif
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
+#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Parser.Lexer
+#else
 import "ghc-lib-parser" Lexer
+#endif
 #if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Types.Name.Reader
 #else
 import "ghc-lib-parser" RdrName
 #endif
 import "ghc-lib-parser" ErrUtils
+#if defined (GHC_MASTER)
+import qualified "ghc-lib-parser" GHC.Parser
+#else
 import qualified "ghc-lib-parser" Parser
+#endif
 import "ghc-lib-parser" FastString
 import "ghc-lib-parser" Outputable
 #if defined(GHC_MASTER)
@@ -51,12 +59,25 @@ import "ghc-lib-parser" GHC.Driver.Types
 #else
 import "ghc-lib-parser" HscTypes
 #endif
+#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Parser.Header
+#else
 import "ghc-lib-parser" HeaderInfo
+#endif
+#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Parser.Annotation
+#else
 import "ghc-lib-parser" ApiAnnotation
+#endif
+
+#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Settings
+#elif defined (GHC_8101)
+import "ghc-lib-parser" ToolSettings
+#endif
 
 #if defined (GHC_MASTER) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Platform
-import "ghc-lib-parser" ToolSettings
 #else
 import "ghc-lib-parser" Bag
 import "ghc-lib-parser" Platform
@@ -135,7 +156,11 @@ parse :: String -> DynFlags -> String -> ParseResult (Located HsModule)
 parse :: String -> DynFlags -> String -> ParseResult (Located (HsModule GhcPs))
 #endif
 parse filename flags str =
+#if defined(GHC_MASTER)
+  unP GHC.Parser.parseModule parseState
+#else
   unP Parser.parseModule parseState
+#endif
   where
     location = mkRealSrcLoc (mkFastString filename) 1 1
     buffer = stringToStringBuffer str

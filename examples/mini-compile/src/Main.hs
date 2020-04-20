@@ -18,7 +18,11 @@ module Main (main) where
 
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
+#if defined(GHC_MASTER)
+import "ghc-lib-parser" GHC.Parser.Header
+#else
 import "ghc-lib-parser" HeaderInfo
+#endif
 #if defined(GHC_MASTER)
 import "ghc-lib-parser" GHC.Types.Module
 #else
@@ -34,9 +38,14 @@ import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Outputable
 
+#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Settings
+#elif defined (GHC_8101)
+import "ghc-lib-parser" ToolSettings
+#endif
+
 #if defined (GHC_MASTER) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Platform
-import "ghc-lib-parser" ToolSettings
 #else
 import "ghc-lib-parser" Platform
 #endif
