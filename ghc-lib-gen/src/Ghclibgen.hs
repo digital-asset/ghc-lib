@@ -185,23 +185,25 @@ derivedConstantsDependencies ghcFlavor =
                 _ -> "ghc-lib/generated") ++ "/"
 
 compilerDependencies :: GhcFlavor -> [FilePath]
-compilerDependencies _ =
-    [ "ghc-lib/stage0/compiler/build/primop-can-fail.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-code-size.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-commutable.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-data-decl.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-fixity.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-has-side-effects.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-list.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-out-of-line.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-primop-info.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-strictness.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-tag.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-vector-tycons.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-vector-tys-exports.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-vector-tys.hs-incl"
-    , "ghc-lib/stage0/compiler/build/primop-vector-uniques.hs-incl"
-    ]
+compilerDependencies ghcFlavor =
+  map ("ghc-lib/stage0/compiler/build/" ++) $
+    [ "primop-can-fail.hs-incl"
+    , "primop-code-size.hs-incl"
+    , "primop-commutable.hs-incl"
+    , "primop-data-decl.hs-incl"
+    , "primop-fixity.hs-incl"
+    , "primop-has-side-effects.hs-incl"
+    , "primop-list.hs-incl"
+    , "primop-out-of-line.hs-incl"
+    , "primop-primop-info.hs-incl"
+    , "primop-strictness.hs-incl"
+    , "primop-tag.hs-incl"
+    , "primop-vector-tycons.hs-incl"
+    , "primop-vector-tys-exports.hs-incl"
+    , "primop-vector-tys.hs-incl"
+    , "primop-vector-uniques.hs-incl"
+    ] ++
+    [ "primop-docs.hs-incl" | ghcFlavor == GhcMaster ]
 
 platformH :: GhcFlavor -> [FilePath]
 platformH ghcFlavor = ["ghc-lib/stage0/compiler/build/ghc_boot_platform.h" | ghcFlavor `notElem` [GhcMaster, Ghc8101]]
