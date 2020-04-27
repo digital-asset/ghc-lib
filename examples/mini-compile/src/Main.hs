@@ -18,26 +18,22 @@ module Main (main) where
 
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
-#if defined(GHC_MASTER)
+#if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Parser.Header
+import "ghc-lib-parser" GHC.Types.Module
+import "ghc-lib-parser" GHC.Driver.Session
+import "ghc-lib-parser" GHC.Data.StringBuffer
+import "ghc-lib-parser" GHC.Utils.Fingerprint
+import "ghc-lib-parser" GHC.Utils.Outputable
 #else
 import "ghc-lib-parser" HeaderInfo
-#endif
-#if defined(GHC_MASTER)
-import "ghc-lib-parser" GHC.Types.Module
-#else
 import "ghc-lib-parser" Module
-#endif
-import "ghc-lib-parser" Config
-#if defined(GHC_MASTER)
-import "ghc-lib-parser" GHC.Driver.Session
-#else
 import "ghc-lib-parser" DynFlags
-#endif
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Outputable
-
+#endif
+import "ghc-lib-parser" Config
 #if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Settings
 #elif defined (GHC_8101)

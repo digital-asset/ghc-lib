@@ -25,64 +25,46 @@ import "ghc-lib-parser" HsSyn
 import "ghc-lib-parser" Config
 #if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Driver.Session
-#else
-import "ghc-lib-parser" DynFlags
-#endif
-import "ghc-lib-parser" StringBuffer
-import "ghc-lib-parser" Fingerprint
-#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Data.StringBuffer
+import "ghc-lib-parser" GHC.Utils.Fingerprint
 import "ghc-lib-parser" GHC.Parser.Lexer
-#else
-import "ghc-lib-parser" Lexer
-#endif
-#if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Types.Name.Reader
-#else
-import "ghc-lib-parser" RdrName
-#endif
-import "ghc-lib-parser" ErrUtils
-#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Utils.Error
 import qualified "ghc-lib-parser" GHC.Parser
-#else
-import qualified "ghc-lib-parser" Parser
-#endif
-import "ghc-lib-parser" FastString
-import "ghc-lib-parser" Outputable
-#if defined(GHC_MASTER)
+import "ghc-lib-parser" GHC.Data.FastString
+import "ghc-lib-parser" GHC.Utils.Outputable
 import "ghc-lib-parser" GHC.Types.SrcLoc
-#else
-import "ghc-lib-parser" SrcLoc
-#endif
-import "ghc-lib-parser" Panic
-#if defined(GHC_MASTER)
+import "ghc-lib-parser" GHC.Utils.Panic
 import "ghc-lib-parser" GHC.Driver.Types
-#else
-import "ghc-lib-parser" HscTypes
-#endif
-#if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Parser.Header
-#else
-import "ghc-lib-parser" HeaderInfo
-#endif
-#if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Parser.Annotation
 #else
+import "ghc-lib-parser" DynFlags
+import "ghc-lib-parser" StringBuffer
+import "ghc-lib-parser" Fingerprint
+import "ghc-lib-parser" Lexer
+import "ghc-lib-parser" RdrName
+import "ghc-lib-parser" ErrUtils
+import qualified "ghc-lib-parser" Parser
+import "ghc-lib-parser" FastString
+import "ghc-lib-parser" Outputable
+import "ghc-lib-parser" SrcLoc
+import "ghc-lib-parser" Panic
+import "ghc-lib-parser" HscTypes
+import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" ApiAnnotation
 #endif
-
 #if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Settings
 #elif defined (GHC_8101)
 import "ghc-lib-parser" ToolSettings
 #endif
-
 #if defined (GHC_MASTER) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Platform
 #else
 import "ghc-lib-parser" Bag
 import "ghc-lib-parser" Platform
 #endif
-
 #if defined (GHC_MASTER) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Hs.Dump
 #else
