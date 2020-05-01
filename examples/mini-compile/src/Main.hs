@@ -20,7 +20,7 @@ import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
 #if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Parser.Header
-import "ghc-lib-parser" GHC.Types.Module
+import "ghc-lib-parser" GHC.Unit.Module
 import "ghc-lib-parser" GHC.Driver.Session
 import "ghc-lib-parser" GHC.Data.StringBuffer
 import "ghc-lib-parser" GHC.Utils.Fingerprint
@@ -39,7 +39,6 @@ import "ghc-lib-parser" GHC.Settings
 #elif defined (GHC_8101)
 import "ghc-lib-parser" ToolSettings
 #endif
-
 #if defined (GHC_MASTER) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Platform
 #else
@@ -89,7 +88,11 @@ mkDynFlags filename s = do
 #ifdef DAML_UNIT_IDS
         , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "daml-prim")
 #else
+#if defined (GHC_MASTER)
+        , thisUnitId = toUnitId (stringToUnit "ghc-prim")
+#else
         , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "ghc-prim")
+#endif
 #endif
         }
   parsePragmasIntoDynFlags filename s baseFlags
