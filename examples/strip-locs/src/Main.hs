@@ -167,7 +167,7 @@ dumpParseTree :: DynFlags -> Located (HsModule GhcPs) -> IO ()
 #endif
 dumpParseTree flags m =
 #if defined (GHC_MASTER)
-  dumpAction flags (mkDumpStyle flags alwaysQualify) (dumpOptionsFromFlag Opt_D_dump_parsed_ast) "" FormatText $ showAstData NoBlankSrcSpan m
+  dumpAction flags (mkDumpStyle alwaysQualify) (dumpOptionsFromFlag Opt_D_dump_parsed_ast) "" FormatText $ showAstData NoBlankSrcSpan m
 #else
   dumpSDoc flags alwaysQualify Opt_D_dump_parsed_ast "" $ showAstData NoBlankSrcSpan m
 #endif
