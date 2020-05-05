@@ -273,16 +273,22 @@ calcParserModules ghcFlavor = do
   let includeDirs = map ("-I" ++ ) (ghcLibParserIncludeDirs ghcFlavor)
       hsSrcDirs = ghcLibParserHsSrcDirs True ghcFlavor lib
       hsSrcIncludes = map ("-i" ++ ) hsSrcDirs
+      -- See [Note: GHC now depends on exceptions].
       cmd = unwords $
-        [ "stack exec --stack-yaml hadrian/stack.yaml -- ghc"
+        [ "stack exec" ] ++
+        [ "--package exceptions" | ghcFlavor == GhcMaster ] ++
+        [ "--stack-yaml hadrian/stack.yaml" ] ++
+        [ "-- ghc"
         , "-dep-suffix ''"
         , "-dep-makefile .parser-depends"
-        , "-M"]
+        , "-M"
+        ]
         ++ includeDirs
         ++ [ "-ignore-package ghc"
            , "-ignore-package ghci"
            , "-package base"
            ]
+        ++ [ "-package exceptions" | ghcFlavor == GhcMaster ]
         ++ hsSrcIncludes
         ++ (if ghcFlavor == GhcMaster
               then
@@ -518,8 +524,8 @@ withCommas ms =
     reverse (head ms' : map (++",") (tail ms'))
 
 -- | Common build dependencies.
-commonBuildDepends :: [String]
-commonBuildDepends =
+commonBuildDepends :: GhcFlavor -> [String]
+commonBuildDepends ghcFlavor =
   [ "ghc-prim > 0.2 && < 0.7"
   , "base >= 4.11 && < 4.15"
   , "containers >= 0.5 && < 0.7"
@@ -534,7 +540,8 @@ commonBuildDepends =
   , "transformers == 0.5.*"
   , "process >= 1 && < 1.7"
   , "hpc == 0.6.*"
-  ]
+  ] ++
+  [ "exceptions == 0.10.*" | ghcFlavor == GhcMaster ]
 
 -- | This utility factored out to avoid repetion.
 libBinParserModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String])
@@ -606,7 +613,7 @@ generateGhcLibCabal ghcFlavor = do
         ,"    else"
         ,"        build-depends: Win32"
         ,"    build-depends:"]++
-        indent2 (withCommas (commonBuildDepends ++ ["ghc-lib-parser"]))++
+        indent2 (withCommas (commonBuildDepends ghcFlavor ++ ["ghc-lib-parser"]))++
         ["    build-tools: alex >= 3.1, happy >= 1.19.4"
         ,"    other-extensions:"] ++
         indent2 (askField lib "other-extensions:") ++
@@ -672,7 +679,7 @@ generateGhcLibParserCabal ghcFlavor = do
         ,"        build-depends: unix"
         ,"    else"
         ,"        build-depends: Win32"
-        ,"    build-depends:"] ++ indent2 (withCommas commonBuildDepends) ++
+        ,"    build-depends:"] ++ indent2 (withCommas (commonBuildDepends ghcFlavor)) ++
         ["    build-tools: alex >= 3.1, happy >= 1.19.4"
         ,"    other-extensions:"] ++ indent2 (askField lib "other-extensions:") ++
         ["    c-sources:"] ++
