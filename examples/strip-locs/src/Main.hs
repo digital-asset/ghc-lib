@@ -111,6 +111,19 @@ fakeSettings = Settings
 #endif
     platform =
       Platform {
+#if defined (GHC_MASTER)
+    -- It doesn't matter what values we write here as these fields are
+    -- not referenced for our purposes. However the fields are strict
+    -- so we must say something.
+        platformByteOrder=LittleEndian
+      , platformHasGnuNonexecStack=True
+      , platformHasIdentDirective=False
+      , platformHasSubsectionsViaSymbols=False
+      , platformIsCrossCompiling=False
+      , platformLeadingUnderscore=False
+      ,
+#endif
+
 #if defined (GHC_MASTER) || defined (GHC_8101)
              platformWordSize=PW8
              , platformMini = PlatformMini {platformMini_os=OSUnknown}
