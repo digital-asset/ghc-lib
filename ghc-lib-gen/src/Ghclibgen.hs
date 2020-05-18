@@ -3,7 +3,8 @@
 -- (Apache-2.0 OR BSD-3-Clause)
 
 module Ghclibgen (
-    applyPatchGhcPrim
+    applyPatchHsVersions
+  , applyPatchGhcPrim
   , applyPatchDisableCompileTimeOptimizations
   , applyPatchRtsIncludePaths
   , applyPatchStage
@@ -17,9 +18,9 @@ import Control.Monad
 import System.Process.Extra
 import System.FilePath hiding ((</>))
 import System.FilePath.Posix((</>)) -- Make sure we generate / on all platforms.
-import System.Directory
+import System.Directory.Extra
 import System.IO.Extra
-import Data.List.Extra
+import Data.List.Extra hiding (find)
 import Data.Char
 import Data.Maybe
 import Data.Ord
@@ -224,7 +225,7 @@ cHeaders ghcFlavor =
   , "includes/MachDeps.h"
   , "includes/stg/MachRegs.h"
   , "includes/CodeGen.Platform.hs"
-  , "compiler/HsVersions.h"
+  , "compiler/GhclibHsVersions.h"
   , "compiler/Unique.h"
   ] ++
   [ f | ghcFlavor `notElem` [GhcMaster, Ghc8101]
@@ -326,7 +327,24 @@ calcParserModules ghcFlavor = do
         [ if ghcFlavor `elem` [ GhcMaster, Ghc8101 ] then "GHC.Hs.Dump" else "HsDumpAst"]
   return $ nubSort (modules ++ extraModules)
 
--- | Selectively disable optimizations in some particular files so as
+-- Rename 'HsVersions.h' to 'GhclibHsVersions.h' then replace
+-- occurences of that string in all .hs,.hsc and .y files reachable
+-- from the 'compiler' directory. This enables use of ghc-lib-parser
+-- with ghcjs (issue
+-- https://github.com/digital-asset/ghc-lib/issues/204).
+applyPatchHsVersions :: GhcFlavor -> IO ()
+applyPatchHsVersions _ = do
+  renameFile "compiler/HsVersions.h" "compiler/GhclibHsVersions.h"
+  files <- filter ((`elem` [".hs", ".y", ".hsc"]) . takeExtension) <$> listFilesRecursive "compiler"
+  forM_ files $
+    \file -> do
+      writeFile file .
+        replace
+          "HsVersions.h"
+          "GhclibHsVersions.h"
+      =<< readFile' file
+
+-- Selectively disable optimizations in some particular files so as
 -- to reduce (user) compile times. The files we apply this to were
 -- those identified as bottlenecks in the 2019 GSoC Hadrian speed
 -- project.
