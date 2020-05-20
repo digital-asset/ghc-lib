@@ -16,143 +16,173 @@ pr:
     include:
     - master
 
-strategy:
-  # Limit number of executors used so other pipelines can run too
-  maxParallel: 10
-  matrix:
-    # Notes:
-    #  Tags are encoded in the following way:
-    #        <os> '-' <ghc-lib> '-' <compiler>
-    #  Not every combination is tested
-    #  - We do sampling to keep the number of builds reasonable;
-    #  - No ghc-8.4.4 builds are tested;
-    #  - No Windows 8.8.3 builds are tested (ghc-8.8.3 on Windows
-    #    has issues);
-    #  - Minimum GHC needed to bootstrap:
-    #      +--------------+------------+
-    #      | GHC flavor   |  version   |
-    #      +==============+============+
-    #      | ghc-8.8.*    |  >= 8.4.4  |
-    #      | ghc-8.10.*   |  >= 8.6.5  | (since 09/29/2019, https://gitlab.haskell.org/ghc/ghc/commit/24620182abdfcc65a0cfc0e2f3bc391d464d0ad5)
-    #      | ghc-8.11.*   |  >= 8.8.1  | (since 2020/03/31, https://gitlab.haskell.org/ghc/ghc/-/commit/57b888c0e90be7189285a6b078c30b26d092380)
-    #      +--------------+------------+
+jobs:
+- job: build
+  strategy:
+    # Limit number of executors used so other pipelines can run too
+    maxParallel: 10
+    matrix:
+      # Notes:
+      #  Tags are encoded in the following way:
+      #        <os> '-' <ghc-lib> '-' <compiler>
+      #  Not every combination is tested
+      #  - We do sampling to keep the number of builds reasonable;
+      #  - No ghc-8.4.4 builds are tested;
+      #  - No Windows 8.8.3 builds are tested (ghc-8.8.3 on Windows
+      #    has issues);
+      #  - Minimum GHC needed to bootstrap:
+      #      +--------------+------------+
+      #      | GHC flavor   |  version   |
+      #      +==============+============+
+      #      | ghc-8.8.*    |  >= 8.4.4  |
+      #      | ghc-8.10.*   |  >= 8.6.5  | (since 09/29/2019, https://gitlab.haskell.org/ghc/ghc/commit/24620182abdfcc65a0cfc0e2f3bc391d464d0ad5)
+      #      | ghc-8.11.*   |  >= 8.8.1  | (since 2020/03/31, https://gitlab.haskell.org/ghc/ghc/-/commit/57b888c0e90be7189285a6b078c30b26d092380)
+      #      +--------------+------------+
 
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
-    # +=========+=================+============+
-    # | linux   | ghc-master      | ghc-8.10.1 |
-    # +---------+-----------------+------------+
-    linux-ghc-master-8.10.1:
-      image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-master"
-      resolver: "ghc-8.10.1"
-      stack-yaml: "stack-exact.yaml"
+      # +---------+-----------------+------------+
+      # | OS      | ghc-lib flavour | GHC        |
+      # +=========+=================+============+
+      # | linux   | ghc-master      | ghc-8.10.1 |
+      # +---------+-----------------+------------+
+      linux-ghc-master-8.10.1:
+        image: "Ubuntu 16.04"
+        ghc-flavor: "ghc-master"
+        resolver: "ghc-8.10.1"
+        stack-yaml: "stack-exact.yaml"
 
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
-    # +=========+=================+============+
-    # | linux   | ghc-8.10.1      | ghc-8.10.1 |
-    # | macOS   | ghc-8.10.1      | ghc-8.10.1 |
-    # +---------+-----------------+------------+
-    linux-ghc-8.10.1-8.10.1:
-      image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-8.10.1"
-      resolver: "ghc-8.10.1"
-      stack-yaml: "stack-exact.yaml"
-    mac-ghc-8.10.1-8.10.1:
-      image: "macOS-10.14"
-      ghc-flavor: "ghc-8.10.1"
-      resolver: "ghc-8.10.1"
-      stack-yaml: "stack-exact.yaml"
+      # +---------+-----------------+------------+
+      # | OS      | ghc-lib flavour | GHC        |
+      # +=========+=================+============+
+      # | linux   | ghc-8.10.1      | ghc-8.10.1 |
+      # | macOS   | ghc-8.10.1      | ghc-8.10.1 |
+      # +---------+-----------------+------------+
+      linux-ghc-8.10.1-8.10.1:
+        image: "Ubuntu 16.04"
+        ghc-flavor: "ghc-8.10.1"
+        resolver: "ghc-8.10.1"
+        stack-yaml: "stack-exact.yaml"
+      mac-ghc-8.10.1-8.10.1:
+        image: "macOS-10.14"
+        ghc-flavor: "ghc-8.10.1"
+        resolver: "ghc-8.10.1"
+        stack-yaml: "stack-exact.yaml"
 
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
-    # +=========+=================+============+
-    # | linux   | ghc-8.8.3       | ghc-8.10.1 |
-    # | macOS   | ghc-8.8.3       | ghc-8.10.1 |
-    # +---------+-----------------+------------+
-    linux-ghc-8.8.3-8.10.1:
-      image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-8.8.3"
-      resolver: "ghc-8.10.1"
-      stack-yaml: "stack-exact.yaml"
-    mac-ghc-8.8.3-8.10.1:
-      image: "macOS-10.14"
-      ghc-flavor: "ghc-8.8.3"
-      resolver: "ghc-8.10.1"
-      stack-yaml: "stack-exact.yaml"
+      # +---------+-----------------+------------+
+      # | OS      | ghc-lib flavour | GHC        |
+      # +=========+=================+============+
+      # | linux   | ghc-8.8.3       | ghc-8.10.1 |
+      # | macOS   | ghc-8.8.3       | ghc-8.10.1 |
+      # +---------+-----------------+------------+
+      linux-ghc-8.8.3-8.10.1:
+        image: "Ubuntu 16.04"
+        ghc-flavor: "ghc-8.8.3"
+        resolver: "ghc-8.10.1"
+        stack-yaml: "stack-exact.yaml"
+      mac-ghc-8.8.3-8.10.1:
+        image: "macOS-10.14"
+        ghc-flavor: "ghc-8.8.3"
+        resolver: "ghc-8.10.1"
+        stack-yaml: "stack-exact.yaml"
 
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
-    # +=========+=================+============+
-    # | linux   | ghc-master      | ghc-8.8.3  |
-    # +---------+-----------------+------------+
-    linux-ghc-master-8.8.3:
-      image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-master"
-      stack-yaml: "stack.yaml"
-      resolver: "nightly-2020-03-14"
+      # +---------+-----------------+------------+
+      # | OS      | ghc-lib flavour | GHC        |
+      # +=========+=================+============+
+      # | linux   | ghc-master      | ghc-8.8.3  |
+      # +---------+-----------------+------------+
+      linux-ghc-master-8.8.3:
+        image: "Ubuntu 16.04"
+        ghc-flavor: "ghc-master"
+        stack-yaml: "stack.yaml"
+        resolver: "nightly-2020-03-14"
 
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
-    # +=========+=================+============+
-    # | macOS   | ghc-8.8.3       | ghc-8.8.3  |
-    # +---------+-----------------+------------+
-    mac-ghc-8.8.3-8.8.3:
-      image: "macOS-10.14"
-      ghc-flavor: "ghc-8.8.3"
-      resolver: "nightly-2020-03-14"
-      stack-yaml: "stack.yaml"
+      # +---------+-----------------+------------+
+      # | OS      | ghc-lib flavour | GHC        |
+      # +=========+=================+============+
+      # | macOS   | ghc-8.8.3       | ghc-8.8.3  |
+      # +---------+-----------------+------------+
+      mac-ghc-8.8.3-8.8.3:
+        image: "macOS-10.14"
+        ghc-flavor: "ghc-8.8.3"
+        resolver: "nightly-2020-03-14"
+        stack-yaml: "stack.yaml"
 
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
-    # +=========+=================+============+
-    # | linux   | ghc-8.10.1      | ghc-8.8.3  |
-    # +---------+-----------------+------------+
-    linux-ghc-8.10.1-8.8.3:
-      image: "Ubuntu 16.04"
-      ghc-flavor: "ghc-8.10.1"
-      resolver: "nightly-2020-03-14"
-      stack-yaml: "stack.yaml"
+      # +---------+-----------------+------------+
+      # | OS      | ghc-lib flavour | GHC        |
+      # +=========+=================+============+
+      # | linux   | ghc-8.10.1      | ghc-8.8.3  |
+      # +---------+-----------------+------------+
+      linux-ghc-8.10.1-8.8.3:
+        image: "Ubuntu 16.04"
+        ghc-flavor: "ghc-8.10.1"
+        resolver: "nightly-2020-03-14"
+        stack-yaml: "stack.yaml"
 
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
-    # +=========+=================+============+
-    # | linux   | da-ghc-8.8.1    | ghc-8.8.1  |
-    # | windows | da-ghc-8.8.1    | ghc-8.8.1  |
-    # | macOS   | da-ghc-8.8.1    | ghc-8.8.1  |
-    # +---------+-----------------+------------+
-    linux-da-ghc-8.8.1-8.8.1:
-      image: "Ubuntu 16.04"
-      ghc-flavor: "da-ghc-8.8.1"
-      resolver: "nightly-2019-09-26"
-      stack-yaml: "stack.yaml"
-    windows-da-ghc-8.8.1-8.8.1:
-      image: "vs2017-win2016"
-      ghc-flavor: "da-ghc-8.8.1"
-      resolver: "nightly-2019-09-26"
-      stack-yaml: "stack.yaml"
-    mac-da-ghc-8.8.1-8.8.1:
-      image: "macOS-10.14"
-      ghc-flavor: "da-ghc-8.8.1"
-      resolver: "nightly-2019-09-26"
-      stack-yaml: "stack.yaml"
+      # +---------+-----------------+------------+
+      # | OS      | ghc-lib flavour | GHC        |
+      # +=========+=================+============+
+      # | linux   | da-ghc-8.8.1    | ghc-8.8.1  |
+      # | windows | da-ghc-8.8.1    | ghc-8.8.1  |
+      # | macOS   | da-ghc-8.8.1    | ghc-8.8.1  |
+      # +---------+-----------------+------------+
+      linux-da-ghc-8.8.1-8.8.1:
+        image: "Ubuntu 16.04"
+        ghc-flavor: "da-ghc-8.8.1"
+        resolver: "nightly-2019-09-26"
+        stack-yaml: "stack.yaml"
+      windows-da-ghc-8.8.1-8.8.1:
+        image: "vs2017-win2016"
+        ghc-flavor: "da-ghc-8.8.1"
+        resolver: "nightly-2019-09-26"
+        stack-yaml: "stack.yaml"
+      mac-da-ghc-8.8.1-8.8.1:
+        image: "macOS-10.14"
+        ghc-flavor: "da-ghc-8.8.1"
+        resolver: "nightly-2019-09-26"
+        stack-yaml: "stack.yaml"
 
-pool: {vmImage: '$(image)'}
+  pool: {vmImage: '$(image)'}
 
-steps:
-  # macOS
+  steps:
+    # macOS
+    - bash: |
+        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+        brew install automake
+        brew upgrade gmp
+      condition: eq( variables['Agent.OS'], 'Darwin' )
+      displayName: Install brew
+
+    - script: |
+        curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s CI.hs
+        curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/src
+        curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
+        curl -sSL https://get.haskellstack.org/ | sh
+        stack --stack-yaml $(stack-yaml) --resolver $(resolver) setup > /dev/null
+        stack runhaskell --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative -- CI.hs --ghc-flavor $(ghc-flavor)  --stack-yaml $(stack-yaml) --resolver $(resolver)
+- job: push
+  dependsOn: build
+  pool:
+    vmImage: "ubuntu-16.04"
+  steps:
+  - checkout: self
   - bash: |
-      /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-      brew install automake
-      brew upgrade gmp
-    condition: eq( variables['Agent.OS'], 'Darwin' )
-    displayName: Install brew
+      set -euo pipefail
 
-  - script: |
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s CI.hs
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/src
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
-      curl -sSL https://get.haskellstack.org/ | sh
-      stack --stack-yaml $(stack-yaml) --resolver $(resolver) setup > /dev/null
-      stack runhaskell --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative -- CI.hs --ghc-flavor $(ghc-flavor)  --stack-yaml $(stack-yaml) --resolver $(resolver)
+      GCS_KEY=$(mktemp)
+      cleanup () {
+          rm -f $GCS_KEY
+      }
+      trap cleanup EXIT
+      echo "$GOOGLE_APPLICATION_CREDENTIALS_CONTENT" > $GCS_KEY
+      gcloud auth activate-service-account --key-file=$GCS_KEY
+      export BOTO_CONFIG=/dev/null
+
+      VERSION_TAG="$(git log -n1 --format=%cd --date=format:%Y%m%d HEAD).$(git rev-list --count HEAD).$(git log -n1 --format=%h --abbrev=8 HEAD)"
+
+      stack runhaskell --package extra --package optparse-applicative CI.hs -- --ghc-flavor=ghc-8.8.1
+
+      gsutil cp ??? gs://da-ghc-lib/???-${VERSION_TAG}.tar.gz
+      gsutil cp ??? gs://da-ghc-lib/???-${VERSION_TAG}.tar.gz
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS_CONTENT: $(GOOGLE_APPLICATION_CREDENTIALS_CONTENT)
+  condition: and(succeeded(),
+                 eq(variables['Build.SourceBranchName'], 'master'))
