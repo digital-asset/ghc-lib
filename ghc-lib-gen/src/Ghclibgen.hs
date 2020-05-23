@@ -3,7 +3,8 @@
 -- (Apache-2.0 OR BSD-3-Clause)
 
 module Ghclibgen (
-    applyPatchHsVersions
+    applyPatchHeapClosures
+  , applyPatchHsVersions
   , applyPatchGhcPrim
   , applyPatchDisableCompileTimeOptimizations
   , applyPatchRtsIncludePaths
@@ -326,6 +327,27 @@ calcParserModules ghcFlavor = do
         [ if ghcFlavor == GhcMaster then "GHC.Parser.Header" else "HeaderInfo"] ++
         [ if ghcFlavor `elem` [ GhcMaster, Ghc8101 ] then "GHC.Hs.Dump" else "HsDumpAst"]
   return $ nubSort (modules ++ extraModules)
+
+-- Avoid duplicate symbols with HSghc-heap (see issue
+-- https://github.com/digital-asset/ghc-lib/issues/210).
+applyPatchHeapClosures :: GhcFlavor -> IO ()
+applyPatchHeapClosures _ = do
+  writeFile "libraries/ghc-heap/cbits/HeapPrim.cmm" .
+    replace
+      "aToWordzh"
+      "Ghclib_aToWordzh" .
+    replace
+      "reallyUnsafePtrEqualityUpToTag"
+      "Ghclib_reallyUnsafePtrEqualityUpToTag"
+    =<< readFile' "libraries/ghc-heap/cbits/HeapPrim.cmm"
+  writeFile "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs" .
+    replace
+      "\"aToWordzh\""
+      "\"Ghclib_aToWordzh\"" .
+    replace
+      "\"reallyUnsafePtrEqualityUpToTag\""
+      "\"Ghclib_reallyUnsafePtrEqualityUpToTag\""
+    =<< readFile' "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
 
 -- Rename 'HsVersions.h' to 'GhclibHsVersions.h' then replace
 -- occurences of that string in all .hs,.hsc and .y files reachable

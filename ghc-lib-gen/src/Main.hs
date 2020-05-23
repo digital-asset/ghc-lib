@@ -36,6 +36,7 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do
         applyPatchHsVersions ghcFlavor
+        applyPatchHeapClosures ghcFlavor
         applyPatchRtsIncludePaths ghcFlavor
         applyPatchGhcPrim ghcFlavor
         applyPatchDisableCompileTimeOptimizations ghcFlavor
