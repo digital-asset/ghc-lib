@@ -212,7 +212,8 @@ platformH ghcFlavor = ["ghc-lib/stage0/compiler/build/ghc_boot_platform.h" | ghc
 
 packageCode :: GhcFlavor -> [FilePath]
 packageCode ghcFlavor =
-  "ghc-lib/stage0/compiler/build/Config.hs" :
+  [ "ghc-lib/stage0/compiler/build/Config.hs" | ghcFlavor /= GhcMaster ] ++
+  [ "ghc-lib/stage0/compiler/build/GHC/Settings/Config.hs" | ghcFlavor == GhcMaster ] ++
   [ "ghc-lib/stage0/libraries/ghc-boot/build/GHC/Version.hs" | ghcFlavor `elem` [GhcMaster, Ghc8101] ]
 
 fingerprint :: GhcFlavor -> [FilePath]

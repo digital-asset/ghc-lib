@@ -33,15 +33,17 @@ import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Outputable
 #endif
-import "ghc-lib-parser" Config
 #if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Settings
+import "ghc-lib-parser" GHC.Settings.Config
 #elif defined (GHC_8101)
+import "ghc-lib-parser" Config
 import "ghc-lib-parser" ToolSettings
 #endif
 #if defined (GHC_MASTER) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Platform
 #else
+import "ghc-lib-parser" Config
 import "ghc-lib-parser" Platform
 #endif
 

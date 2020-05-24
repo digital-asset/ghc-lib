@@ -22,8 +22,8 @@ import "ghc-lib-parser" GHC.Hs
 #else
 import "ghc-lib-parser" HsSyn
 #endif
-import "ghc-lib-parser" Config
 #if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Settings.Config
 import "ghc-lib-parser" GHC.Driver.Session
 import "ghc-lib-parser" GHC.Data.StringBuffer
 import "ghc-lib-parser" GHC.Utils.Fingerprint
@@ -39,6 +39,7 @@ import "ghc-lib-parser" GHC.Driver.Types
 import "ghc-lib-parser" GHC.Parser.Header
 import "ghc-lib-parser" GHC.Parser.Annotation
 #else
+import "ghc-lib-parser" Config
 import "ghc-lib-parser" DynFlags
 import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
