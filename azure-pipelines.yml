@@ -124,17 +124,17 @@ strategy:
     # +---------+-----------------+------------+
     linux-da-ghc-8.8.1-8.8.1:
       image: "Ubuntu 16.04"
-      ghc-flavor: "da-ghc-8.8.1"
+      ghc-flavor: "da"
       resolver: "nightly-2019-09-26"
       stack-yaml: "stack.yaml"
     windows-da-ghc-8.8.1-8.8.1:
       image: "vs2017-win2016"
-      ghc-flavor: "da-ghc-8.8.1"
+      ghc-flavor: "da"
       resolver: "nightly-2019-09-26"
       stack-yaml: "stack.yaml"
     mac-da-ghc-8.8.1-8.8.1:
       image: "macOS-10.14"
-      ghc-flavor: "da-ghc-8.8.1"
+      ghc-flavor: "da"
       resolver: "nightly-2019-09-26"
       stack-yaml: "stack.yaml"
 
