@@ -18,6 +18,7 @@ import Data.List.Extra
 import Data.Time.Clock
 import Data.Time.Calendar
 import Data.Semigroup ((<>))
+import qualified Data.List
 import qualified Options.Applicative as Opts
 import qualified System.Environment as Env
 import qualified System.Exit as Exit
@@ -27,16 +28,15 @@ main = do
     let opts =
           Opts.info (parseOptions Opts.<**> Opts.helper)
           ( Opts.fullDesc
-            <> Opts.progDesc "Build (and possibly upload) ghc-lib and ghc-lib-parser tarballs."
+            <> Opts.progDesc "Build ghc-lib and ghc-lib-parser tarballs."
             <> Opts.header "CI - CI script for ghc-lib"
           )
-    Options { upload, ghcFlavor, stackOptions } <- Opts.execParser opts
+    Options { ghcFlavor, stackOptions } <- Opts.execParser opts
     version <- buildDists ghcFlavor stackOptions
-    when upload $ bintrayUpload version
+    putStrLn version
 
 data Options = Options
-    { upload :: Bool
-    , ghcFlavor :: GhcFlavor
+    { ghcFlavor :: GhcFlavor
     , stackOptions :: StackOptions
     } deriving (Show)
 
@@ -48,7 +48,12 @@ data StackOptions = StackOptions
     , ghcOptions :: Maybe String -- If 'Just _', pass '--ghc-options="xxx"' to 'stack build' (for ghc verbose, try 'v3').
     } deriving (Show)
 
-data GhcFlavor = Ghc8101 | Ghc881 | Ghc882 | Ghc883 | DaGhc881 | GhcMaster String
+data GhcFlavor = Ghc8101
+               | Ghc881
+               | Ghc882
+               | Ghc883
+               | Da { mergeBaseSha :: String , patches :: [String] , flavor :: String }
+               | GhcMaster String
   deriving (Eq, Show)
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
@@ -73,7 +78,7 @@ ghcFlavorOpt = \case
     Ghc881 -> "--ghc-flavor ghc-8.8.1"
     Ghc882 -> "--ghc-flavor ghc-8.8.2"
     Ghc883 -> "--ghc-flavor ghc-8.8.3"
-    DaGhc881 -> "--ghc-flavor da-ghc-8.8.1"
+    Da { flavor } -> "--ghc-flavor " <> flavor
     GhcMaster _hash -> "--ghc-flavor ghc-master"
       -- The git SHA1 hash is not passed to ghc-lib-gen at this time.
 
@@ -101,13 +106,12 @@ genVersionStr = \case
 
 parseOptions :: Opts.Parser Options
 parseOptions = Options
-    <$> Opts.switch
-        ( Opts.long "upload-to-bintray"
-       <> Opts.help "If specified, will try uploading the sdists to Bintray, using credentials in BINTRAY_BASIC_AUTH env var.")
-    <*> Opts.option readFlavor
-        ( Opts.long "ghc-flavor"
-       <> Opts.help "The ghc-flavor to test against"
-        )
+    <$> (parseDaOptions
+         Opts.<|>
+         (Opts.option readFlavor
+          ( Opts.long "ghc-flavor"
+         <> Opts.help "The ghc-flavor to test against"
+          )))
     <*> parseStackOptions
  where
    readFlavor :: Opts.ReadM GhcFlavor
@@ -116,9 +120,29 @@ parseOptions = Options
        "ghc-8.8.1" -> Right Ghc881
        "ghc-8.8.2" -> Right Ghc882
        "ghc-8.8.3" -> Right Ghc883
-       "da-ghc-8.8.1" -> Right DaGhc881
        "ghc-master" -> Right (GhcMaster current)
        hash -> Right (GhcMaster hash)
+   parseDaOptions :: Opts.Parser GhcFlavor
+   parseDaOptions =
+       Opts.flag' Da ( Opts.long "da" <> Opts.help "Enables DA custom build." )
+       <*> Opts.strOption
+           ( Opts.long "merge-base-sha"
+          <> Opts.help "DA flavour only. Base commit to use from the GHC repo."
+          <> Opts.showDefault
+          <> Opts.value "ghc-8.8.1-release"
+           )
+       <*> (Opts.some
+             (Opts.strOption
+              ( Opts.long "patch"
+             <> Opts.help "DA flavour only. Commits to merge in from the DA GHC fork, referenced as 'upstream'. Can be specified multiple times. If no patch is specified, default will be equivalent to `--patch upstream/da-master-8.8.1 --patch upstream/da-unit-ids-8.8.1`. Specifying any patch will overwrite the default (i.e. replace, not add)."
+              ))
+            Opts.<|>
+            pure ["upstream/da-master-8.8.1", "upstream/da-unit-ids-8.8.1"])
+       <*> Opts.strOption
+           ( Opts.long "gen-flavor"
+          <> Opts.help "DA flavor only. Flavor to pass on to ghc-lib-gen."
+          <> Opts.showDefault
+          <> Opts.value "da-ghc-8.8.1")
 
 parseStackOptions :: Opts.Parser StackOptions
 parseStackOptions = StackOptions
@@ -143,46 +167,11 @@ parseStackOptions = StackOptions
        <> Opts.help "If specified, pass '--ghc-options=\"xxx\"' to stack"
         ))
 
-bintrayUpload :: String -> IO ()
-bintrayUpload version = do
-    credentials <- Env.lookupEnv "BINTRAY_BASIC_AUTH"
-    case credentials of
-      Nothing ->
-        Exit.die $ unlines [
-          "Error: Cannot upload without BINTRAY_BASIC_AUTH.",
-          "To set the environment variable, run:",
-          "    BINTRAY_BASIC_AUTH=<creds> ./CI.hs --upload-to-bintray",
-          "where <creds> should be of the form:",
-          "  fname.lname@digitalassetsdk:0123456789abcdef0123456789abcdef01234567",
-          "You can find your API key (the part after the colon) at:",
-          "  https://bintray.com/profile/edit",
-          "after logging in. (The username is also displayed on that page.)"]
-      Just creds -> do
-        cmd $ concat [
-            "curl -T ./ghc-lib-parser-", version, ".tar.gz",
-            " -u", creds,
-            " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/ghc-lib-parser-", version, ".tar.gz"]
-        cmd $ concat [
-            "curl -T ./ghc-lib-", version, ".tar.gz",
-            " -u", creds,
-            " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/ghc-lib-", version, ".tar.gz"]
-        cmd $ concat [
-            "curl -X POST",
-            " -u", creds,
-            " https://api.bintray.com/content/digitalassetsdk/ghc-lib/da-ghc-lib/", version, "/publish"]
-        where
-          cmd :: String -> IO ()
-          cmd x = do
-            let c = replace creds "***:***" x
-            putStrLn $ "\n\n# Running: " ++ c
-            hFlush stdout
-            (t, _) <- duration $ callCommand x
-            putStrLn $ "# Completed in " ++ showDuration t ++ ": " ++ c ++ "\n"
-            hFlush stdout
-
 buildDists :: GhcFlavor -> StackOptions -> IO String
-buildDists ghcFlavor
-  StackOptions {stackYaml, resolver, verbosity, cabalVerbose, ghcOptions} =
+buildDists
+  ghcFlavor
+  StackOptions {stackYaml, resolver, verbosity, cabalVerbose, ghcOptions}
+  =
   do
     let stackConfig = fromMaybe "stack.yaml" stackYaml
 
@@ -210,12 +199,12 @@ buildDists ghcFlavor
         Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
         Ghc882 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.2-release"
         Ghc883 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.3-release"
-        DaGhc881 -> do
-            cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
+        Da { mergeBaseSha, patches } -> do
+            cmd $ "cd ghc && git fetch --tags && git checkout " <> mergeBaseSha
             -- Apply Digital Asset extensions.
             cmd "cd ghc && git remote add upstream https://github.com/digital-asset/ghc.git"
             cmd "cd ghc && git fetch upstream"
-            cmd "cd ghc && git -c \"user.name=Cookie Monster\" -c \"user.email=cookie.monster@seasame-street.com\" merge --no-edit upstream/da-master-8.8.1 upstream/da-unit-ids-8.8.1"
+            cmd $ "cd ghc && git -c user.name=\"Cookie Monster\" -c user.email=cookie.monster@seasame-street.com merge --no-edit " <> Data.List.intercalate " " patches
         GhcMaster hash -> cmd $ "cd ghc && git checkout " ++ hash
     cmd "cd ghc && git submodule update --init --recursive"
 
@@ -291,7 +280,7 @@ buildDists ghcFlavor
           -- explanation)
           unlines ["extra-deps: [transformers-0.5.6.2]"]
 #endif
-        DaGhc881 ->
+        Da {} ->
           unlines ["flags: {mini-compile: {daml-unit-ids: true}}"]
         _ -> ""
 
@@ -330,7 +319,7 @@ buildDists ghcFlavor
 #endif
 
     -- Something like, "8.8.1.20190828".
-    tag  -- The return value of type 'IO string'.
+    tag -- The return value of type 'IO string'.
 
     where
       stack :: String -> IO ()
