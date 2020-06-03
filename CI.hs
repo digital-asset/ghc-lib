@@ -52,10 +52,7 @@ data GhcFlavor = Ghc8101
                | Ghc881
                | Ghc882
                | Ghc883
-               | Da { mergeBaseSha :: String
-                    , patches :: [String]
-                    , flavor :: String
-                    }
+               | Da { mergeBaseSha :: String , patches :: [String] , flavor :: String }
                | GhcMaster String
   deriving (Eq, Show)
 
