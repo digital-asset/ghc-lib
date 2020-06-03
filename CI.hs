@@ -28,7 +28,7 @@ main = do
     let opts =
           Opts.info (parseOptions Opts.<**> Opts.helper)
           ( Opts.fullDesc
-            <> Opts.progDesc "Build (and possibly upload) ghc-lib and ghc-lib-parser tarballs."
+            <> Opts.progDesc "Build ghc-lib and ghc-lib-parser tarballs."
             <> Opts.header "CI - CI script for ghc-lib"
           )
     Options { ghcFlavor, stackOptions } <- Opts.execParser opts
@@ -126,20 +126,20 @@ parseOptions = Options
    parseDaOptions =
        Opts.flag' Da ( Opts.long "da" <> Opts.help "Enables DA custom build." )
        <*> Opts.strOption
-           ( Opts.long "da-merge-base-sha"
+           ( Opts.long "merge-base-sha"
           <> Opts.help "DA flavour only. Base commit to use from the GHC repo."
           <> Opts.showDefault
           <> Opts.value "ghc-8.8.1-release"
            )
        <*> (Opts.some
              (Opts.strOption
-              ( Opts.long "da-patch"
-             <> Opts.help "DA flavour only. Commits to merge in from the DA GHC fork, referenced as 'upstream'. Can be specified multiple times. If no patch is specified, default will be equivalent to `--da-patch upstream/da-master-8.8.1 --da-patch upstream/da-unit-ids-8.8.1`. Specifying any patch will overwrite the default (i.e. replace, not add)."
+              ( Opts.long "patch"
+             <> Opts.help "DA flavour only. Commits to merge in from the DA GHC fork, referenced as 'upstream'. Can be specified multiple times. If no patch is specified, default will be equivalent to `--patch upstream/da-master-8.8.1 --patch upstream/da-unit-ids-8.8.1`. Specifying any patch will overwrite the default (i.e. replace, not add)."
               ))
             Opts.<|>
             pure ["upstream/da-master-8.8.1", "upstream/da-unit-ids-8.8.1"])
        <*> Opts.strOption
-           ( Opts.long "da-gen-flavor"
+           ( Opts.long "gen-flavor"
           <> Opts.help "DA flavor only. Flavor to pass on to ghc-lib-gen."
           <> Opts.showDefault
           <> Opts.value "da-ghc-8.8.1")

@@ -62,10 +62,10 @@ general case: the `--ghc-flavor` flag is replaced with an "enabling" flag
 stack runhaskell --package extra \
                  --package optparse-applicative \
                  CI.hs -- --da \
-                          --da-merge-base-sha=ghc-8.8.1-release \
-                          --da-patch=upstream/da-master-8.8.1 \
-                          --da-patch=upstream/da-unit-ids-8.8.1 \
-                          --da-gen-flavor=da-ghc-8.8.1
+                          --merge-base-sha=ghc-8.8.1-release \
+                          --patch=upstream/da-master-8.8.1 \
+                          --patch=upstream/da-unit-ids-8.8.1 \
+                          --gen-flavor=da-ghc-8.8.1
 ```
 
 The DAML-specific process only differs from the normal one in that it patches
@@ -74,13 +74,13 @@ GHC with the given patches. More specifically, it will:
 - Clone GHC. (This is also done by the normal workflow.)
 - Add the [DA fork](https://github.com/digital-asset/ghc/) of GHC as a remote
   named `upstream`.
-- Checkout the commit provided as `da-merge-base-sha`.
+- Checkout the commit provided as `merge-base-sha`.
 - Create a new commit by merging in all of the commits specified through the
-  `--da-patch` flags.
+  `--patch` flags.
 - Proceed as normal for the rest of the workflow.
 
 At some later stage, the workflow calls out to the `ghc-lib-gen` program, and
 at that point it needs to pass in a "flavor" argument; it will use the value of
-the `--da-flavor` option for that.
+the `--gen-flavor` option for that.
 
 Note that deployment for the DAML version is handled from within the DAML CI.
