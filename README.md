@@ -65,7 +65,8 @@ stack runhaskell --package extra \
                           --merge-base-sha=ghc-8.8.1-release \
                           --patch=upstream/da-master-8.8.1 \
                           --patch=upstream/da-unit-ids-8.8.1 \
-                          --gen-flavor=da-ghc-8.8.1
+                          --gen-flavor=da-ghc-8.8.1 \
+                          --upstream=https://github.com/digital-asset/ghc.git
 ```
 
 The DAML-specific process only differs from the normal one in that it patches
@@ -73,7 +74,11 @@ GHC with the given patches. More specifically, it will:
 
 - Clone GHC. (This is also done by the normal workflow.)
 - Add the [DA fork](https://github.com/digital-asset/ghc/) of GHC as a remote
-  named `upstream`.
+  named `upstream`; this can be overridden with the `--upstream` flag. For
+  example, in local development, `--upstream=$PWD/../ghc-fork/`. Note that if
+  you want to specify a local path (as in this example), it should be an
+  absolute one, as the command will be run from the folder into which GHC has
+  been cloned.
 - Checkout the commit provided as `merge-base-sha`.
 - Create a new commit by merging in all of the commits specified through the
   `--patch` flags.

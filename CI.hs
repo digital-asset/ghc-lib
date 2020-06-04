@@ -52,7 +52,7 @@ data GhcFlavor = Ghc8101
                | Ghc881
                | Ghc882
                | Ghc883
-               | Da { mergeBaseSha :: String , patches :: [String] , flavor :: String }
+               | Da { mergeBaseSha :: String, patches :: [String], flavor :: String, upstream :: String }
                | GhcMaster String
   deriving (Eq, Show)
 
@@ -143,6 +143,11 @@ parseOptions = Options
           <> Opts.help "DA flavor only. Flavor to pass on to ghc-lib-gen."
           <> Opts.showDefault
           <> Opts.value "da-ghc-8.8.1")
+       <*> Opts.strOption
+           ( Opts.long "upstream"
+          <> Opts.help "DA flavor only. URL for the git remote add command."
+          <> Opts.showDefault
+          <> Opts.value "https://github.com/digital-asset/ghc.git")
 
 parseStackOptions :: Opts.Parser StackOptions
 parseStackOptions = StackOptions
@@ -199,10 +204,10 @@ buildDists
         Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
         Ghc882 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.2-release"
         Ghc883 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.3-release"
-        Da { mergeBaseSha, patches } -> do
+        Da { mergeBaseSha, patches, upstream } -> do
             cmd $ "cd ghc && git fetch --tags && git checkout " <> mergeBaseSha
             -- Apply Digital Asset extensions.
-            cmd "cd ghc && git remote add upstream https://github.com/digital-asset/ghc.git"
+            cmd $ "cd ghc && git remote add upstream " <> upstream
             cmd "cd ghc && git fetch upstream"
             cmd $ "cd ghc && git -c user.name=\"Cookie Monster\" -c user.email=cookie.monster@seasame-street.com merge --no-edit " <> Data.List.intercalate " " patches
         GhcMaster hash -> cmd $ "cd ghc && git checkout " ++ hash
