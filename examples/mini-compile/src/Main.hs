@@ -83,15 +83,19 @@ mkDynFlags filename s = do
         (defaultDynFlags fakeSettings fakeLlvmConfig) {
           ghcLink = NoLink
         , hscTarget = HscNothing
+#if defined(GHC_MASTER)
+        , unitDatabases = Just []
+#else
         , pkgDatabase = Just []
+#endif
         , dirsToClean = dirs_to_clean
         , filesToClean = files_to_clean
         , nextTempSuffix = next_temp_suffix
-#ifdef DAML_UNIT_IDS
+#if defined(DAML_UNIT_IDS)
         , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "daml-prim")
 #else
 #if defined (GHC_MASTER)
-        , thisUnitId = toUnitId (stringToUnit "ghc-prim")
+        , homeUnitId = toUnitId (stringToUnit "ghc-prim")
 #else
         , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "ghc-prim")
 #endif
@@ -136,7 +140,15 @@ fakeSettings = Settings
 #if defined (GHC_MASTER) || defined (GHC_8101)
     fileSettings = FileSettings {
         fileSettings_tmpDir="."
+#if defined (GHC_MASTER)
+      , fileSettings_topDir="."
+      , fileSettings_toolDir=Nothing
+      , fileSettings_ghcUsagePath="."
+      , fileSettings_ghciUsagePath="."
+      , fileSettings_globalPackageDatabase="."
+#endif
       }
+
     toolSettings = ToolSettings {
         toolSettings_opt_P_fingerprint=fingerprint0
       }
