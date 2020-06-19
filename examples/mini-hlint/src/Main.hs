@@ -116,6 +116,7 @@ fakeSettings = Settings
       , platformHasSubsectionsViaSymbols=False
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
+      , platformTablesNextToCode=False
       ,
 #endif
 #if defined (GHC_MASTER) || defined (GHC_8101)

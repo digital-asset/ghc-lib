@@ -153,7 +153,9 @@ fakeSettings = Settings
         toolSettings_opt_P_fingerprint=fingerprint0
       }
     platformMisc = PlatformMisc {
+#if !defined (GHC_MASTER)
         platformMisc_integerLibraryType=IntegerSimple
+#endif
       }
     ghcNameVersion =
       GhcNameVersion{
@@ -164,15 +166,16 @@ fakeSettings = Settings
     platform =
       Platform{
 #if defined (GHC_MASTER)
-    -- It doesn't matter what values we write here as these fields are
-    -- not referenced for our purposes. However the fields are strict
-    -- so we must say something.
+      -- It doesn't matter what values we write here as these fields are
+      -- not referenced for our purposes. However the fields are strict
+      -- so we must say something.
         platformByteOrder=LittleEndian
       , platformHasGnuNonexecStack=True
       , platformHasIdentDirective=False
       , platformHasSubsectionsViaSymbols=False
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
+      , platformTablesNextToCode=False
       ,
 #endif
 #if defined (GHC_MASTER) || defined (GHC_8101)

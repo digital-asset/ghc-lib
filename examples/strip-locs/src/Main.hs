@@ -122,6 +122,7 @@ fakeSettings = Settings
       , platformHasSubsectionsViaSymbols=False
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
+      , platformTablesNextToCode=False
       ,
 #endif
 
