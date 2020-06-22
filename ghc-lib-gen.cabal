@@ -12,7 +12,6 @@ maintainer:          Shayne Fletcher (shayne.fletcher@digitalasset.com)
 copyright:           Digital Asset 2018-2019
 category:            Development
 build-type:          Simple
-extra-source-files:  ChangeLog.md
 
 library
   build-depends:     base >=4.10
