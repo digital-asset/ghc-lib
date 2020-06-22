@@ -6,7 +6,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE MagicHash #-}
 
--- | MOVE Prelude
 module GHC.Types (
         -- Data types that are built-in syntax
         -- They are defined here, but not explicitly exported
@@ -17,6 +16,7 @@ module GHC.Types (
         Ordering(..),
         Symbol,
         ifThenElse,
+        Multiplicity(..)
     ) where
 
 import GHC.Prim
@@ -25,6 +25,8 @@ infixr 5 :
 
 -- | The kind of constraints, like `Show a`
 data Constraint
+
+data Multiplicity = Many | One
 
 -- | (Kind) This is the kind of type-level symbols.
 -- Declared here because class IP needs it

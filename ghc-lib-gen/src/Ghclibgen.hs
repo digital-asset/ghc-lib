@@ -765,12 +765,19 @@ generatePrerequisites ghcFlavor = do
     -- directory itself.
     system_ "stack build --no-library-profiling"
     system_ $ unwords $
-        ["stack exec hadrian --"
-        ,"--directory=.."
-        ,"--integer-simple"
-        ,"--build-root=ghc-lib"
-        ] ++ ghcLibParserExtraFiles ghcFlavor ++
-        map (dataDir </>) dataFiles
+        ( [ "stack exec hadrian --"
+          , "--directory=.."
+          , "--build-root=ghc-lib"
+          ]
+          ++ (if ghcFlavor == GhcMaster
+                then
+                  ["--bignum=native"]
+                else
+                  ["--integer-simple"]
+             )
+          ++ ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) dataFiles
+        )
+
   -- We use the hadrian generated Lexer and Parser so get these out
   -- of the way.
   let lexer = if ghcFlavor == GhcMaster then "compiler/GHC/Parser/Lexer.x" else "compiler/parser/Lexer.x"
