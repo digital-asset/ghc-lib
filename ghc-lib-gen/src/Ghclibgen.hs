@@ -52,7 +52,7 @@ ghcLibParserIncludeDirs ghcFlavor =
       _ -> [ "ghc-lib/generated" ]
   ) ++
   [ stage0Compiler, "compiler"] ++
-  [ "compiler/utils" | ghcFlavor `elem` [ Ghc881, Ghc882, Ghc883, DaGhc881 ] ]
+  [ "compiler/utils" | ghcFlavor `elem` [ DaGhc881, Ghc881, Ghc882, Ghc883, Ghc884 ] ]
 
 -- Sort by length so the longest paths are at the front. We do this
 -- so that in 'calcParserModules', longer substituions are performed
@@ -210,7 +210,7 @@ compilerDependencies ghcFlavor =
 
 platformH :: GhcFlavor -> [FilePath]
 platformH ghcFlavor =
-  [ stage0Compiler </> "ghc_boot_platform.h" | ghcFlavor `elem` [ Ghc881, Ghc882, Ghc883, DaGhc881 ] ]
+  [ stage0Compiler </> "ghc_boot_platform.h" | ghcFlavor `elem` [ DaGhc881, Ghc881, Ghc882, Ghc883, Ghc884 ] ]
 
 packageCode :: GhcFlavor -> [FilePath]
 packageCode ghcFlavor =
@@ -219,7 +219,7 @@ packageCode ghcFlavor =
   [ stage0GhcBoot  </> "GHC/Version.hs" | ghcFlavor `elem` [ GhcMaster, Ghc8101 ] ]
 
 fingerprint :: GhcFlavor -> [FilePath]
-fingerprint ghcFlavor = [ stage0Compiler </> "Fingerprint.hs" | ghcFlavor `elem` [ Ghc881, Ghc882, Ghc883, DaGhc881 ] ]
+fingerprint ghcFlavor = [ stage0Compiler </> "Fingerprint.hs" | ghcFlavor `elem` [ DaGhc881, Ghc881, Ghc882, Ghc883, Ghc884 ] ]
 
 -- | The C headers shipped with ghc-lib. These globs get glommed onto
 -- the 'extraFiles' above as 'extra-source-files'.
@@ -232,7 +232,7 @@ cHeaders ghcFlavor =
   , "compiler/GhclibHsVersions.h"
   , "compiler/Unique.h"
   ] ++
-  [ f | ghcFlavor `elem` [ Ghc881, Ghc882, Ghc883, DaGhc881 ], f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"] ]
+  [ f | ghcFlavor `elem` [ DaGhc881, Ghc881, Ghc882, Ghc883, Ghc884 ], f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"] ]
 
 -- | We generate the parser and lexer and ship those rather than their
 -- sources.
@@ -434,7 +434,7 @@ applyPatchRtsIncludePaths ghcFlavor = do
         [ "compiler/GHC/Runtime/Heap/Layout.hs" | ghcFlavor == GhcMaster ] ++
         [ "compiler/cmm/SMRep.hs" | ghcFlavor /= GhcMaster ] ++
         [ "compiler/GHC/StgToCmm/Layout.hs"  | ghcFlavor `elem` [ GhcMaster, Ghc8101 ] ] ++
-        [ "compiler/codeGen/StgCmmLayout.hs" | ghcFlavor `elem` [ Ghc881, Ghc882, Ghc883, DaGhc881 ] ]
+        [ "compiler/codeGen/StgCmmLayout.hs" | ghcFlavor `elem` [ DaGhc881, Ghc881, Ghc882, Ghc883, Ghc884 ] ]
   forM_ files $
     \file ->
         writeFile file .
@@ -507,7 +507,7 @@ applyPatchStage ghcFlavor =
   -- get a build (`MachDeps.h` does not hide its contents from stages
   -- below 2 anymore). All usages of `getOrSetLibHSghc*` require
   -- `GHC_STAGE >= 2`. Thus, it's no longer neccessary to patch here.
-  when (ghcFlavor `elem` [ Ghc881, Ghc882, Ghc883, DaGhc881 ]) $
+  when (ghcFlavor `elem` [ DaGhc881, Ghc881, Ghc882, Ghc883, Ghc884 ]) $
     forM_ [ "compiler/ghci/Linker.hs"
           , "compiler/utils/FastString.hs"
           , "compiler/main/DynFlags.hs"
@@ -786,5 +786,5 @@ generatePrerequisites ghcFlavor = do
   let parser = if ghcFlavor == GhcMaster then "compiler/GHC/Parser.y" else "compiler/parser/Parser.y"
   removeFile lexer
   removeFile parser
-  when (ghcFlavor `elem` [ Ghc881, Ghc882, Ghc883, DaGhc881 ]) $
+  when (ghcFlavor `elem` [ DaGhc881, Ghc881, Ghc882, Ghc883, Ghc884 ]) $
     removeFile "compiler/utils/Fingerprint.hsc" -- Favor the generated .hs file here too.

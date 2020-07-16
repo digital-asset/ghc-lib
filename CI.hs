@@ -52,6 +52,7 @@ data GhcFlavor = Ghc8101
                | Ghc881
                | Ghc882
                | Ghc883
+               | Ghc884
                | Da { mergeBaseSha :: String, patches :: [String], flavor :: String, upstream :: String }
                | GhcMaster String
   deriving (Eq, Show)
@@ -78,6 +79,7 @@ ghcFlavorOpt = \case
     Ghc881 -> "--ghc-flavor ghc-8.8.1"
     Ghc882 -> "--ghc-flavor ghc-8.8.2"
     Ghc883 -> "--ghc-flavor ghc-8.8.3"
+    Ghc884 -> "--ghc-flavor ghc-8.8.4"
     Da { flavor } -> "--ghc-flavor " <> flavor
     GhcMaster _hash -> "--ghc-flavor ghc-master"
       -- The git SHA1 hash is not passed to ghc-lib-gen at this time.
@@ -102,6 +104,7 @@ genVersionStr = \case
    Ghc8101     -> \day -> "8.10.1." ++ replace "-" "" (showGregorian day)
    Ghc882      -> \day -> "8.8.2." ++ replace "-" "" (showGregorian day)
    Ghc883      -> \day -> "8.8.3." ++ replace "-" "" (showGregorian day)
+   Ghc884      -> \day -> "8.8.4." ++ replace "-" "" (showGregorian day)
    _           -> \day -> "8.8.1." ++ replace "-" "" (showGregorian day)
 
 parseOptions :: Opts.Parser Options
@@ -120,6 +123,7 @@ parseOptions = Options
        "ghc-8.8.1" -> Right Ghc881
        "ghc-8.8.2" -> Right Ghc882
        "ghc-8.8.3" -> Right Ghc883
+       "ghc-8.8.4" -> Right Ghc884
        "ghc-master" -> Right (GhcMaster current)
        hash -> Right (GhcMaster hash)
    parseDaOptions :: Opts.Parser GhcFlavor
@@ -204,6 +208,7 @@ buildDists
         Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
         Ghc882 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.2-release"
         Ghc883 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.3-release"
+        Ghc884 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.4-release"
         Da { mergeBaseSha, patches, upstream } -> do
             cmd $ "cd ghc && git fetch --tags && git checkout " <> mergeBaseSha
             -- Apply Digital Asset extensions.
