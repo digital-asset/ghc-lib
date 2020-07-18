@@ -50,6 +50,18 @@ stack runhaskell --package extra --package optparse-applicative CI.hs -- --ghc-f
 
 Build `ghc-lib` using the [above instructions](#building-ghc-lib)  and upload the resulting `.tar.gz` files to [Hackage](https://hackage.haskell.org/upload).
 
+## FAQ
+
+### Why doesn't `ghc-lib` version `X` build with GHC compiler version `Y`?
+
+Building `ghc-lib` is subject to the same minimum version requirements that apply to bootstrapping GHC itself. Those requirements are given in the following table.
+
+| Ghc flavor | >= version |
+| ---------- |:----------:|
+| ghc-8.8.*  | 8.4.4      |
+| ghc-8.10.* | 8.6.5      |
+| ghc-8.11.* | 8.8.1      |
+
 # Building `ghc-lib` for DAML
 
 The [`CI.hs`](CI.hs) script has special support for building custom versions of
