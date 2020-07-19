@@ -567,8 +567,12 @@ withCommas ms =
 commonBuildDepends :: GhcFlavor -> [String]
 commonBuildDepends ghcFlavor =
   [ "ghc-prim > 0.2 && < 0.7"
-  , "base >= 4.11 && < 4.15"
-  , "containers >= 0.5 && < 0.7"
+  ] ++
+  [ if ghcFlavor `elem` [ Ghc881, Ghc882, Ghc883, Ghc884, DaGhc881 ]
+    then "base >= 4.11 && < 4.15"
+    else "base >= 4.12 && < 4.15" -- flavor >= 8.10.*
+  ] ++
+  [ "containers >= 0.5 && < 0.7"
   , "bytestring >= 0.9 && < 0.11"
   , "binary == 0.8.*"
   , "filepath >= 1 && < 1.5"
@@ -634,8 +638,7 @@ generateGhcLibCabal ghcFlavor = do
         , "data-dir: " ++ dataDir
         , "data-files:"] ++ indent dataFiles ++
         [ "extra-source-files:"] ++ indent (ghcLibExtraFiles ghcFlavor) ++
-        [ "tested-with: GHC==8.10.1, GHC==8.8.2, GHC==8.6.5, GHC==8.4.4"
-        , "source-repository head"
+        [ "source-repository head"
         , "    type: git"
         , "    location: git@github.com:digital-asset/ghc-lib.git"
         , ""
@@ -707,8 +710,7 @@ generateGhcLibParserCabal ghcFlavor = do
         ] ++ indent dataFiles ++
         [ "extra-source-files:" ] ++
         indent (ghcLibParserExtraFiles ghcFlavor) ++
-        [ "tested-with: GHC==8.10.1, GHC==8.8.2, GHC==8.6.5, GHC==8.4.4"
-        , "source-repository head"
+        [ "source-repository head"
         , "    type: git"
         , "    location: git@github.com:digital-asset/ghc-lib.git"
         , ""
