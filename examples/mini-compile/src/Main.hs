@@ -82,7 +82,11 @@ mkDynFlags filename s = do
   let baseFlags =
         (defaultDynFlags fakeSettings fakeLlvmConfig) {
           ghcLink = NoLink
+#if defined(GHC_MASTER)
+        , backend = NoBackend
+#else
         , hscTarget = HscNothing
+#endif
 #if defined(GHC_MASTER)
         , unitDatabases = Just []
 #else
