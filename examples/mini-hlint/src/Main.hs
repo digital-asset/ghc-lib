@@ -117,11 +117,15 @@ fakeSettings = Settings
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
       , platformTablesNextToCode=False
+      , platformConstants=platformConstants
       ,
 #endif
-#if defined (GHC_MASTER) || defined (GHC_8101)
-        platformWordSize = PW8
-      , platformMini = PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
+#if defined(GHC_MASTER)
+        platformWordSize=PW8
+      , platformArchOS=ArchOS ArchUnknown OSUnknown
+#elif defined (GHC_8101)
+        platformWordSize=PW8
+      , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
 #else
         platformWordSize=8
       , platformOS=OSUnknown
