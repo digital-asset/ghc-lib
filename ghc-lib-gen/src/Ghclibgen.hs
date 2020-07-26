@@ -175,11 +175,15 @@ includesDependencies ghcFlavor =
 derivedConstantsDependencies :: GhcFlavor -> [FilePath]
 derivedConstantsDependencies ghcFlavor =
    map (root </>)
-     [ "DerivedConstants.h"
-     , "GHCConstantsHaskellExports.hs"
-     , "GHCConstantsHaskellType.hs"
-     , "GHCConstantsHaskellWrappers.hs"
-     ]
+     ([ "DerivedConstants.h"
+      ] ++
+      [ x | ghcFlavor /= GhcMaster
+        , x <- [ "GHCConstantsHaskellExports.hs"
+               , "GHCConstantsHaskellWrappers.hs"
+               , "GHCConstantsHaskellType.hs"
+               ]
+      ]
+     )
    where
       root =
         case ghcFlavor of
@@ -206,7 +210,11 @@ compilerDependencies ghcFlavor =
     , "primop-vector-tys.hs-incl"
     , "primop-vector-uniques.hs-incl"
     ] ++
-    [ "primop-docs.hs-incl" | ghcFlavor == GhcMaster ]
+    [ x | ghcFlavor == GhcMaster
+        , x <- [ "primop-docs.hs-incl"
+               , "GHC/Platform/Constants.hs"
+               ]
+    ]
 
 platformH :: GhcFlavor -> [FilePath]
 platformH ghcFlavor =
@@ -216,6 +224,7 @@ packageCode :: GhcFlavor -> [FilePath]
 packageCode ghcFlavor =
   [ stage0Compiler </> "Config.hs" | ghcFlavor /= GhcMaster ] ++
   [ stage0Compiler </> "GHC/Settings/Config.hs" | ghcFlavor == GhcMaster ] ++
+  [ stage0Compiler </> "GHC/Platform/Constants.hs" | ghcFlavor == GhcMaster ] ++
   [ stage0GhcBoot  </> "GHC/Version.hs" | ghcFlavor `elem` [ GhcMaster, Ghc8101 ] ]
 
 fingerprint :: GhcFlavor -> [FilePath]

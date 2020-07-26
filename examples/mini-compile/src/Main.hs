@@ -82,7 +82,11 @@ mkDynFlags filename s = do
   let baseFlags =
         (defaultDynFlags fakeSettings fakeLlvmConfig) {
           ghcLink = NoLink
+#if defined(GHC_MASTER)
+        , backend = NoBackend
+#else
         , hscTarget = HscNothing
+#endif
 #if defined(GHC_MASTER)
         , unitDatabases = Just []
 #else
@@ -176,11 +180,15 @@ fakeSettings = Settings
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
       , platformTablesNextToCode=False
+      , platformConstants=platformConstants
       ,
 #endif
-#if defined (GHC_MASTER) || defined (GHC_8101)
-        platformWordSize = PW8
-      , platformMini = PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
+#if defined(GHC_MASTER)
+        platformWordSize=PW8
+      , platformArchOS=ArchOS ArchUnknown OSUnknown
+#elif defined (GHC_8101)
+        platformWordSize=PW8
+      , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
 #else
         platformWordSize=8
       , platformOS=OSUnknown
