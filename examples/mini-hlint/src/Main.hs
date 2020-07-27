@@ -122,7 +122,7 @@ fakeSettings = Settings
 #endif
 #if defined(GHC_MASTER)
         platformWordSize=PW8
-      , platformArchOS=ArchOS ArchUnknown OSUnknown
+      , platformArchOS=ArchOS {archOS_arch=ArchUnknown, archOS_OS=OSUnknown}
 #elif defined (GHC_8101)
         platformWordSize=PW8
       , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
