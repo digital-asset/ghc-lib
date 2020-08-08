@@ -49,6 +49,7 @@ ghcLibParserIncludeDirs ghcFlavor =
   ( case ghcFlavor of
       GhcMaster -> [ stage0Lib ]
       Ghc8101 -> [ stage0Lib ]
+      Ghc8102 -> [ stage0Lib ]
       _ -> [ "ghc-lib/generated" ]
   ) ++
   [ stage0Compiler, "compiler"] ++
@@ -85,7 +86,7 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         -- This next conditional just smooths over a 'master'
         -- vs. '8.8.1' branch difference (relating to a file
         -- 'GhcVersion.hs' IIRC).
-        [ stage0GhcBoot | ghcFlavor `elem` [ GhcMaster, Ghc8101 ] ] ++
+        [ stage0GhcBoot | ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102 ] ] ++
         map takeDirectory cabalFileLibraries ++
         askFiles lib "hs-source-dirs:"
 
@@ -100,7 +101,7 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
           ] ++
           [ d | ghcFlavor == GhcMaster, d <- [ "typecheck", "specialise", "cmm" ] ] ++
           [ "nativeGen" | ghcFlavor /= GhcMaster ] ++ -- Since 2020-01-04. See https://gitlab.haskell.org/ghc/ghc/commit/d561c8f6244f8280a2483e8753c38e39d34c1f01.
-          [ "deSugar" | ghcFlavor `elem` [ GhcMaster, Ghc8101 ] && not forParserDepends ]
+          [ "deSugar" | ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102 ] && not forParserDepends ]
         )
   in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
 
@@ -113,7 +114,7 @@ ghcLibHsSrcDirs :: GhcFlavor -> [Cabal] -> [FilePath]
 ghcLibHsSrcDirs ghcFlavor lib =
   let all = Set.fromList $
         [ stage0Compiler ] ++
-        [ stage0GhcBoot | ghcFlavor `elem` [ GhcMaster, Ghc8101 ] ] ++ -- 'GHC.Platform' is in 'ghc-lib-parser', 'GHC.Platform.Host' is not.
+        [ stage0GhcBoot | ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102 ] ] ++ -- 'GHC.Platform' is in 'ghc-lib-parser', 'GHC.Platform.Host' is not.
         map takeDirectory cabalFileLibraries ++
         askFiles lib "hs-source-dirs:"
       excludes = Set.fromList $
@@ -170,6 +171,7 @@ includesDependencies ghcFlavor =
         case ghcFlavor of
           GhcMaster -> stage0Lib
           Ghc8101 -> stage0Lib
+          Ghc8102 -> stage0Lib
           _ -> ghcLibGeneratedPath
 
 derivedConstantsDependencies :: GhcFlavor -> [FilePath]
@@ -189,6 +191,7 @@ derivedConstantsDependencies ghcFlavor =
         case ghcFlavor of
           GhcMaster -> stage0Lib
           Ghc8101 -> stage0Lib
+          Ghc8102 -> stage0Lib
           _ -> ghcLibGeneratedPath
 
 compilerDependencies :: GhcFlavor -> [FilePath]
@@ -225,7 +228,7 @@ packageCode ghcFlavor =
   [ stage0Compiler </> "Config.hs" | ghcFlavor /= GhcMaster ] ++
   [ stage0Compiler </> "GHC/Settings/Config.hs" | ghcFlavor == GhcMaster ] ++
   [ stage0Compiler </> "GHC/Platform/Constants.hs" | ghcFlavor == GhcMaster ] ++
-  [ stage0GhcBoot  </> "GHC/Version.hs" | ghcFlavor `elem` [ GhcMaster, Ghc8101 ] ]
+  [ stage0GhcBoot  </> "GHC/Version.hs" | ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102 ] ]
 
 fingerprint :: GhcFlavor -> [FilePath]
 fingerprint ghcFlavor = [ stage0Compiler </> "Fingerprint.hs" | ghcFlavor `elem` [ DaGhc881, Ghc881, Ghc882, Ghc883, Ghc884 ] ]
@@ -332,7 +335,7 @@ calcParserModules ghcFlavor = do
       -- ghc-lib-parser.
       extraModules =
         [ if ghcFlavor == GhcMaster then "GHC.Parser.Header" else "HeaderInfo"] ++
-        [ if ghcFlavor `elem` [ GhcMaster, Ghc8101 ] then "GHC.Hs.Dump" else "HsDumpAst"]
+        [ if ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102 ] then "GHC.Hs.Dump" else "HsDumpAst"]
   return $ nubSort (modules ++ extraModules)
 
 -- Avoid duplicate symbols with HSghc-heap (see issue
@@ -383,6 +386,7 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
           case ghcFlavor of
             GhcMaster -> [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
             Ghc8101 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
+            Ghc8102 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
             _ ->         [ "compiler/main/DynFlags.hs", "compiler/hsSyn/HsInstances.hs" ]
     in
       forM_ files $
@@ -442,7 +446,7 @@ applyPatchRtsIncludePaths ghcFlavor = do
   let files =
         [ "compiler/GHC/Runtime/Heap/Layout.hs" | ghcFlavor == GhcMaster ] ++
         [ "compiler/cmm/SMRep.hs" | ghcFlavor /= GhcMaster ] ++
-        [ "compiler/GHC/StgToCmm/Layout.hs"  | ghcFlavor `elem` [ GhcMaster, Ghc8101 ] ] ++
+        [ "compiler/GHC/StgToCmm/Layout.hs"  | ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102 ] ] ++
         [ "compiler/codeGen/StgCmmLayout.hs" | ghcFlavor `elem` [ DaGhc881, Ghc881, Ghc882, Ghc883, Ghc884 ] ]
   forM_ files $
     \file ->
@@ -689,11 +693,13 @@ generateGhcLibCabal ghcFlavor = do
 ghciDef :: GhcFlavor -> String
 ghciDef GhcMaster = ""
 ghciDef Ghc8101 = ""
+ghciDef Ghc8102 = ""
 ghciDef _ = "-DGHCI"
 
 ghcStageDef :: GhcFlavor -> String
 ghcStageDef GhcMaster = ""
 ghcStageDef Ghc8101 = ""
+ghcStageDef Ghc8102 = ""
 ghcStageDef _ = "-DSTAGE=2"
 
 -- | Produces a ghc-lib-parser Cabal file.

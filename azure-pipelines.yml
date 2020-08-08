@@ -107,11 +107,11 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-8.10.1      | ghc-8.8.4  |
+    # | linux   | ghc-8.10.2      | ghc-8.8.4  |
     # +---------+-----------------+------------+
-    linux-ghc-8.10.1-8.8.4:
+    linux-ghc-8.10.2-8.8.4:
       image: "Ubuntu 16.04"
-      mode: "--ghc-flavor ghc-8.10.1"
+      mode: "--ghc-flavor ghc-8.10.2"
       resolver: "nightly-2020-03-14"
       stack-yaml: "stack.yaml"
 
