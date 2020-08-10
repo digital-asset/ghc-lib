@@ -4,8 +4,8 @@
 #    --package extra --package optparse-applicative \
 #    CI.hs -- \
 #    --stack-yaml stack-exact.yaml --ghc-flavor xxx
-# You can add --resolver xxx to the above command to have the effet of
-# overriding the choice of compiler if desired.
+# You can add --resolver xxx to the above command to have the effect
+# of overriding the choice of compiler if desired.
 
 # Stack 8.10 builds generate a lot of warnings of this kind.
 #   Warning: Failed to decode module interface:
@@ -14,9 +14,7 @@
 # This is a known upstream issue (see
 # https://github.com/commercialhaskell/stack/issues/5134).
 
-resolver: ghc-8.10.1
-# No resolver, only packages shipped with the compiler
-# i.e. base-4.14.0.0, ghc-prim-0.6.1, hpc-0.6.1.0.
+resolver: ghc-8.10.2
 
 ghc-options:
   # Try to be quick.
@@ -31,10 +29,11 @@ extra-deps:
 - containers-0.6.2.1
 - deepseq-1.4.4.0
 - directory-1.3.6.0
+- exceptions-0.10.4
 - filepath-1.4.2.1
 - happy-1.19.12
 - pretty-1.1.3.6
-- process-1.6.8.2
+- process-1.6.9.0
 - time-1.9.3
 - transformers-0.5.6.2
 - unix-2.7.2.2
@@ -48,7 +47,7 @@ extra-deps:
 - ansi-wl-pprint-0.6.9
 - clock-0.8
 - colour-2.3.5
-- extra-1.7.1
+- extra-1.7.3
 - mintty-0.1.2 # Windows specific (but it does no harm).
 - optparse-applicative-0.15.1.0
 - semigroups-0.19.1
