@@ -33,6 +33,7 @@ import "ghc-lib-parser" GHC.Utils.Error
 import qualified "ghc-lib-parser" GHC.Parser
 import "ghc-lib-parser" GHC.Data.FastString
 import "ghc-lib-parser" GHC.Utils.Outputable
+import "ghc-lib-parser" GHC.Driver.Ppr
 import "ghc-lib-parser" GHC.Types.SrcLoc
 import "ghc-lib-parser" GHC.Utils.Panic
 import "ghc-lib-parser" GHC.Driver.Types
