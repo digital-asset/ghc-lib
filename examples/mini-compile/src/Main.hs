@@ -25,6 +25,7 @@ import "ghc-lib-parser" GHC.Driver.Session
 import "ghc-lib-parser" GHC.Data.StringBuffer
 import "ghc-lib-parser" GHC.Utils.Fingerprint
 import "ghc-lib-parser" GHC.Utils.Outputable
+import "ghc-lib-parser" GHC.Driver.Ppr
 #else
 import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" Module
