@@ -657,7 +657,6 @@ generateGhcLibCabal ghcFlavor = do
         , ""
         , "library"
         , "    default-language:   Haskell2010"
-        , "    default-extensions: NoImplicitPrelude"
         , "    exposed: False"
         , "    include-dirs:"
         ] ++
@@ -673,9 +672,8 @@ generateGhcLibCabal ghcFlavor = do
         ] ++
         indent2 (withCommas (commonBuildDepends ghcFlavor ++ [ "ghc-lib-parser" ]))++
         [ "    build-tools: alex >= 3.1, happy >= 1.19.4"
-        , "    other-extensions:"
-        ] ++
-        indent2 (askField lib "other-extensions:") ++
+        , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
+        [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
         [ "    hs-source-dirs:" ] ++
         indent2 (ghcLibHsSrcDirs ghcFlavor lib) ++
         [ "    autogen-modules:"
@@ -731,7 +729,6 @@ generateGhcLibParserCabal ghcFlavor = do
         , ""
         , "library"
         , "    default-language:   Haskell2010"
-        , "    default-extensions: NoImplicitPrelude"
         , "    exposed: False"
         , "    include-dirs:"] ++ indent2 (ghcLibParserIncludeDirs ghcFlavor) ++
         [ "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
@@ -744,9 +741,8 @@ generateGhcLibParserCabal ghcFlavor = do
         , "    build-depends:"
         ] ++ indent2 (withCommas (commonBuildDepends ghcFlavor)) ++
         [ "    build-tools: alex >= 3.1, happy >= 1.19.4"
-        , "    other-extensions:"
-        ] ++
-        indent2 (askField lib "other-extensions:") ++
+        , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
+        [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
         [ "    c-sources:" ] ++
         -- List CMM sources here. Go figure! (see
         -- https://twitter.com/smdiehl/status/1231958702141431808?s=20

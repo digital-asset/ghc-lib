@@ -100,7 +100,7 @@ mkDynFlags filename s = do
         , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "daml-prim")
 #else
 #if defined (GHC_MASTER)
-        , homeUnitId = toUnitId (stringToUnit "ghc-prim")
+        , homeUnitId_ = toUnitId (stringToUnit "ghc-prim")
 #else
         , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "ghc-prim")
 #endif
