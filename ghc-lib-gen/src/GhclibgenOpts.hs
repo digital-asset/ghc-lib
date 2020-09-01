@@ -15,7 +15,6 @@ import Control.Applicative
 import Options.Applicative
 import Data.Maybe
 import Data.Version (showVersion)
-import Data.Semigroup ((<>))
 import Paths_ghc_lib_gen (version)
 
 -- | A ghc-lib-gen target.

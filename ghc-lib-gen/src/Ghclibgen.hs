@@ -61,7 +61,7 @@ ghcLibParserIncludeDirs ghcFlavor =
 -- not the case).
 sortDiffListByLength :: Set.Set FilePath -> Set.Set FilePath -> [FilePath]
 sortDiffListByLength all excludes =
-  sortBy (flip (comparing length)) $ Set.toList (Set.difference all excludes)
+  sortOn (Down . length) $ Set.toList (Set.difference all excludes)
 
 -- | The "hs-source-dirs" for 'ghc-lib-parser' (actually used in two
 -- contexts, 'ghc-lib-parser.cabal' generation and when calculating
@@ -177,14 +177,13 @@ includesDependencies ghcFlavor =
 derivedConstantsDependencies :: GhcFlavor -> [FilePath]
 derivedConstantsDependencies ghcFlavor =
    map (root </>)
-     ([ "DerivedConstants.h"
-      ] ++
-      [ x | ghcFlavor /= GhcMaster
-        , x <- [ "GHCConstantsHaskellExports.hs"
-               , "GHCConstantsHaskellWrappers.hs"
-               , "GHCConstantsHaskellType.hs"
-               ]
-      ]
+     ("DerivedConstants.h"
+      : [ x | ghcFlavor /= GhcMaster
+          , x <- [ "GHCConstantsHaskellExports.hs"
+                 , "GHCConstantsHaskellWrappers.hs"
+                 , "GHCConstantsHaskellType.hs"
+                 ]
+        ]
      )
    where
       root =
@@ -334,8 +333,8 @@ calcParserModules ghcFlavor = do
       -- ghc-lib. We intervene so that rather, they go into
       -- ghc-lib-parser.
       extraModules =
-        [ if ghcFlavor == GhcMaster then "GHC.Parser.Header" else "HeaderInfo"] ++
-        [ if ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102 ] then "GHC.Hs.Dump" else "HsDumpAst"]
+        (if ghcFlavor == GhcMaster then "GHC.Parser.Header" else "HeaderInfo")
+         : [ if ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102 ] then "GHC.Hs.Dump" else "HsDumpAst"]
   return $ nubSort (modules ++ extraModules)
 
 -- Avoid duplicate symbols with HSghc-heap (see issue
@@ -369,7 +368,7 @@ applyPatchHsVersions _ = do
   renameFile "compiler/HsVersions.h" "compiler/GhclibHsVersions.h"
   files <- filter ((`elem` [".hs", ".y", ".hsc"]) . takeExtension) <$> listFilesRecursive "compiler"
   forM_ files $
-    \file -> do
+    \file ->
       writeFile file .
         replace
           "HsVersions.h"
@@ -549,6 +548,7 @@ readCabalFile file = do
         isIf x = "if " `isPrefixOf` trim x
         trimComment x = maybe x fst $ stripInfix "--" x
         f (x : xs) = let (a, b) = break (":" `isSuffixOf`) xs in ((lower x, a), b)
+        f [] = error "readCabalFile: unexpected"
 
 -- | Ask a Cabal file for a field.
 askCabalField :: Cabal -> String -> [String]
@@ -631,7 +631,7 @@ generateGhcLibCabal :: GhcFlavor -> IO ()
 generateGhcLibCabal ghcFlavor = do
     -- Compute the list of modules to be compiled. The rest are parser
     -- modules re-exported from ghc-lib-parser.
-    (lib, bin, parserModules) <- libBinParserModules ghcFlavor
+    (lib, _, parserModules) <- libBinParserModules ghcFlavor
     let nonParserModules =
           Set.toList (Set.difference
           (Set.fromList (askField lib "exposed-modules:" ))
@@ -706,7 +706,7 @@ ghcStageDef _ = "-DSTAGE=2"
 -- | Produces a ghc-lib-parser Cabal file.
 generateGhcLibParserCabal :: GhcFlavor -> IO ()
 generateGhcLibParserCabal ghcFlavor = do
-    (lib, bin, parserModules) <- libBinParserModules ghcFlavor
+    (lib, _, parserModules) <- libBinParserModules ghcFlavor
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
         [ "cabal-version: >=1.22"
         , "build-type: Simple"
@@ -787,7 +787,7 @@ generatePrerequisites ghcFlavor = do
     -- No need to specify a stack.yaml here, we are in the hadrian
     -- directory itself.
     system_ "stack build --no-library-profiling"
-    system_ $ unwords $
+    system_ $ unwords
         ( [ "stack exec hadrian --"
           , "--directory=.."
           , "--build-root=ghc-lib"
