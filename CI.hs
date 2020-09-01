@@ -17,11 +17,8 @@ import Data.Maybe
 import Data.List.Extra
 import Data.Time.Clock
 import Data.Time.Calendar
-import Data.Semigroup ((<>))
 import qualified Data.List
 import qualified Options.Applicative as Opts
-import qualified System.Environment as Env
-import qualified System.Exit as Exit
 
 main :: IO ()
 main = do
@@ -60,7 +57,7 @@ data GhcFlavor = Ghc8101
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "3f50154591ada9064351ccec4adfe6df53ca2439" -- 2020-08-22
+current = "a8a2568b7b64e5b9fca5b12df7da759de4db39ae" -- 2020-09-01
 
 -- Command line argument generators.
 
