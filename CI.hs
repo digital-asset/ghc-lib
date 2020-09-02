@@ -17,7 +17,6 @@ import Data.Maybe
 import Data.List.Extra
 import Data.Time.Clock
 import Data.Time.Calendar
-import qualified Data.List
 import qualified Options.Applicative as Opts
 
 main :: IO ()
