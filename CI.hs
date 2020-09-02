@@ -224,7 +224,7 @@ buildDists
     stack "exec -- ghc --version"
     -- Build ghc-lib-gen. Do this here rather than in the Azure script
     -- so that it's not forgotten when testing this program locally.
-    stack "build --no-terminal build --ghc-options \"-Wall -Wno-name-shadowing -Werror\""
+    stack "build --no-terminal --ghc-options \"-Wall -Wno-name-shadowing -Werror\""
 
     -- Any invocations of GHC in the sdist steps that follow use the
     -- hadrian/stack.yaml resolver (which can and we should expect

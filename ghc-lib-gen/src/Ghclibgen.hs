@@ -333,8 +333,9 @@ calcParserModules ghcFlavor = do
       -- ghc-lib. We intervene so that rather, they go into
       -- ghc-lib-parser.
       extraModules =
-        (if ghcFlavor == GhcMaster then "GHC.Parser.Header" else "HeaderInfo")
-         : [ if ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102 ] then "GHC.Hs.Dump" else "HsDumpAst"]
+        [ if ghcFlavor == GhcMaster then "GHC.Parser.Header" else "HeaderInfo"
+        , if ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102 ] then "GHC.Hs.Dump" else "HsDumpAst"
+        ]
   return $ nubSort (modules ++ extraModules)
 
 -- Avoid duplicate symbols with HSghc-heap (see issue
@@ -548,7 +549,7 @@ readCabalFile file = do
         isIf x = "if " `isPrefixOf` trim x
         trimComment x = maybe x fst $ stripInfix "--" x
         f (x : xs) = let (a, b) = break (":" `isSuffixOf`) xs in ((lower x, a), b)
-        f [] = error "readCabalFile: unexpected"
+        f [] = error "readCabalFile: unexpected empty file"
 
 -- | Ask a Cabal file for a field.
 askCabalField :: Cabal -> String -> [String]
@@ -631,7 +632,7 @@ generateGhcLibCabal :: GhcFlavor -> IO ()
 generateGhcLibCabal ghcFlavor = do
     -- Compute the list of modules to be compiled. The rest are parser
     -- modules re-exported from ghc-lib-parser.
-    (lib, _, parserModules) <- libBinParserModules ghcFlavor
+    (lib, _bin, parserModules) <- libBinParserModules ghcFlavor
     let nonParserModules =
           Set.toList (Set.difference
           (Set.fromList (askField lib "exposed-modules:" ))
@@ -706,7 +707,7 @@ ghcStageDef _ = "-DSTAGE=2"
 -- | Produces a ghc-lib-parser Cabal file.
 generateGhcLibParserCabal :: GhcFlavor -> IO ()
 generateGhcLibParserCabal ghcFlavor = do
-    (lib, _, parserModules) <- libBinParserModules ghcFlavor
+    (lib, _bin, parserModules) <- libBinParserModules ghcFlavor
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
         [ "cabal-version: >=1.22"
         , "build-type: Simple"
@@ -787,14 +788,13 @@ generatePrerequisites ghcFlavor = do
     -- No need to specify a stack.yaml here, we are in the hadrian
     -- directory itself.
     system_ "stack build --no-library-profiling"
-    system_ $ unwords
-        ( [ "stack exec hadrian --"
+    system_ $ unwords $
+        [ "stack exec hadrian --"
           , "--directory=.."
           , "--build-root=ghc-lib"
-          ] ++
-          (if ghcFlavor == GhcMaster then ["--bignum=native"] else ["--integer-simple"]) ++
-          ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) dataFiles
-        )
+        ] ++
+        (if ghcFlavor == GhcMaster then ["--bignum=native"] else ["--integer-simple"]) ++
+        ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) dataFiles
 
   -- We use the hadrian generated Lexer and Parser so get these out
   -- of the way.
