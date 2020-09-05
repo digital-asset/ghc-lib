@@ -28,6 +28,7 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
         init ghcFlavor
         mangleCSymbols ghcFlavor
         applyPatchStage ghcFlavor
+        applyPatchNoMonoLocalBinds ghcFlavor
         generateGhcLibParserCabal ghcFlavor
       Ghclib -> do
         init ghcFlavor

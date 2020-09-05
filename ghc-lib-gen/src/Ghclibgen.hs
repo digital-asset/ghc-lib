@@ -9,6 +9,7 @@ module Ghclibgen (
   , applyPatchDisableCompileTimeOptimizations
   , applyPatchRtsIncludePaths
   , applyPatchStage
+  , applyPatchNoMonoLocalBinds
   , generatePrerequisites
   , mangleCSymbols
   , generateGhcLibCabal
@@ -531,6 +532,23 @@ applyPatchStage ghcFlavor =
     \file ->
       (writeFile file . replace "STAGE >= 2" "0" . replace "STAGE < 2" "1")
       =<< readFile' file
+
+{- The MonoLocalBinds extension in ghc-cabal.in was default enabled
+   02-Sep-2020 in commit
+   https://gitlab.haskell.org/ghc/ghc/-/commit/bfab2a30be5cc68e7914c3f6bb9ae4ad33283ffc.
+   The files (of the ghc-heap boot library):
+     - InfoTable.hsc
+     - InfoTableProf.hsc
+   rely on this extension not being enabled.
+-}
+applyPatchNoMonoLocalBinds :: GhcFlavor -> IO ()
+applyPatchNoMonoLocalBinds _ =
+    forM_ [ "libraries/ghc-heap/GHC/Exts/Heap/InfoTable.hsc"
+          , "libraries/ghc-heap/GHC/Exts/Heap/InfoTableProf.hsc"
+          ] $
+      \file ->
+        (writeFile file . ("{-# LANGUAGE NoMonoLocalBinds #-}\n" ++))
+        =<< readFile' file
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
