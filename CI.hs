@@ -56,7 +56,7 @@ data GhcFlavor = Ghc8101
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "643785e3835de2de6c575e6418db0d4598b72a7d" -- 2020-09-05
+current = "8440b5fa1397940f2f293935927e690b34110a73" -- 2020-09-12
 
 -- Command line argument generators.
 
@@ -314,8 +314,8 @@ buildDists
     stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
     stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs"
     stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
-    stack "--no-terminal exec -- strip-locs examples/mini-compile/test/MiniCompileTest.hs"
-    stack "--no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs"
+    stack "--no-terminal exec -- strip-locs examples/mini-compile/test/MiniCompileTest.hs | tail -10"
+    stack "--no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs | tail -10"
 
 #if __GLASGOW_HASKELL__ == 808 && \
     (__GLASGOW_HASKELL_PATCHLEVEL1__ == 1 || __GLASGOW_HASKELL_PATCHLEVEL1__ == 2) && \
