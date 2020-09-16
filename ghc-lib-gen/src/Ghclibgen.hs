@@ -10,6 +10,7 @@ module Ghclibgen (
   , applyPatchRtsIncludePaths
   , applyPatchStage
   , applyPatchNoMonoLocalBinds
+  , applyPatchCmmParseNoImplicitPrelude
   , generatePrerequisites
   , mangleCSymbols
   , generateGhcLibCabal
@@ -549,6 +550,22 @@ applyPatchNoMonoLocalBinds _ =
       \file ->
         (writeFile file . ("{-# LANGUAGE NoMonoLocalBinds #-}\n" ++))
         =<< readFile' file
+
+{- 'CmmParse.y' on the ghc-8.10.* branches is missing an import. It's
+ unclear why the stack ghc-lib build succeeds (and hence CI) but it
+ certainly does not build with cabal directly -- see
+ https://github.com/digital-asset/ghc-lib/issues/243 for where the
+ problem was first reported. On master, this file has moved to
+ GHC/cmm/Parser.y and already contains the missing directive so
+ nothing to do there. -}
+applyPatchCmmParseNoImplicitPrelude :: GhcFlavor -> IO ()
+applyPatchCmmParseNoImplicitPrelude ghcFlavor =
+  when (ghcFlavor == Ghc8101 || ghcFlavor == Ghc8102) $
+    writeFile "compiler/cmm/CmmParse.y" .
+      replace
+        "import GhcPrelude"
+        "import GhcPrelude\nimport qualified Prelude"
+    =<< readFile' "compiler/cmm/CmmParse.y"
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
