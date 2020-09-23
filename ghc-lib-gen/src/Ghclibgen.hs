@@ -579,19 +579,35 @@ applyPatchCmmParseNoImplicitPrelude ghcFlavor =
 -- function 'appyPatchHadrianStackYaml' guarantees it is available
 -- if its needed.
 
--- Patch Hadrian's Cabal.
+-- | Patch Hadrian's Cabal.
 applyPatchHadrianStackYaml :: GhcFlavor -> IO ()
 applyPatchHadrianStackYaml ghcFlavor = do
-   appendFile "hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-   case ghcFlavor of
-     GhcMaster ->
-       appendFile "hadrian/stack.yaml" $
-       unlines [
-           "extra-deps:"
-         , "  - happy-1.20.0" -- See https://gitlab.haskell.org/ghc/ghc/-/issues/18726.
-         , "  - exceptions-0.10.4" -- See [Note : GHC now depends on exceptions package]
-         ]
-     _ -> pure ()
+ -- Build hadrian (and any artifacts we generate via hadrian e.g.
+ -- Parser.hs) as quickly as possible.
+  update "ghc-options:" ["  \"$everything\": -O0 -j"]
+  -- See [Note : GHC now depends on exceptions package].
+  when (ghcFlavor == GhcMaster) $ update "extra-deps:" ["- exceptions-0.10.4"]
+  where
+   hadrianStackYaml :: String
+   hadrianStackYaml = "hadrian/stack.yaml"
+
+   update :: String -> [String] -> IO ()
+   update fld elems =
+     writeFile hadrianStackYaml .
+       appendOrExtend fld elems
+       =<< readFile' hadrianStackYaml
+
+   -- If there are multiple occurences of a stanza (e.g. 'extra-deps')
+   -- they don't get merged and the last occurence prevails. Thus it's
+   -- important to extend a stanza if one already exists and not just
+   -- append a new one.
+   appendOrExtend :: String -> [String] -> String -> String
+   appendOrExtend fld elems s =
+     let fld' = fld ++ "\n"
+         lines = unlines (fld : elems)
+     in case stripInfix fld' s of
+          Nothing -> s ++ "\n" ++ lines
+          Just _ -> replace fld' lines s
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
