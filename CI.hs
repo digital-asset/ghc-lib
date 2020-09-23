@@ -56,7 +56,7 @@ data GhcFlavor = Ghc8101
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "8440b5fa1397940f2f293935927e690b34110a73" -- 2020-09-12
+current = "057db94ce038970b14df1599fe83097c284b9c1f" -- 2020-09-20
 
 -- Command line argument generators.
 
@@ -234,21 +234,7 @@ buildDists
     let pkg_ghclib = "ghc-lib-" ++ version
         pkg_ghclib_parser = "ghc-lib-parser-" ++ version
 
-    appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-    -- [Note : GHC now depends on exception]
-    -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    -- As of
-    -- https://gitlab.haskell.org/ghc/ghc/-/commit/30272412fa437ab8e7a8035db94a278e10513413
-    -- (4th May 2020), certain GHC modules depend on the exceptions
-    -- package. Depending on the boot compiler, this package may or
-    -- may not be present and if it's missing, determining the list of
-    -- ghc-lib-parser modules (via 'calcParserModules') will fail. The
-    -- following guarantees it is available if its needed.
-    case ghcFlavor of
-      GhcMaster _ -> appendFile "ghc/hadrian/stack.yaml" $ unlines ["extra-deps:", "  - exceptions-0.10.4"]
-      _ -> pure ()
-
-    -- Feedback on the compiler used for ghc-lib-gen.
+    -- Make and extract an sdist of ghc-lib-parser.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser
@@ -258,8 +244,6 @@ buildDists
 
     -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
-    appendFile "ghc/hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-    -- Feedback on the compiler used for ghc-lib-gen.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraint version "ghc/ghc-lib.cabal"

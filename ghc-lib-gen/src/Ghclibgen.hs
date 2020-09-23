@@ -11,6 +11,7 @@ module Ghclibgen (
   , applyPatchStage
   , applyPatchNoMonoLocalBinds
   , applyPatchCmmParseNoImplicitPrelude
+  , applyPatchHadrianStackYaml
   , generatePrerequisites
   , mangleCSymbols
   , generateGhcLibCabal
@@ -287,7 +288,7 @@ calcParserModules ghcFlavor = do
   let includeDirs = map ("-I" ++ ) (ghcLibParserIncludeDirs ghcFlavor)
       hsSrcDirs = ghcLibParserHsSrcDirs True ghcFlavor lib
       hsSrcIncludes = map ("-i" ++ ) hsSrcDirs
-      -- See [Note: GHC now depends on exceptions].
+      -- See [Note: GHC now depends on exceptions package].
       cmd = unwords $
         [ "stack exec" ] ++
         [ "--package exceptions" | ghcFlavor == GhcMaster ] ++
@@ -566,6 +567,31 @@ applyPatchCmmParseNoImplicitPrelude ghcFlavor =
         "import GhcPrelude"
         "import GhcPrelude\nimport qualified Prelude"
     =<< readFile' "compiler/cmm/CmmParse.y"
+
+-- [Note : GHC now depends on exceptions package]
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- As of
+-- https://gitlab.haskell.org/ghc/ghc/-/commit/30272412fa437ab8e7a8035db94a278e10513413
+-- (4th May 2020), certain GHC modules depend on the exceptions
+-- package. Depending on the boot compiler, this package may or may
+-- not be present and if it's missing, determining the list of
+-- ghc-lib-parser modules (via 'calcParserModules') will fail. The
+-- function 'appyPatchHadrianStackYaml' guarantees it is available
+-- if its needed.
+
+-- Patch Hadrian's Cabal.
+applyPatchHadrianStackYaml :: GhcFlavor -> IO ()
+applyPatchHadrianStackYaml ghcFlavor = do
+   appendFile "hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
+   case ghcFlavor of
+     GhcMaster ->
+       appendFile "hadrian/stack.yaml" $
+       unlines [
+           "extra-deps:"
+         , "  - happy-1.20.0" -- See https://gitlab.haskell.org/ghc/ghc/-/issues/18726.
+         , "  - exceptions-0.10.4" -- See [Note : GHC now depends on exceptions package]
+         ]
+     _ -> pure ()
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
