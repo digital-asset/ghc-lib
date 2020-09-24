@@ -2,6 +2,9 @@
 -- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+
 module Ghclibgen (
     applyPatchHeapClosures
   , applyPatchHsVersions
@@ -29,6 +32,12 @@ import Data.Char
 import Data.Maybe
 import Data.Ord
 import qualified Data.Set as Set
+
+import qualified Data.Text as T
+import qualified Data.Yaml as Y
+import Data.Yaml (FromJSON(..), ToJSON(..), (.:?), (.!=))
+import qualified Data.ByteString as B
+import qualified Data.HashMap.Strict as HMS
 
 import GhclibgenOpts
 
@@ -579,35 +588,40 @@ applyPatchCmmParseNoImplicitPrelude ghcFlavor =
 -- function 'appyPatchHadrianStackYaml' guarantees it is available
 -- if its needed.
 
+data HadrianStackYaml =
+  HadrianStackYaml {
+      extraDeps :: [T.Text]
+    , ghcOptions :: HMS.HashMap T.Text T.Text
+    , otherFields :: Y.Object
+  } deriving (Eq, Show)
+
+instance FromJSON HadrianStackYaml where
+  parseJSON (Y.Object v) =
+    HadrianStackYaml
+    <$> v .:? "extra-deps" .!= []
+    <*> v .:? "ghc-options" .!= HMS.empty
+    <*> pure (HMS.delete "ghc-options" (HMS.delete "extra-deps" v))
+  parseJSON _ = fail "Expected Object for HadrianStackYaml value"
+
+instance ToJSON HadrianStackYaml where
+  toJSON HadrianStackYaml{..} = Y.Object
+    (HMS.insert "extra-deps" (toJSON extraDeps)
+    (HMS.insert "ghc-options" (toJSON ghcOptions)
+    otherFields)
+    )
+
 -- | Patch Hadrian's Cabal.
 applyPatchHadrianStackYaml :: GhcFlavor -> IO ()
 applyPatchHadrianStackYaml ghcFlavor = do
+  let hadrianStackYaml = "hadrian/stack.yaml"
+  bytes <- B.readFile hadrianStackYaml
+  config <- Y.decodeThrow bytes
  -- Build hadrian (and any artifacts we generate via hadrian e.g.
  -- Parser.hs) as quickly as possible.
-  update "ghc-options:" ["  \"$everything\": -O0 -j"]
-  -- See [Note : GHC now depends on exceptions package].
-  when (ghcFlavor == GhcMaster) $ update "extra-deps:" ["- exceptions-0.10.4"]
-  where
-   hadrianStackYaml :: String
-   hadrianStackYaml = "hadrian/stack.yaml"
-
-   update :: String -> [String] -> IO ()
-   update fld elems =
-     writeFile hadrianStackYaml .
-       appendOrExtend fld elems
-       =<< readFile' hadrianStackYaml
-
-   -- If there are multiple occurences of a stanza (e.g. 'extra-deps')
-   -- they don't get merged and the last occurence prevails. Thus it's
-   -- important to extend a stanza if one already exists and not just
-   -- append a new one.
-   appendOrExtend :: String -> [String] -> String -> String
-   appendOrExtend fld elems s =
-     let fld' = fld ++ "\n"
-         lines = unlines (fld : elems)
-     in case stripInfix fld' s of
-          Nothing -> s ++ "\n" ++ lines
-          Just _ -> replace fld' lines s
+  let opts = HMS.insert "$everything" "-O0 -j" (ghcOptions config)
+  -- See [Note : GHC now depends on exceptions package]
+  let deps = [x | ghcFlavor == GhcMaster, x <- ["exceptions-0.10.4"]] ++ extraDeps config
+  B.writeFile hadrianStackYaml $ Y.encode config{ extraDeps=deps, ghcOptions=opts }
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
