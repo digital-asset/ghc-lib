@@ -35,6 +35,7 @@ import qualified Data.Set as Set
 
 import qualified Data.Text as T
 import qualified Data.Yaml as Y
+import qualified Data.Yaml.Pretty as Y
 import Data.Yaml (FromJSON(..), ToJSON(..), (.:?), (.!=))
 import qualified Data.ByteString as B
 import qualified Data.HashMap.Strict as HMS
@@ -590,7 +591,7 @@ applyPatchCmmParseNoImplicitPrelude ghcFlavor =
 
 data HadrianStackYaml =
   HadrianStackYaml {
-      extraDeps :: [T.Text]
+      extraDeps :: [Y.Value]
     , ghcOptions :: HMS.HashMap T.Text T.Text
     , otherFields :: Y.Object
   } deriving (Eq, Show)
@@ -620,8 +621,10 @@ applyPatchHadrianStackYaml ghcFlavor = do
  -- Parser.hs) as quickly as possible.
   let opts = HMS.insert "$everything" "-O0 -j" (ghcOptions config)
   -- See [Note : GHC now depends on exceptions package]
-  let deps = [x | ghcFlavor == GhcMaster, x <- ["exceptions-0.10.4"]] ++ extraDeps config
-  B.writeFile hadrianStackYaml $ Y.encode config{ extraDeps=deps, ghcOptions=opts }
+  let deps = [x | ghcFlavor == GhcMaster, x <- [toJSON (T.pack "exceptions-0.10.4")]] ++ extraDeps config
+  B.writeFile hadrianStackYaml $
+    Y.encodePretty (Y.setConfCompare compare (Y.setConfDropNull True Y.defConfig))
+    config{extraDeps=deps, ghcOptions=opts}
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal

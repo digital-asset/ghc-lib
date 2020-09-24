@@ -21,7 +21,7 @@ library
                      , directory
                      , optparse-applicative
                      , bytestring
-                     , yaml >= 0.11.5.0
+                     , yaml
                      , text
                      , unordered-containers
                      , extra >=1.6

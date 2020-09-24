@@ -1,8 +1,5 @@
 resolver: lts-16.14 # ghc-8.8.4
 
-extra-deps:
-- yaml-0.11.5.0
-
 ghc-options:
   # try and speed up recompilation on the CI server
   "$everything": -O0 -j
