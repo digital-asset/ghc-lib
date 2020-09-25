@@ -3,7 +3,6 @@
 -- (Apache-2.0 OR BSD-3-Clause)
 
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Ghclibgen (
     applyPatchHeapClosures
@@ -34,10 +33,9 @@ import Data.Ord
 import qualified Data.Set as Set
 
 import qualified Data.Text as T
+import Data.Aeson.Types(parse, Result(..))
 import qualified Data.Yaml as Y
-import qualified Data.Yaml.Pretty as Y
-import Data.Yaml (FromJSON(..), ToJSON(..), (.:?), (.!=))
-import qualified Data.ByteString as B
+import Data.Yaml (ToJSON(..), (.:?), (.!=))
 import qualified Data.HashMap.Strict as HMS
 
 import GhclibgenOpts
@@ -589,42 +587,24 @@ applyPatchCmmParseNoImplicitPrelude ghcFlavor =
 -- function 'appyPatchHadrianStackYaml' guarantees it is available
 -- if its needed.
 
-data HadrianStackYaml =
-  HadrianStackYaml {
-      extraDeps :: [Y.Value]
-    , ghcOptions :: HMS.HashMap T.Text T.Text
-    , otherFields :: Y.Object
-  } deriving (Eq, Show)
-
-instance FromJSON HadrianStackYaml where
-  parseJSON (Y.Object v) =
-    HadrianStackYaml
-    <$> v .:? "extra-deps" .!= []
-    <*> v .:? "ghc-options" .!= HMS.empty
-    <*> pure (HMS.delete "ghc-options" (HMS.delete "extra-deps" v))
-  parseJSON _ = fail "Expected Object for HadrianStackYaml value"
-
-instance ToJSON HadrianStackYaml where
-  toJSON HadrianStackYaml{..} = Y.Object
-    (HMS.insert "extra-deps" (toJSON extraDeps)
-    (HMS.insert "ghc-options" (toJSON ghcOptions)
-    otherFields)
-    )
-
 -- | Patch Hadrian's Cabal.
 applyPatchHadrianStackYaml :: GhcFlavor -> IO ()
 applyPatchHadrianStackYaml ghcFlavor = do
   let hadrianStackYaml = "hadrian/stack.yaml"
-  bytes <- B.readFile hadrianStackYaml
-  config <- Y.decodeThrow bytes
+  config <- Y.decodeFileThrow hadrianStackYaml
+  -- See [Note : GHC now depends on exceptions package]
+  let deps = ["exceptions-0.10.4" | ghcFlavor == GhcMaster] ++
+        case parse (\cfg -> cfg .:? "extra-deps" .!= []) config of
+          Success ls -> ls :: [Y.Value]
+          Error msg -> error msg
  -- Build hadrian (and any artifacts we generate via hadrian e.g.
  -- Parser.hs) as quickly as possible.
-  let opts = HMS.insert "$everything" "-O0 -j" (ghcOptions config)
-  -- See [Note : GHC now depends on exceptions package]
-  let deps = [x | ghcFlavor == GhcMaster, x <- [toJSON (T.pack "exceptions-0.10.4")]] ++ extraDeps config
-  B.writeFile hadrianStackYaml $
-    Y.encodePretty (Y.setConfCompare compare (Y.setConfDropNull True Y.defConfig))
-    config{extraDeps=deps, ghcOptions=opts}
+  let opts = HMS.insert "$everything" "-O0 -j" $
+        case parse (\cfg -> cfg .:? "ghc-options" .!= HMS.empty) config of
+          Success os -> os :: HMS.HashMap T.Text Y.Value
+          Error msg -> error msg
+  let config' = HMS.insert "extra-deps" (toJSON deps) (HMS.insert "ghc-options" (toJSON opts) config)
+  Y.encodeFile hadrianStackYaml config'
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
