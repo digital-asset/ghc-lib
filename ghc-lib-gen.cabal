@@ -20,6 +20,11 @@ library
                      , containers
                      , directory
                      , optparse-applicative
+                     , bytestring
+                     , yaml
+                     , aeson
+                     , text
+                     , unordered-containers
                      , extra >=1.6
   hs-source-dirs:    ghc-lib-gen/src
   exposed-modules:   Ghclibgen

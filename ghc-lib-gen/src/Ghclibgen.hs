@@ -2,6 +2,8 @@
 -- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
+{-# LANGUAGE OverloadedStrings #-}
+
 module Ghclibgen (
     applyPatchHeapClosures
   , applyPatchHsVersions
@@ -29,6 +31,12 @@ import Data.Char
 import Data.Maybe
 import Data.Ord
 import qualified Data.Set as Set
+
+import qualified Data.Text as T
+import Data.Aeson.Types(parse, Result(..))
+import qualified Data.Yaml as Y
+import Data.Yaml (ToJSON(..), (.:?), (.!=))
+import qualified Data.HashMap.Strict as HMS
 
 import GhclibgenOpts
 
@@ -579,19 +587,24 @@ applyPatchCmmParseNoImplicitPrelude ghcFlavor =
 -- function 'appyPatchHadrianStackYaml' guarantees it is available
 -- if its needed.
 
--- Patch Hadrian's Cabal.
+-- | Patch Hadrian's Cabal.
 applyPatchHadrianStackYaml :: GhcFlavor -> IO ()
 applyPatchHadrianStackYaml ghcFlavor = do
-   appendFile "hadrian/stack.yaml" $ unlines ["ghc-options:","  \"$everything\": -O0 -j"]
-   case ghcFlavor of
-     GhcMaster ->
-       appendFile "hadrian/stack.yaml" $
-       unlines [
-           "extra-deps:"
-         , "  - happy-1.20.0" -- See https://gitlab.haskell.org/ghc/ghc/-/issues/18726.
-         , "  - exceptions-0.10.4" -- See [Note : GHC now depends on exceptions package]
-         ]
-     _ -> pure ()
+  let hadrianStackYaml = "hadrian/stack.yaml"
+  config <- Y.decodeFileThrow hadrianStackYaml
+  -- See [Note : GHC now depends on exceptions package]
+  let deps = ["exceptions-0.10.4" | ghcFlavor == GhcMaster] ++
+        case parse (\cfg -> cfg .:? "extra-deps" .!= []) config of
+          Success ls -> ls :: [Y.Value]
+          Error msg -> error msg
+ -- Build hadrian (and any artifacts we generate via hadrian e.g.
+ -- Parser.hs) as quickly as possible.
+  let opts = HMS.insert "$everything" "-O0 -j" $
+        case parse (\cfg -> cfg .:? "ghc-options" .!= HMS.empty) config of
+          Success os -> os :: HMS.HashMap T.Text Y.Value
+          Error msg -> error msg
+  let config' = HMS.insert "extra-deps" (toJSON deps) (HMS.insert "ghc-options" (toJSON opts) config)
+  Y.encodeFile hadrianStackYaml config'
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
