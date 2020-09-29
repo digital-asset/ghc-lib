@@ -13,16 +13,20 @@ module Main (main) where
 #  define GHC_MASTER
 #endif
 
+#if MIN_VERSION_ghc_lib_parser(9,0,1)
+#  define GHC_901
+#endif
+
 #if MIN_VERSION_ghc_lib_parser(8,10,1)
 #  define GHC_8101
 #endif
 
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Hs
 #else
 import "ghc-lib-parser" HsSyn
 #endif
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
 import "ghc-lib-parser" GHC.Settings.Config
 import "ghc-lib-parser" GHC.Driver.Session
 import "ghc-lib-parser" GHC.Data.StringBuffer
@@ -33,7 +37,9 @@ import "ghc-lib-parser" GHC.Utils.Error
 import qualified "ghc-lib-parser" GHC.Parser
 import "ghc-lib-parser" GHC.Data.FastString
 import "ghc-lib-parser" GHC.Utils.Outputable
+#  if !defined (GHC_901)
 import "ghc-lib-parser" GHC.Driver.Ppr
+#  endif
 import "ghc-lib-parser" GHC.Types.SrcLoc
 import "ghc-lib-parser" GHC.Utils.Panic
 import "ghc-lib-parser" GHC.Driver.Types
@@ -56,12 +62,12 @@ import "ghc-lib-parser" HscTypes
 import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" ApiAnnotation
 #endif
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
 import "ghc-lib-parser" GHC.Settings
 #elif defined (GHC_8101)
 import "ghc-lib-parser" ToolSettings
 #endif
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Platform
 #else
 import "ghc-lib-parser" Bag
@@ -94,7 +100,7 @@ fakeSettings = Settings
   }
 #endif
   where
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
     toolSettings = ToolSettings {
       toolSettings_opt_P_fingerprint=fingerprint0
       }
@@ -107,7 +113,7 @@ fakeSettings = Settings
 #endif
     platform =
       Platform{
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
     -- It doesn't matter what values we write here as these fields are
     -- not referenced for our purposes. However the fields are strict
     -- so we must say something.
@@ -118,7 +124,9 @@ fakeSettings = Settings
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
       , platformTablesNextToCode=False
+#if !defined(GHC_901)
       , platformConstants=platformConstants
+#endif
       ,
 #endif
 #if defined(GHC_MASTER)
@@ -136,7 +144,7 @@ fakeSettings = Settings
     platformConstants =
       PlatformConstants{pc_DYNAMIC_BY_DEFAULT=False,pc_WORD_SIZE=8}
 
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined(GHC_901) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
 fakeLlvmConfig = LlvmConfig [] []
 #else
@@ -144,13 +152,13 @@ fakeLlvmConfig :: (LlvmTargets, LlvmPasses)
 fakeLlvmConfig = ([], [])
 #endif
 
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
 parse :: String -> DynFlags -> String -> ParseResult (Located HsModule)
 #else
 parse :: String -> DynFlags -> String -> ParseResult (Located (HsModule GhcPs))
 #endif
 parse filename flags str =
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
   unP GHC.Parser.parseModule parseState
 #else
   unP Parser.parseModule parseState
@@ -190,7 +198,7 @@ analyzeExpr flags (L loc expr) =
                       ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
     _ -> return ()
 
-#if defined(GHC_MASTER)
+#if defined(GHC_MASTER) || defined (GHC_901)
 analyzeModule :: DynFlags -> Located HsModule -> ApiAnns -> IO ()
 #else
 analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> ApiAnns -> IO ()
@@ -230,7 +238,7 @@ main = do
         | msg <- pprErrMsgBagWithLoc msgs
         ]
     harvestAnns pst =
-#if defined(GHC_MASTER)
+#if defined(GHC_MASTER) || defined (GHC_901)
       ApiAnns
         (Map.fromListWith (++) $ annotations pst)
         Nothing

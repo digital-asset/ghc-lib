@@ -12,20 +12,26 @@ module Main (main) where
 #  define GHC_MASTER
 #endif
 
+#if MIN_VERSION_ghc_lib(9,0,1)
+#  define GHC_901
+#endif
+
 #if MIN_VERSION_ghc_lib(8,10,1)
 #  define GHC_8101
 #endif
 
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
 import "ghc-lib-parser" GHC.Parser.Header
 import "ghc-lib-parser" GHC.Unit.Module
 import "ghc-lib-parser" GHC.Driver.Session
 import "ghc-lib-parser" GHC.Data.StringBuffer
 import "ghc-lib-parser" GHC.Utils.Fingerprint
 import "ghc-lib-parser" GHC.Utils.Outputable
+#  if !defined(GHC_901)
 import "ghc-lib-parser" GHC.Driver.Ppr
+#  endif
 #else
 import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" Module
@@ -34,14 +40,14 @@ import "ghc-lib-parser" StringBuffer
 import "ghc-lib-parser" Fingerprint
 import "ghc-lib-parser" Outputable
 #endif
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
 import "ghc-lib-parser" GHC.Settings
 import "ghc-lib-parser" GHC.Settings.Config
 #elif defined (GHC_8101)
 import "ghc-lib-parser" Config
 import "ghc-lib-parser" ToolSettings
 #endif
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Platform
 #else
 import "ghc-lib-parser" Config
@@ -83,12 +89,12 @@ mkDynFlags filename s = do
   let baseFlags =
         (defaultDynFlags fakeSettings fakeLlvmConfig) {
           ghcLink = NoLink
-#if defined(GHC_MASTER)
+#if defined( GHC_MASTER)
         , backend = NoBackend
 #else
         , hscTarget = HscNothing
 #endif
-#if defined(GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
         , unitDatabases = Just []
 #else
         , pkgDatabase = Just []
@@ -101,6 +107,8 @@ mkDynFlags filename s = do
 #else
 #if defined (GHC_MASTER)
         , homeUnitId_ = toUnitId (stringToUnit "ghc-prim")
+#elif defined (GHC_901)
+        , homeUnitId = toUnitId (stringToUnit "ghc-prim")
 #else
         , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "ghc-prim")
 #endif
@@ -114,7 +122,7 @@ mkDynFlags filename s = do
       (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
       return dflags
 
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
 fakeLlvmConfig = LlvmConfig [] []
 #else
@@ -124,7 +132,7 @@ fakeLlvmConfig = ([], [])
 
 fakeSettings :: Settings
 fakeSettings = Settings
-#if !defined (GHC_MASTER) && !defined (GHC_8101)
+#if !defined (GHC_MASTER) && !defined (GHC_901) && !defined (GHC_8101)
   { sTargetPlatform=platform
   , sPlatformConstants=platformConstants
   , sProjectVersion=cProjectVersion
@@ -142,10 +150,10 @@ fakeSettings = Settings
   }
 #endif
   where
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
     fileSettings = FileSettings {
         fileSettings_tmpDir="."
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
       , fileSettings_topDir="."
       , fileSettings_toolDir=Nothing
       , fileSettings_ghcUsagePath="."
@@ -158,7 +166,7 @@ fakeSettings = Settings
         toolSettings_opt_P_fingerprint=fingerprint0
       }
     platformMisc = PlatformMisc {
-#if !defined (GHC_MASTER)
+#if !defined (GHC_MASTER) && !defined (GHC_901)
         platformMisc_integerLibraryType=IntegerSimple
 #endif
       }
@@ -170,7 +178,7 @@ fakeSettings = Settings
 #endif
     platform =
       Platform{
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
       -- It doesn't matter what values we write here as these fields are
       -- not referenced for our purposes. However the fields are strict
       -- so we must say something.
@@ -181,10 +189,12 @@ fakeSettings = Settings
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
       , platformTablesNextToCode=False
+#if !defined(GHC_901)
       , platformConstants=platformConstants
+#endif
       ,
 #endif
-#if defined(GHC_MASTER)
+#if defined (GHC_MASTER)
         platformWordSize=PW8
       , platformArchOS=ArchOS {archOS_arch=ArchUnknown, archOS_OS=OSUnknown}
 #elif defined (GHC_8101)

@@ -44,7 +44,8 @@ data StackOptions = StackOptions
     , ghcOptions :: Maybe String -- If 'Just _', pass '--ghc-options="xxx"' to 'stack build' (for ghc verbose, try 'v3').
     } deriving (Show)
 
-data GhcFlavor = Ghc8101
+data GhcFlavor = Ghc901
+               | Ghc8101
                | Ghc8102
                | Ghc881
                | Ghc882
@@ -72,6 +73,7 @@ stackResolverOpt = \case
 
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
+    Ghc901 -> "--ghc-flavor ghc-9.0.1"
     Ghc8101 -> "--ghc-flavor ghc-8.10.1"
     Ghc8102 -> "--ghc-flavor ghc-8.10.2"
     Ghc881 -> "--ghc-flavor ghc-8.8.1"
@@ -99,6 +101,7 @@ ghcOptionsOpt = \case
 genVersionStr :: GhcFlavor -> (Day -> String)
 genVersionStr = \case
    GhcMaster _ -> \day -> "0." ++ replace "-" "" (showGregorian day)
+   Ghc901      -> \day -> "9.0.1." ++ replace "-" "" (showGregorian day)
    Ghc8101     -> \day -> "8.10.1." ++ replace "-" "" (showGregorian day)
    Ghc8102     -> \day -> "8.10.2." ++ replace "-" "" (showGregorian day)
    Ghc882      -> \day -> "8.8.2." ++ replace "-" "" (showGregorian day)
@@ -118,6 +121,7 @@ parseOptions = Options
  where
    readFlavor :: Opts.ReadM GhcFlavor
    readFlavor = Opts.eitherReader $ \case
+       "ghc-9.0.1" -> Right Ghc901
        "ghc-8.10.1" -> Right Ghc8101
        "ghc-8.10.2" -> Right Ghc8102
        "ghc-8.8.1" -> Right Ghc881
@@ -188,7 +192,7 @@ buildDists
     filesInDot <- getDirectoryContents "."
     let lockFiles = filter (isExtensionOf ".lock") filesInDot
         tarBalls  = filter (isExtensionOf ".tar.gz") filesInDot
-        ghcDirs   = ["ghc", "ghc-lib", "ghc-lib-parser"]
+        ghcDirs   = [ "ghc", "ghc-lib", "ghc-lib-parser" ]
         toDelete  = ghcDirs ++ tarBalls ++ lockFiles
     forM_ toDelete removePath
     cmd $ "git checkout " ++ stackConfig
@@ -204,6 +208,7 @@ buildDists
     -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
     case ghcFlavor of
+        Ghc901 -> cmd "cd ghc && git fetch --tags && git checkout ghc-9.0"
         Ghc8101 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.1-release"
         Ghc8102 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.2-release"
         Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
@@ -235,6 +240,8 @@ buildDists
         pkg_ghclib_parser = "ghc-lib-parser-" ++ version
 
     -- Make and extract an sdist of ghc-lib-parser.
+    cmd "cd ghc && git checkout ."
+
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser
