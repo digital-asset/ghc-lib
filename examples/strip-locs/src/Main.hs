@@ -13,16 +13,20 @@ module Main (main) where
 #  define GHC_MASTER
 #endif
 
+#if MIN_VERSION_ghc_lib_parser(9,0,1)
+#  define GHC_901
+#endif
+
 #if MIN_VERSION_ghc_lib_parser(8,10,1)
 #  define GHC_8101
 #endif
 
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Hs
 #else
 import "ghc-lib-parser" HsSyn
 #endif
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
 import "ghc-lib-parser" GHC.Settings.Config
 import "ghc-lib-parser" GHC.Driver.Session
 import "ghc-lib-parser" GHC.Data.StringBuffer
@@ -33,7 +37,9 @@ import "ghc-lib-parser" GHC.Utils.Error
 import qualified "ghc-lib-parser" GHC.Parser
 import "ghc-lib-parser" GHC.Data.FastString
 import "ghc-lib-parser" GHC.Utils.Outputable
+#if !defined (GHC_901)
 import "ghc-lib-parser" GHC.Driver.Ppr
+#endif
 import "ghc-lib-parser" GHC.Types.SrcLoc
 import "ghc-lib-parser" GHC.Utils.Panic
 import "ghc-lib-parser" GHC.Driver.Types
@@ -56,18 +62,18 @@ import "ghc-lib-parser" HscTypes
 import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" ApiAnnotation
 #endif
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
 import "ghc-lib-parser" GHC.Settings
 #elif defined (GHC_8101)
 import "ghc-lib-parser" ToolSettings
 #endif
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Platform
 #else
 import "ghc-lib-parser" Bag
 import "ghc-lib-parser" Platform
 #endif
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Hs.Dump
 #else
 import "ghc-lib-parser" HsDumpAst
@@ -82,7 +88,7 @@ import Data.Generics.Uniplate.Data
 
 fakeSettings :: Settings
 fakeSettings = Settings
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
   { sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
@@ -100,7 +106,7 @@ fakeSettings = Settings
 #endif
   where
 
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
     toolSettings = ToolSettings {
       toolSettings_opt_P_fingerprint=fingerprint0
       }
@@ -113,7 +119,7 @@ fakeSettings = Settings
 #endif
     platform =
       Platform {
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
     -- It doesn't matter what values we write here as these fields are
     -- not referenced for our purposes. However the fields are strict
     -- so we must say something.
@@ -124,10 +130,12 @@ fakeSettings = Settings
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
       , platformTablesNextToCode=False
+#if !defined(GHC_901)
       , platformConstants=platformConstants
+#endif
       ,
 #endif
-#if defined(GHC_MASTER)
+#if defined (GHC_MASTER)
         platformWordSize=PW8
       , platformArchOS=ArchOS {archOS_arch=ArchUnknown, archOS_OS=OSUnknown}
 #elif defined (GHC_8101)
@@ -142,7 +150,7 @@ fakeSettings = Settings
     platformConstants =
       PlatformConstants{pc_DYNAMIC_BY_DEFAULT=False,pc_WORD_SIZE=8}
 
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
 fakeLlvmConfig = LlvmConfig [] []
 #else
@@ -150,13 +158,13 @@ fakeLlvmConfig :: (LlvmTargets, LlvmPasses)
 fakeLlvmConfig = ([], [])
 #endif
 
-#if defined(GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
 parse :: String -> DynFlags -> String -> ParseResult (Located HsModule)
 #else
 parse :: String -> DynFlags -> String -> ParseResult (Located (HsModule GhcPs))
 #endif
 parse filename flags str =
-#if defined(GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
   unP GHC.Parser.parseModule parseState
 #else
   unP Parser.parseModule parseState
@@ -178,19 +186,19 @@ parsePragmasIntoDynFlags flags filepath str =
                         (handleSourceError reportErr act)
     reportErr e = do putStrLn $ "error : " ++ show e; return Nothing
 
-#if defined(GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
 dumpParseTree :: DynFlags -> Located HsModule -> IO ()
 #else
 dumpParseTree :: DynFlags -> Located (HsModule GhcPs) -> IO ()
 #endif
 dumpParseTree flags m =
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
   dumpAction flags (mkDumpStyle alwaysQualify) (dumpOptionsFromFlag Opt_D_dump_parsed_ast) "" FormatText $ showAstData NoBlankSrcSpan m
 #else
   dumpSDoc flags alwaysQualify Opt_D_dump_parsed_ast "" $ showAstData NoBlankSrcSpan m
 #endif
 
-#if defined(GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
 stripLocs :: Located HsModule -> Located HsModule
 #else
 stripLocs :: Located (HsModule GhcPs) -> Located (HsModule GhcPs)
@@ -208,7 +216,7 @@ main = do
           (defaultDynFlags fakeSettings fakeLlvmConfig) file s
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
             PFailed s ->
               report flags $ snd (getMessages s flags)
 #else
@@ -228,7 +236,7 @@ main = do
         | msg <- pprErrMsgBagWithLoc msgs
         ]
     harvestAnns pst =
-#if defined(GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_901)
       ApiAnns
         (Map.fromListWith (++) $ annotations pst)
         Nothing
