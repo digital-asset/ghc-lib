@@ -11,15 +11,12 @@ module Main (main) where
 -- We use 0.x for HEAD
 #if !MIN_VERSION_ghc_lib_parser(1,0,0)
 #  define GHC_MASTER
-#endif
-
-#if MIN_VERSION_ghc_lib_parser(9,0,1)
+#elif MIN_VERSION_ghc_lib_parser(9,0,0)
 #  define GHC_901
-#endif
-
-#if MIN_VERSION_ghc_lib_parser(8,10,1)
+#elif MIN_VERSION_ghc_lib_parser(8,10,1)
 #  define GHC_8101
 #endif
+
 
 #if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Hs
@@ -138,7 +135,7 @@ fakeSettings = Settings
 #if defined (GHC_MASTER)
         platformWordSize=PW8
       , platformArchOS=ArchOS {archOS_arch=ArchUnknown, archOS_OS=OSUnknown}
-#elif defined (GHC_8101)
+#elif defined (GHC_8101) || defined (GHC_901)
         platformWordSize=PW8
       , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
 #else
