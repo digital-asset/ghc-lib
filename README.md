@@ -62,6 +62,10 @@ Building `ghc-lib` is subject to the same minimum version requirements that appl
 | ghc-8.10.* | 8.6.5      |
 | ghc-8.11.* | 8.8.1      |
 
+### How do I use the `ghc-lib`/`ghc-lib-parser` version macros?
+
+Read the [Standard CPP macros](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/phases.html#standard-cpp-macros) section of the GHC users guide for the semantics of the `MIN_VERSION_pkgname(x, y, z)` macros and keep in mind that builds of `ghc-lib-parser`/`ghc-lib` from GHC head are ascribed version numbers of the form *0.α*.
+
 # Building `ghc-lib` for DAML
 
 The [`CI.hs`](CI.hs) script has special support for building custom versions of
