@@ -11,13 +11,9 @@ module Main (main) where
 -- We use 0.x for HEAD
 #if !MIN_VERSION_ghc_lib_parser(1,0,0)
 #  define GHC_MASTER
-#endif
-
-#if MIN_VERSION_ghc_lib_parser(9,0,1)
+#elif MIN_VERSION_ghc_lib_parser(9,0,0)
 #  define GHC_901
-#endif
-
-#if MIN_VERSION_ghc_lib_parser(8,10,1)
+#elif MIN_VERSION_ghc_lib_parser(8,10,1)
 #  define GHC_8101
 #endif
 
@@ -83,7 +79,7 @@ import Data.Generics.Uniplate.Data
 
 fakeSettings :: Settings
 fakeSettings = Settings
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
   { sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
@@ -124,15 +120,15 @@ fakeSettings = Settings
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
       , platformTablesNextToCode=False
-#if !defined(GHC_901)
+#if !defined (GHC_901)
       , platformConstants=platformConstants
 #endif
       ,
 #endif
-#if defined(GHC_MASTER)
+#if defined (GHC_MASTER)
         platformWordSize=PW8
       , platformArchOS=ArchOS {archOS_arch=ArchUnknown, archOS_OS=OSUnknown}
-#elif defined (GHC_8101)
+#elif defined (GHC_8101) || defined (GHC_901)
         platformWordSize=PW8
       , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
 #else
@@ -144,7 +140,7 @@ fakeSettings = Settings
     platformConstants =
       PlatformConstants{pc_DYNAMIC_BY_DEFAULT=False,pc_WORD_SIZE=8}
 
-#if defined (GHC_MASTER) || defined(GHC_901) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
 fakeLlvmConfig = LlvmConfig [] []
 #else
@@ -198,7 +194,7 @@ analyzeExpr flags (L loc expr) =
                       ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
     _ -> return ()
 
-#if defined(GHC_MASTER) || defined (GHC_901)
+#if defined (GHC_MASTER) || defined (GHC_901)
 analyzeModule :: DynFlags -> Located HsModule -> ApiAnns -> IO ()
 #else
 analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> ApiAnns -> IO ()
@@ -217,7 +213,7 @@ main = do
           (defaultDynFlags fakeSettings fakeLlvmConfig) file s
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
-#if defined (GHC_MASTER) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
             PFailed s ->
               report flags $ snd (getMessages s flags)
 #else
@@ -238,7 +234,7 @@ main = do
         | msg <- pprErrMsgBagWithLoc msgs
         ]
     harvestAnns pst =
-#if defined(GHC_MASTER) || defined (GHC_901)
+#if defined (GHC_MASTER) || defined (GHC_901)
       ApiAnns
         (Map.fromListWith (++) $ annotations pst)
         Nothing

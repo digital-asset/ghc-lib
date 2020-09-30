@@ -10,13 +10,9 @@ module Main (main) where
 -- We use 0.x for HEAD
 #if !MIN_VERSION_ghc_lib(1,0,0)
 #  define GHC_MASTER
-#endif
-
-#if MIN_VERSION_ghc_lib(9,0,1)
+#elif MIN_VERSION_ghc_lib(9,0,0)
 #  define GHC_901
-#endif
-
-#if MIN_VERSION_ghc_lib(8,10,1)
+#elif MIN_VERSION_ghc_lib(8,10,1)
 #  define GHC_8101
 #endif
 
@@ -29,7 +25,7 @@ import "ghc-lib-parser" GHC.Driver.Session
 import "ghc-lib-parser" GHC.Data.StringBuffer
 import "ghc-lib-parser" GHC.Utils.Fingerprint
 import "ghc-lib-parser" GHC.Utils.Outputable
-#  if !defined(GHC_901)
+#  if !defined (GHC_901)
 import "ghc-lib-parser" GHC.Driver.Ppr
 #  endif
 #else
@@ -89,7 +85,7 @@ mkDynFlags filename s = do
   let baseFlags =
         (defaultDynFlags fakeSettings fakeLlvmConfig) {
           ghcLink = NoLink
-#if defined( GHC_MASTER)
+#if defined (GHC_MASTER)
         , backend = NoBackend
 #else
         , hscTarget = HscNothing
@@ -197,7 +193,7 @@ fakeSettings = Settings
 #if defined (GHC_MASTER)
         platformWordSize=PW8
       , platformArchOS=ArchOS {archOS_arch=ArchUnknown, archOS_OS=OSUnknown}
-#elif defined (GHC_8101)
+#elif defined (GHC_8101) || defined (GHC_901)
         platformWordSize=PW8
       , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
 #else
