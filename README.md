@@ -64,15 +64,7 @@ Building `ghc-lib` is subject to the same minimum version requirements that appl
 
 ### How do I use the `ghc-lib`/`ghc-lib-parser` version macros?
 
-In general we can interpret the phrase,
-```
-#if MIN_VERSION_ghc_lib_parser(x, y, z)
-```
-as asking the question, is the ghc-lib-parser version at least x.y.z?
-
-For example, suppose version 9.0.1. If we write, `MIN_VERSION_ghc_lib_parser(10, 0, 1)` then this check will fail since the version is not greater equal 10.0.1. The check `MIN_VERSION_ghc_lib_parser(8, 0, 1)` however will succeed because 9.0.1 is greater equal 8.0.1, that is, the version is at least 8.0.1.
-
-For GHC head builds, we define the ghc-lib-parser version number to be of the form *0.α*. Thus, the condition `!MIN_VERSION_ghc_lib_parser(1, 0, 0)` is true if the ghc-lib-parser version is a build from GHC head and false otherwise.
+Read the [Standard CPP macros](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/phases.html#standard-cpp-macros) section of the GHC users guide for the semantics of the `MIN_VERSION_pkgname(x, y, z)` macros and keep in mind that builds of `ghc-lib-parser`/`ghc-lib` from GHC head are ascribed version numbers of the form *0.α*.
 
 # Building `ghc-lib` for DAML
 
