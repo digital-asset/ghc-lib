@@ -17,7 +17,9 @@ module Main (main) where
 #  define GHC_8101
 #endif
 
-
+#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Driver.Config
+#endif
 #if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Hs
 #else
@@ -169,7 +171,12 @@ parse filename flags str =
   where
     location = mkRealSrcLoc (mkFastString filename) 1 1
     buffer = stringToStringBuffer str
-    parseState = mkPState flags buffer location
+    parseState =
+#if defined (GHC_MASTER)
+      initParserState (initParserOpts flags) buffer location
+#else
+      mkPState flags buffer location
+#endif
 
 parsePragmasIntoDynFlags :: DynFlags -> FilePath -> String -> IO (Maybe DynFlags)
 parsePragmasIntoDynFlags flags filepath str =

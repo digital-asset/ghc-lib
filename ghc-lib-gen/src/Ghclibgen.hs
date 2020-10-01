@@ -343,6 +343,7 @@ calcParserModules ghcFlavor = do
       -- ghc-lib. We intervene so that rather, they go into
       -- ghc-lib-parser.
       extraModules =
+        [ "GHC.Driver.Config" | ghcFlavor == GhcMaster ] ++
         [ if ghcFlavor `elem` [ GhcMaster, Ghc901 ] then "GHC.Parser.Header" else "HeaderInfo"
         , if ghcFlavor `elem` [ GhcMaster, Ghc901, Ghc8101, Ghc8102 ] then "GHC.Hs.Dump" else "HsDumpAst"
         ]
