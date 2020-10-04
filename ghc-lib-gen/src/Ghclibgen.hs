@@ -344,6 +344,7 @@ calcParserModules ghcFlavor = do
       -- ghc-lib-parser.
       extraModules =
         [ "GHC.Driver.Config" | ghcFlavor == GhcMaster ] ++
+        [ "GHC.Parser.Errors.Ppr" | ghcFlavor == GhcMaster ] ++
         [ if ghcFlavor `elem` [ GhcMaster, Ghc901 ] then "GHC.Parser.Header" else "HeaderInfo"
         , if ghcFlavor `elem` [ GhcMaster, Ghc901, Ghc8101, Ghc8102 ] then "GHC.Hs.Dump" else "HsDumpAst"
         ]
