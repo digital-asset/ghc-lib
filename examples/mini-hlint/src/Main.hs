@@ -38,6 +38,7 @@ import "ghc-lib-parser" GHC.Data.FastString
 import "ghc-lib-parser" GHC.Utils.Outputable
 #  if !defined (GHC_901)
 import "ghc-lib-parser" GHC.Driver.Ppr
+import "ghc-lib-parser" GHC.Parser.Errors.Ppr
 #  endif
 import "ghc-lib-parser" GHC.Types.SrcLoc
 import "ghc-lib-parser" GHC.Utils.Panic
@@ -221,17 +222,23 @@ main = do
           (defaultDynFlags fakeSettings fakeLlvmConfig) file s
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
-#if defined (GHC_MASTER) || defined (GHC_901) || defined (GHC_8101)
-            PFailed s ->
-              report flags $ snd (getMessages s flags)
+#if defined (GHC_MASTER)
+            PFailed s -> report flags $ fmap pprError (snd (getMessages s))
+#elif defined (GHC_901) || defined (GHC_8101)
+            PFailed s -> report flags $ snd (getMessages s flags)
 #else
-            PFailed _ loc err ->
-              report flags $ unitBag $ mkPlainErrMsg flags loc err
+            PFailed _ loc err -> report flags $ unitBag $ mkPlainErrMsg flags loc err
 #endif
             POk s m -> do
+#if defined (GHC_MASTER)
+              let (wrns, errs) = getMessages s
+              report flags (fmap pprWarning wrns)
+              report flags (fmap pprError errs)
+#else
               let (wrns, errs) = getMessages s flags
               report flags wrns
               report flags errs
+#endif
               when (null errs) $
                analyzeModule flags m (harvestAnns s)
     _ -> fail "Exactly one file argument required"
@@ -243,11 +250,12 @@ main = do
         ]
     harvestAnns pst =
 #if defined (GHC_MASTER) || defined (GHC_901)
-      ApiAnns
-        (Map.fromListWith (++) $ annotations pst)
-        Nothing
-        (Map.fromList ((realSrcLocSpan (mkRealSrcLoc (fsLit "<no location info>") 0 0), comment_q pst) :annotations_comments pst))
-        []
+        ApiAnns {
+              apiAnnItems = Map.fromListWith (++) $ annotations pst
+            , apiAnnEofPos = Nothing
+            , apiAnnComments = Map.fromListWith (++) $ annotations_comments pst
+            , apiAnnRogueComments = comment_q pst
+            }
 #else
       ( Map.fromListWith (++) $ annotations pst
       , Map.fromList ((noSrcSpan, comment_q pst) : annotations_comments pst)

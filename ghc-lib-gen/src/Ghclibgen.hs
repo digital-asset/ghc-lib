@@ -344,6 +344,7 @@ calcParserModules ghcFlavor = do
       -- ghc-lib-parser.
       extraModules =
         [ "GHC.Driver.Config" | ghcFlavor == GhcMaster ] ++
+        [ "GHC.Parser.Errors.Ppr" | ghcFlavor == GhcMaster ] ++
         [ if ghcFlavor `elem` [ GhcMaster, Ghc901 ] then "GHC.Parser.Header" else "HeaderInfo"
         , if ghcFlavor `elem` [ GhcMaster, Ghc901, Ghc8101, Ghc8102 ] then "GHC.Hs.Dump" else "HsDumpAst"
         ]
@@ -856,6 +857,16 @@ generateGhcLibParserCabal ghcFlavor = do
 -- | Run Hadrian to build the things that the Cabal files need.
 generatePrerequisites :: GhcFlavor -> IO ()
 generatePrerequisites ghcFlavor = do
+  when (ghcFlavor `elem` [DaGhc881, Ghc881, Ghc882, Ghc883, Ghc884]) (
+    -- Workaround a Windows bug present in at least 8.4.3. See
+    -- http://haskell.1045720.n5.nabble.com/msys-woes-td5898334.html
+    writeFile "./mk/get-win32-tarballs.sh" .
+      replace
+        "$curl_cmd || echo \"Checking repo.msys2.org instead of Haskell.org...\" && $curl_cmd_bnk || {"
+        "$curl_cmd || (echo \"Checking repo.msys2.org instead of Haskell.org...\" && $curl_cmd_bnk) || {"
+      =<< readFile' "./mk/get-win32-tarballs.sh"
+    )
+
   -- If building happy in the next step, the configure it does
   -- requires some versions of alex and happy pre-exist. We make sure
   -- of this in CI.hs.
