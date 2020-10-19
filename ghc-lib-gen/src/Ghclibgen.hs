@@ -22,8 +22,8 @@ module Ghclibgen (
 
 import Control.Monad
 import System.Process.Extra
-import System.FilePath hiding ((</>))
-import System.FilePath.Posix((</>)) -- Make sure we generate / on all platforms.
+import System.FilePath hiding ((</>), normalise, dropTrailingPathSeparator)
+import System.FilePath.Posix((</>), normalise, dropTrailingPathSeparator) -- Make sure we generate / on all platforms.
 import System.Directory.Extra
 import System.IO.Extra
 import Data.List.Extra hiding (find)
