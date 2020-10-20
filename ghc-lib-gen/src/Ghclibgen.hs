@@ -22,8 +22,8 @@ module Ghclibgen (
 
 import Control.Monad
 import System.Process.Extra
-import System.FilePath hiding ((</>))
-import System.FilePath.Posix((</>)) -- Make sure we generate / on all platforms.
+import System.FilePath hiding ((</>), normalise, dropTrailingPathSeparator)
+import System.FilePath.Posix((</>), normalise, dropTrailingPathSeparator) -- Make sure we generate / on all platforms.
 import System.Directory.Extra
 import System.IO.Extra
 import Data.List.Extra hiding (find)
@@ -73,7 +73,7 @@ ghcLibParserIncludeDirs ghcFlavor =
 -- not the case).
 sortDiffListByLength :: Set.Set FilePath -> Set.Set FilePath -> [FilePath]
 sortDiffListByLength all excludes =
-  sortOn (Down . length) $ Set.toList (Set.difference all excludes)
+  nubOrd . sortOn (Down . length) $ Set.toList (Set.difference all excludes)
 
 -- | The "hs-source-dirs" for 'ghc-lib-parser' (actually used in two
 -- contexts, 'ghc-lib-parser.cabal' generation and when calculating
@@ -100,7 +100,7 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         -- 'GhcVersion.hs' IIRC).
         [ stage0GhcBoot | ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102, Ghc901 ] ] ++
         map takeDirectory cabalFileLibraries ++
-        askFiles lib "hs-source-dirs:"
+        map (dropTrailingPathSeparator . normalise) (askFiles lib "hs-source-dirs:")
 
       excludes = Set.fromList $
         map ("compiler" </>) (
@@ -128,7 +128,7 @@ ghcLibHsSrcDirs ghcFlavor lib =
         [ stage0Compiler ] ++
         [ stage0GhcBoot | ghcFlavor `elem` [ GhcMaster, Ghc8101, Ghc8102, Ghc901 ] ] ++ -- 'GHC.Platform' is in 'ghc-lib-parser', 'GHC.Platform.Host' is not.
         map takeDirectory cabalFileLibraries ++
-        askFiles lib "hs-source-dirs:"
+        map (dropTrailingPathSeparator . normalise) (askFiles lib "hs-source-dirs:")
       excludes = Set.fromList $
         [ "compiler/basicTypes"
         , "compiler/parser"
