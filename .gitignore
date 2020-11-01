@@ -2,10 +2,13 @@ dist/
 dist-newstyle/
 .ghc.environment.*
 ghc/
+ghc-lib-parser/
+ghc-lib/
 ghc-master/
 .vscode/
 .stack-work/
 *.hi
+*.o
 .DS_Store
 *.tar.gz
 *_flymake*
