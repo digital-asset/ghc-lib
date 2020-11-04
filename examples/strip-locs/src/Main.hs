@@ -42,7 +42,11 @@ import "ghc-lib-parser" GHC.Parser.Errors.Ppr
 #endif
 import "ghc-lib-parser" GHC.Types.SrcLoc
 import "ghc-lib-parser" GHC.Utils.Panic
+#  if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Types.SourceError
+#  else
 import "ghc-lib-parser" GHC.Driver.Types
+#  endif
 import "ghc-lib-parser" GHC.Parser.Header
 import "ghc-lib-parser" GHC.Parser.Annotation
 #else
