@@ -679,7 +679,8 @@ commonBuildDepends ghcFlavor =
   , "process >= 1 && < 1.7"
   , "hpc == 0.6.*"
   ] ++
-  [ "exceptions == 0.10.*" | ghcFlavor `elem` [ GhcMaster, Ghc901]  ]
+  [ "exceptions == 0.10.*" | ghcFlavor `elem` [ GhcMaster, Ghc901]  ] ++
+  [ "parsec" | ghcFlavor == GhcMaster ]
 
 -- | This utility factored out to avoid repetion.
 libBinParserModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String])
