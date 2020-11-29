@@ -8,6 +8,7 @@ module Ghclibgen (
     applyPatchHeapClosures
   , applyPatchHsVersions
   , applyPatchGhcPrim
+  , applyPatchGHCiMessage
   , applyPatchDisableCompileTimeOptimizations
   , applyPatchRtsIncludePaths
   , applyPatchStage
@@ -407,6 +408,16 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
           writeFile file .
           ("{-# OPTIONS_GHC -O0 #-}\n" ++)
           =<< readFile' file
+
+applyPatchGHCiMessage :: GhcFlavor -> IO ()
+applyPatchGHCiMessage ghcFlavor =
+  when (ghcFlavor == GhcMaster) $ do
+    writeFile messageHs .
+        replace
+          "#if MIN_VERSION_ghc_heap(8,11,0)"
+          "#ifndef MIN_VERSION_ghc_heap\n#define MIN_VERSION_ghc_heap(major1,major2,minor) ((major1) <  8 || (major1) == 8 && (major2) <  11 || (major1) == 8 && (major2) == 11 && (minor) <= 0)\n#endif /* MIN_VERSION_ghc_heap */\n#if MIN_VERSION_ghc_heap(8,11,0)"
+      =<< readFile' messageHs
+  where messageHs = "libraries/ghci/GHCi/Message.hs"
 
 -- Workaround lack of newer ghc-prim 12/3/2019
 -- (https://gitlab.haskell.org/ghc/ghc/commit/705a16df02411ec2445c9a254396a93cabe559ef)
