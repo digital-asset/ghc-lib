@@ -3,11 +3,13 @@
 -- (Apache-2.0 OR BSD-3-Clause)
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Ghclibgen (
     applyPatchHeapClosures
   , applyPatchHsVersions
   , applyPatchGhcPrim
+  , applyPatchGHCiMessage
   , applyPatchDisableCompileTimeOptimizations
   , applyPatchRtsIncludePaths
   , applyPatchStage
@@ -407,6 +409,44 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
           writeFile file .
           ("{-# OPTIONS_GHC -O0 #-}\n" ++)
           =<< readFile' file
+
+applyPatchGHCiMessage :: GhcFlavor -> IO ()
+applyPatchGHCiMessage ghcFlavor =
+  when (ghcFlavor == GhcMaster) $ do
+    -- Synthesize a definition of MIN_VERSION_ghc_heap. If X.Y.Z is
+    -- the current version, then MIN_VERSION_ghc_heap(a, b, c) is a
+    -- test of whether X.Y.Z >= a.b.c (that is, ghc-heap X.Y.Z is at
+    -- least a.b.c).
+    versionText <- readFile' (root </> "ghcversion.h")
+    let ls = lines versionText
+        Just version = firstJust (stripPrefix "#define __GLASGOW_HASKELL__ ") ls
+        Just patchLevel = firstJust (stripPrefix "#define __GLASGOW_HASKELL_PATCHLEVEL1__ ") ls
+        major1Major2 = read @Int version
+        minor        = read @Int patchLevel
+        [x, y, z]    = map show [ major1Major2 `div` 100, major1Major2 `mod` 100, minor ]
+        rs = [
+            "#ifndef MIN_VERSION_ghc_heap"
+          , "#define MIN_VERSION_ghc_heap(major1,major2,minor) (\\"
+          , "  (major1) <  " ++ x ++ " || \\"
+          , "  (major1) == " ++ x ++ " && (major2) <  " ++ y ++ " || \\"
+          , "  (major1) == " ++ x ++ " && (major2) == " ++ y ++ " && (minor) <= " ++ z ++ ")"
+          , "#endif /* MIN_VERSION_ghc_heap */"
+          ]
+    -- Write this definition before it's tested on.
+    writeFile messageHs .
+        replace
+          "#if MIN_VERSION_ghc_heap(8,11,0)"
+          (unlines rs <> "#if MIN_VERSION_ghc_heap(8,11,0)")
+      =<< readFile' messageHs
+  where
+      messageHs = "libraries/ghci/GHCi/Message.hs"
+      root =
+        case ghcFlavor of
+          GhcMaster -> stage0Lib
+          Ghc901 -> stage0Lib
+          Ghc8101 -> stage0Lib
+          Ghc8102 -> stage0Lib
+          _ -> ghcLibGeneratedPath
 
 -- Workaround lack of newer ghc-prim 12/3/2019
 -- (https://gitlab.haskell.org/ghc/ghc/commit/705a16df02411ec2445c9a254396a93cabe559ef)
