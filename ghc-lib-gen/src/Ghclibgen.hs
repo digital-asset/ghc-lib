@@ -419,10 +419,8 @@ applyPatchGHCiMessage ghcFlavor =
     -- least a.b.c).
     versionText <- readFile' (root </> "ghcversion.h")
     let ls = lines versionText
-        t1 = "#define __GLASGOW_HASKELL__ "
-        t2 = "#define __GLASGOW_HASKELL_PATCHLEVEL1__ "
-        version      = dropPrefix t1 (head (filter (t1 `isPrefixOf`) ls))
-        patchLevel   = dropPrefix t2 (head (filter (t2 `isPrefixOf`) ls))
+        Just version = firstJust (stripPrefix "#define __GLASGOW_HASKELL__ ") ls
+        Just patchLevel = firstJust (stripPrefix "#define __GLASGOW_HASKELL_PATCHLEVEL1__ ") ls
         major1Major2 = read @Int version
         minor        = read @Int patchLevel
         [x, y, z]    = map show [ major1Major2 `div` 100, major1Major2 `mod` 100, minor ]
