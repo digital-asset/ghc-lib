@@ -735,15 +735,16 @@ libBinParserModules ghcFlavor = do
 -- the sdists rather than these. If we don't remove them, some
 -- ambiguity results. Cabal and stack are OK with that but bazel gets
 -- messed up.
-removeGeneratedIntermediateFiles :: IO ()
-removeGeneratedIntermediateFiles = do
+removeGeneratedIntermediateFiles :: GhcFlavor -> IO ()
+removeGeneratedIntermediateFiles ghcFlavor = do
     removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/Utils.hs"
     removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/InfoTableProf.hs"
     removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/InfoTable.hs"
     removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/InfoTable/Types.hs"
     removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/Constants.hs"
     removeFile $ stage0Ghci </> "GHCi/FFI.hs"
-    removeFile $ stage0Ghci </> "GHCi/InfoTable.hs"
+    when (ghcFlavor /= GhcMaster) $
+      removeFile $ stage0Ghci </> "GHCi/InfoTable.hs"
 
 -- | Produces a ghc-lib Cabal file.
 generateGhcLibCabal :: GhcFlavor -> IO ()
@@ -807,7 +808,7 @@ generateGhcLibCabal ghcFlavor = do
         , "        Paths_ghc_lib"
         ] ++
         indent2 (nubSort nonParserModules)
-    removeGeneratedIntermediateFiles
+    removeGeneratedIntermediateFiles ghcFlavor
     putStrLn "# Generating 'ghc-lib.cabal'... Done!"
 
 ghciDef :: GhcFlavor -> String
@@ -892,7 +893,7 @@ generateGhcLibParserCabal ghcFlavor = do
            ]
         ) ++
         ["    exposed-modules:" ] ++ indent2 parserModules
-    removeGeneratedIntermediateFiles
+    removeGeneratedIntermediateFiles ghcFlavor
     putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 
 -- | Run Hadrian to build the things that the Cabal files need.
