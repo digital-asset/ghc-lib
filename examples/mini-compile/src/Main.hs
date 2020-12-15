@@ -90,7 +90,10 @@ mkDynFlags filename s = do
 #else
         , hscTarget = HscNothing
 #endif
-#if defined (GHC_MASTER) || defined (GHC_901)
+#if defined (GHC_MASTER)
+        -- Intentionally empty (unit related flags have moved to
+        -- HscEnv).
+#elif defined (GHC_901)
         , unitDatabases = Just []
 #else
         , pkgDatabase = Just []
