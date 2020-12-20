@@ -64,7 +64,7 @@ ghclibgenOpts = GhclibgenOpts
 -- | We might want to factor this out so we can share it with CI.hs
 -- but for now it doesn’t seem worth it and having CI.hs be
 -- self-contained simplifies things.
-data GhcFlavor = Ghc901 | Ghc8101 | Ghc8102 | Ghc881 | Ghc882 | Ghc883 | Ghc884 | DaGhc881 | GhcMaster
+data GhcFlavor = Ghc901 | Ghc8101 | Ghc8102 | Ghc8103 | Ghc881 | Ghc882 | Ghc883 | Ghc884 | DaGhc881 | GhcMaster
     deriving (Show, Eq)
 
 ghcFlavorOpt :: Parser GhcFlavor
@@ -78,10 +78,11 @@ readFlavor = eitherReader $ \case
     "ghc-9.0.1" -> Right Ghc901
     "ghc-8.10.1" -> Right Ghc8101
     "ghc-8.10.2" -> Right Ghc8102
+    "ghc-8.10.3" -> Right Ghc8103
     "ghc-8.8.1" -> Right Ghc881
     "ghc-8.8.2" -> Right Ghc882
     "ghc-8.8.3" -> Right Ghc883
     "ghc-8.8.4" -> Right Ghc884
     "da-ghc-8.8.1" -> Right DaGhc881
     "ghc-master" -> Right GhcMaster
-    flavor -> Left $ "Failed to parse ghc flavor " <> show flavor <> " expected ghc-master, ghc-9.0.1, ghc-8.8.1, ghc-8.8.2, ghc-8.8.3, ghc-8.8.4, da-ghc-8.8.1 or ghc-8.10.1"
+    flavor -> Left $ "Failed to parse ghc flavor " <> show flavor <> " expected ghc-master, ghc-9.0.1, ghc-8.8.1, ghc-8.8.2, ghc-8.8.3, ghc-8.8.4, da-ghc-8.8.1, ghc-8.10.1, ghc-8.10.2 or ghc-8.10.3"
