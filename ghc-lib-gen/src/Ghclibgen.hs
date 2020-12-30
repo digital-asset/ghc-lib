@@ -592,15 +592,22 @@ applyPatchNoMonoLocalBinds _ =
  https://github.com/digital-asset/ghc-lib/issues/243 for where the
  problem was first reported. On master, this file has moved to
  GHC/cmm/Parser.y and already contains the missing directive so
- nothing to do there. -}
+ nothing to do there.
+
+Update 30th Dec, 2020: This appears to be more to do with the compiler
+in play than the flavor. It's still mysterious but not interseting
+enough to dig into further. Just do the rewrite unconditionally.
+ -}
 applyPatchCmmParseNoImplicitPrelude :: GhcFlavor -> IO ()
-applyPatchCmmParseNoImplicitPrelude ghcFlavor =
-  when (ghcFlavor == Ghc8101 || ghcFlavor == Ghc8102 || ghcFlavor == Ghc8103) $
-    writeFile "compiler/cmm/CmmParse.y" .
+applyPatchCmmParseNoImplicitPrelude _ = do
+  let cmmParse = "compiler/cmm/CmmParse.y"
+  fileExists <- doesFileExist cmmParse
+  when fileExists $
+    writeFile cmmParse .
       replace
         "import GhcPrelude"
         "import GhcPrelude\nimport qualified Prelude"
-    =<< readFile' "compiler/cmm/CmmParse.y"
+    =<< readFile' cmmParse
 
 -- [Note : GHC now depends on exceptions package]
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
