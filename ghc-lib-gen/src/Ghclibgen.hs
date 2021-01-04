@@ -595,7 +595,7 @@ applyPatchNoMonoLocalBinds _ =
  nothing to do there.
 
 Update 30th Dec, 2020: This appears to be more to do with the compiler
-in play than the flavor. It's still mysterious but not interseting
+in play than the flavor. It's still mysterious but not interesting
 enough to dig into further. Just do the rewrite unconditionally.
  -}
 applyPatchCmmParseNoImplicitPrelude :: GhcFlavor -> IO ()
