@@ -47,6 +47,7 @@ data StackOptions = StackOptions
 data GhcFlavor = Ghc901
                | Ghc8101
                | Ghc8102
+               | Ghc8103
                | Ghc881
                | Ghc882
                | Ghc883
@@ -57,7 +58,7 @@ data GhcFlavor = Ghc901
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "e9b18a75d5ddf24e5b866fbce17a3648570721af" -- 2020-12-15
+current = "26a928b8fdb1b4ccb75e8edb620b8cf12cb38621" -- 2021-01-03
 
 -- Command line argument generators.
 
@@ -76,6 +77,7 @@ ghcFlavorOpt = \case
     Ghc901 -> "--ghc-flavor ghc-9.0.1"
     Ghc8101 -> "--ghc-flavor ghc-8.10.1"
     Ghc8102 -> "--ghc-flavor ghc-8.10.2"
+    Ghc8103 -> "--ghc-flavor ghc-8.10.3"
     Ghc881 -> "--ghc-flavor ghc-8.8.1"
     Ghc882 -> "--ghc-flavor ghc-8.8.2"
     Ghc883 -> "--ghc-flavor ghc-8.8.3"
@@ -104,6 +106,7 @@ genVersionStr = \case
    Ghc901      -> \day -> "9.0.1." ++ replace "-" "" (showGregorian day)
    Ghc8101     -> \day -> "8.10.1." ++ replace "-" "" (showGregorian day)
    Ghc8102     -> \day -> "8.10.2." ++ replace "-" "" (showGregorian day)
+   Ghc8103     -> \day -> "8.10.3." ++ replace "-" "" (showGregorian day)
    Ghc882      -> \day -> "8.8.2." ++ replace "-" "" (showGregorian day)
    Ghc883      -> \day -> "8.8.3." ++ replace "-" "" (showGregorian day)
    Ghc884      -> \day -> "8.8.4." ++ replace "-" "" (showGregorian day)
@@ -124,6 +127,7 @@ parseOptions = Options
        "ghc-9.0.1" -> Right Ghc901
        "ghc-8.10.1" -> Right Ghc8101
        "ghc-8.10.2" -> Right Ghc8102
+       "ghc-8.10.3" -> Right Ghc8103
        "ghc-8.8.1" -> Right Ghc881
        "ghc-8.8.2" -> Right Ghc882
        "ghc-8.8.3" -> Right Ghc883
@@ -211,6 +215,7 @@ buildDists
         Ghc901 -> cmd "cd ghc && git fetch --tags && git checkout ghc-9.0"
         Ghc8101 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.1-release"
         Ghc8102 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.2-release"
+        Ghc8103 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.3-release"
         Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
         Ghc882 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.2-release"
         Ghc883 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.3-release"
