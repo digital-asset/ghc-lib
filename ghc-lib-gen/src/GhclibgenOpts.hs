@@ -64,8 +64,17 @@ ghclibgenOpts = GhclibgenOpts
 -- | We might want to factor this out so we can share it with CI.hs
 -- but for now it doesn’t seem worth it and having CI.hs be
 -- self-contained simplifies things.
-data GhcFlavor = Ghc901 | Ghc8101 | Ghc8102 | Ghc8103 | Ghc881 | Ghc882 | Ghc883 | Ghc884 | DaGhc881 | GhcMaster
-    deriving (Show, Eq)
+data GhcFlavor = DaGhc881
+               | Ghc881
+               | Ghc882
+               | Ghc883
+               | Ghc884
+               | Ghc8101
+               | Ghc8102
+               | Ghc8103
+               | Ghc901
+               | GhcMaster
+    deriving (Show, Eq, Ord)
 
 ghcFlavorOpt :: Parser GhcFlavor
 ghcFlavorOpt = option readFlavor
