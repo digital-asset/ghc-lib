@@ -248,5 +248,10 @@ main = do
     report flags msgs =
       sequence_
         [ putStrLn $ showSDoc flags msg
-        | msg <- pprErrMsgBagWithLoc msgs
+        | msg <-
+#if defined (GHC_MASTER)
+                  pprMsgEnvelopeBagWithLoc msgs
+#else
+                  pprErrMsgBagWithLoc msgs
+#endif
         ]

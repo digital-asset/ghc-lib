@@ -247,10 +247,16 @@ main = do
                analyzeModule flags m (harvestAnns s)
     _ -> fail "Exactly one file argument required"
   where
+
     report flags msgs =
       sequence_
         [ putStrLn $ showSDoc flags msg
-        | msg <- pprErrMsgBagWithLoc msgs
+        | msg <-
+#if defined (GHC_MASTER)
+                  pprMsgEnvelopeBagWithLoc msgs
+#else
+                  pprErrMsgBagWithLoc msgs
+#endif
         ]
     harvestAnns pst =
 #if defined (GHC_MASTER) || defined (GHC_901)
