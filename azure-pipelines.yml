@@ -62,17 +62,17 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-8.10.3      | ghc-8.10.3 |
-    # | macOS   | ghc-8.10.3      | ghc-8.10.3 |
+    # | linux   | ghc-8.10.4      | ghc-8.10.3 |
+    # | macOS   | ghc-8.10.4      | ghc-8.10.3 |
     # +---------+-----------------+------------+
-    linux-ghc-8.10.3-8.10.3:
+    linux-ghc-8.10.4-8.10.3:
       image: "ubuntu-latest"
-      mode: "--ghc-flavor ghc-8.10.3"
+      mode: "--ghc-flavor ghc-8.10.4"
       resolver: "ghc-8.10.3"
       stack-yaml: "stack-exact.yaml"
-    mac-ghc-8.10.3-8.10.3:
+    mac-ghc-8.10.4-8.10.3:
       image: "macOS-latest"
-      mode: "--ghc-flavor ghc-8.10.3"
+      mode: "--ghc-flavor ghc-8.10.4"
       resolver: "ghc-8.10.3"
       stack-yaml: "stack-exact.yaml"
 

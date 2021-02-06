@@ -162,6 +162,7 @@ hadrianGeneratedRoot = \case
   Ghc8101 -> stage0Lib
   Ghc8102 -> stage0Lib
   Ghc8103 -> stage0Lib
+  Ghc8104 -> stage0Lib
   _ -> ghcLibGeneratedPath
 
 -- |'dataDir' is the directory cabal looks for data files to install,
@@ -392,6 +393,7 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
             Ghc8101 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
             Ghc8102 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
             Ghc8103 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
+            Ghc8104 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
             _ ->         [ "compiler/main/DynFlags.hs", "compiler/hsSyn/HsInstances.hs" ]
     in
       forM_ files $
@@ -807,6 +809,7 @@ ghciDef Ghc901 = ""
 ghciDef Ghc8101 = ""
 ghciDef Ghc8102 = ""
 ghciDef Ghc8103 = ""
+ghciDef Ghc8104 = ""
 ghciDef _ = "-DGHCI"
 
 ghcStageDef :: GhcFlavor -> String
@@ -815,6 +818,7 @@ ghcStageDef Ghc901 = ""
 ghcStageDef Ghc8101 = ""
 ghcStageDef Ghc8102 = ""
 ghcStageDef Ghc8103 = ""
+ghcStageDef Ghc8104 = ""
 ghcStageDef _ = "-DSTAGE=2"
 
 -- | Produces a ghc-lib-parser Cabal file.

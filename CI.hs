@@ -48,6 +48,7 @@ data GhcFlavor = Ghc901
                | Ghc8101
                | Ghc8102
                | Ghc8103
+               | Ghc8104
                | Ghc881
                | Ghc882
                | Ghc883
@@ -78,6 +79,7 @@ ghcFlavorOpt = \case
     Ghc8101 -> "--ghc-flavor ghc-8.10.1"
     Ghc8102 -> "--ghc-flavor ghc-8.10.2"
     Ghc8103 -> "--ghc-flavor ghc-8.10.3"
+    Ghc8104 -> "--ghc-flavor ghc-8.10.4"
     Ghc881 -> "--ghc-flavor ghc-8.8.1"
     Ghc882 -> "--ghc-flavor ghc-8.8.2"
     Ghc883 -> "--ghc-flavor ghc-8.8.3"
@@ -107,6 +109,7 @@ genVersionStr = \case
    Ghc8101     -> \day -> "8.10.1." ++ replace "-" "" (showGregorian day)
    Ghc8102     -> \day -> "8.10.2." ++ replace "-" "" (showGregorian day)
    Ghc8103     -> \day -> "8.10.3." ++ replace "-" "" (showGregorian day)
+   Ghc8104     -> \day -> "8.10.4." ++ replace "-" "" (showGregorian day)
    Ghc882      -> \day -> "8.8.2." ++ replace "-" "" (showGregorian day)
    Ghc883      -> \day -> "8.8.3." ++ replace "-" "" (showGregorian day)
    Ghc884      -> \day -> "8.8.4." ++ replace "-" "" (showGregorian day)
@@ -128,6 +131,7 @@ parseOptions = Options
        "ghc-8.10.1" -> Right Ghc8101
        "ghc-8.10.2" -> Right Ghc8102
        "ghc-8.10.3" -> Right Ghc8103
+       "ghc-8.10.4" -> Right Ghc8104
        "ghc-8.8.1" -> Right Ghc881
        "ghc-8.8.2" -> Right Ghc882
        "ghc-8.8.3" -> Right Ghc883
@@ -216,6 +220,7 @@ buildDists
         Ghc8101 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.1-release"
         Ghc8102 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.2-release"
         Ghc8103 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.3-release"
+        Ghc8104 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.4-release"
         Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
         Ghc882 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.2-release"
         Ghc883 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.3-release"
