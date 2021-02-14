@@ -446,10 +446,10 @@ applyPatchGhcPrim ghcFlavor = do
       writeFile tysPrim .
           replace
               "bcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep"
-              "\n#if __GLASGOW_HASKELL >= 900\nbcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep\n#else\nbcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName UnliftedRep\n#endif\n" .
+              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\nbcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep\n#else\nbcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName UnliftedRep\n#endif\n" .
           replace
               "bcoPrimTyConName              = mkPrimTc (fsLit \"BCO\") bcoPrimTyConKey bcoPrimTyCon"
-              "\n#if __GLASGOW_HASKELL >= 900\nbcoPrimTyConName              = mkPrimTc (fsLit \"BCO\") bcoPrimTyConKey bcoPrimTyCon\n#else\nbcoPrimTyConName              = mkPrimTc (fsLit \"BCO#\") bcoPrimTyConKey bcoPrimTyCon\n#endif\n"
+              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\nbcoPrimTyConName              = mkPrimTc (fsLit \"BCO\") bcoPrimTyConKey bcoPrimTyCon\n#else\nbcoPrimTyConName              = mkPrimTc (fsLit \"BCO#\") bcoPrimTyConKey bcoPrimTyCon\n#endif\n"
         =<< readFile' tysPrim
         )
 
@@ -461,22 +461,22 @@ applyPatchGhcPrim ghcFlavor = do
               "{-# LANGUAGE RecordWildCards #-}\n{-# LANGUAGE CPP #-}" .
           replace
               "do linked_bco <- linkBCO' arr bco"
-              "\n#if __GLASGOW_HASKELL__ >= 900\n     do linked_bco <- linkBCO' arr bco\n#else\n     do BCO bco# <- linkBCO' arr bco\n#endif" .
+              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\n     do linked_bco <- linkBCO' arr bco\n#else\n     do BCO bco# <- linkBCO' arr bco\n#endif" .
           replace
               "then return (HValue (unsafeCoerce linked_bco))\n           else case mkApUpd0# linked_bco of { (# final_bco #) ->"
-              "\n#if __GLASGOW_HASKELL__ >= 900\n           then return (HValue (unsafeCoerce linked_bco))\n           else case mkApUpd0# linked_bco of { (# final_bco #) ->\n#else\n           then return (HValue (unsafeCoerce# bco#))\n           else case mkApUpd0# bco# of { (# final_bco #) ->\n#endif" .
+              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\n           then return (HValue (unsafeCoerce linked_bco))\n           else case mkApUpd0# linked_bco of { (# final_bco #) ->\n#else\n           then return (HValue (unsafeCoerce# bco#))\n           else case mkApUpd0# bco# of { (# final_bco #) ->\n#endif" .
           replace
               "bco <- linkBCO' arr bco\n      writePtrsArrayBCO i bco marr"
-              "\n#if __GLASGOW_HASKELL__ >= 900\n      bco <- linkBCO' arr bco\n      writePtrsArrayBCO i bco marr\n#else\n      BCO bco# <- linkBCO' arr bco\n      writePtrsArrayBCO i bco# marr\n#endif" .
+              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\n      bco <- linkBCO' arr bco\n      writePtrsArrayBCO i bco marr\n#else\n      BCO bco# <- linkBCO' arr bco\n      writePtrsArrayBCO i bco# marr\n#endif" .
           replace
               "writePtrsArrayBCO :: Int -> BCO -> PtrsArr -> IO ()"
-              "\n#if __GLASGOW_HASKELL__ >= 900\nwritePtrsArrayBCO :: Int -> BCO -> PtrsArr -> IO ()\n#else\nwritePtrsArrayBCO :: Int -> BCO# -> PtrsArr -> IO ()\n#endif" .
+              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\nwritePtrsArrayBCO :: Int -> BCO -> PtrsArr -> IO ()\n#else\nwritePtrsArrayBCO :: Int -> BCO# -> PtrsArr -> IO ()\n#endif" .
           replace
               "writePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()"
-              "\n#if __GLASGOW_HASKELL__ >= 900\nwritePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()\n#else\ndata BCO = BCO BCO#\nwritePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()\n#endif" .
+              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\nwritePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()\n#else\ndata BCO = BCO BCO#\nwritePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()\n#endif" .
           replace
               "newBCO# instrs lits ptrs arity bitmap s"
-              "\n#if __GLASGOW_HASKELL__ >= 900\n  newBCO# instrs lits ptrs arity bitmap s\n#else\n  case newBCO# instrs lits ptrs arity bitmap s of\n    (# s1, bco #) -> (# s1, BCO bco #)\n#endif"
+              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\n  newBCO# instrs lits ptrs arity bitmap s\n#else\n  case newBCO# instrs lits ptrs arity bitmap s of\n    (# s1, bco #) -> (# s1, BCO bco #)\n#endif"
         =<< readFile' createBCO
         )
 
