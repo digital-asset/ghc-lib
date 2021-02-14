@@ -446,10 +446,10 @@ applyPatchGhcPrim ghcFlavor = do
       writeFile tysPrim .
           replace
               "bcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep"
-              "\n#if __GLASGOW_HASKELL >= 900\nbcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep\n#else\nbcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName UnliftedRep\n#endif\n" .
+              "\n#if __GLASGOW_HASKELL__ >= 900\nbcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep\n#else\nbcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName UnliftedRep\n#endif\n" .
           replace
               "bcoPrimTyConName              = mkPrimTc (fsLit \"BCO\") bcoPrimTyConKey bcoPrimTyCon"
-              "\n#if __GLASGOW_HASKELL >= 900\nbcoPrimTyConName              = mkPrimTc (fsLit \"BCO\") bcoPrimTyConKey bcoPrimTyCon\n#else\nbcoPrimTyConName              = mkPrimTc (fsLit \"BCO#\") bcoPrimTyConKey bcoPrimTyCon\n#endif\n"
+              "\n#if __GLASGOW_HASKELL__ >= 900\nbcoPrimTyConName              = mkPrimTc (fsLit \"BCO\") bcoPrimTyConKey bcoPrimTyCon\n#else\nbcoPrimTyConName              = mkPrimTc (fsLit \"BCO#\") bcoPrimTyConKey bcoPrimTyCon\n#endif\n"
         =<< readFile' tysPrim
         )
 
