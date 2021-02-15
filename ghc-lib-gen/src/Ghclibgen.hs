@@ -778,7 +778,7 @@ generateGhcLibCabal ghcFlavor = do
         indent2 (ghcLibIncludeDirs ghcFlavor) ++
         [ "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "    cc-options: -DTHREADED_RTS"
-        , "    cpp-options: " <> ghcStageDef ghcFlavor <> " -DTHREADED_RTS " <> ghciDef ghcFlavor <> " -DGHC_IN_GHCI"
+        , "    cpp-options: " <> ghcStageDef ghcFlavor <> " -DTHREADED_RTS " <> ghciDef ghcFlavor <> ghcInGhciDef ghcFlavor
         , "    if !os(windows)"
         , "        build-depends: unix"
         , "    else"
@@ -804,22 +804,13 @@ generateGhcLibCabal ghcFlavor = do
     putStrLn "# Generating 'ghc-lib.cabal'... Done!"
 
 ghciDef :: GhcFlavor -> String
-ghciDef GhcMaster = ""
-ghciDef Ghc901 = ""
-ghciDef Ghc8101 = ""
-ghciDef Ghc8102 = ""
-ghciDef Ghc8103 = ""
-ghciDef Ghc8104 = ""
-ghciDef _ = "-DGHCI"
+ghciDef ghcFlavor = if ghcFlavor > Ghc8101 then "" else "-DGHCI"
 
 ghcStageDef :: GhcFlavor -> String
-ghcStageDef GhcMaster = ""
-ghcStageDef Ghc901 = ""
-ghcStageDef Ghc8101 = ""
-ghcStageDef Ghc8102 = ""
-ghcStageDef Ghc8103 = ""
-ghcStageDef Ghc8104 = ""
-ghcStageDef _ = "-DSTAGE=2"
+ghcStageDef ghcFlavor = if ghcFlavor >= Ghc8101 then "" else "-DSTAGE=2"
+
+ghcInGhciDef :: GhcFlavor -> String
+ghcInGhciDef ghcFlavor = if ghcFlavor > Ghc901 then "" else " -DGHC_IN_GHCI "
 
 -- | Produces a ghc-lib-parser Cabal file.
 generateGhcLibParserCabal :: GhcFlavor -> IO ()
@@ -854,7 +845,7 @@ generateGhcLibParserCabal ghcFlavor = do
         , "    include-dirs:"] ++ indent2 (ghcLibParserIncludeDirs ghcFlavor) ++
         [ "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "    cc-options: -DTHREADED_RTS"
-        , "    cpp-options: " <> ghcStageDef ghcFlavor <> " -DTHREADED_RTS " <> ghciDef ghcFlavor <> " -DGHC_IN_GHCI"
+        , "    cpp-options: " <> ghcStageDef ghcFlavor <> " -DTHREADED_RTS " <> ghciDef ghcFlavor <> ghcInGhciDef ghcFlavor
         , "    if !os(windows)"
         , "        build-depends: unix"
         , "    else"
