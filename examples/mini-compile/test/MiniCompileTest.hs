@@ -82,6 +82,7 @@ data KindRep = KindRepTyConApp TyCon [KindRep]
 
 data TypeLitSort = TypeLitSymbol
                  | TypeLitNat
+                 | TypeLitChar
 
 data TyCon = TyCon Word# Word#           -- Fingerprint
                    Module                -- Module in which this is defined
