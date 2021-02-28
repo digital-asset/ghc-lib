@@ -765,7 +765,7 @@ generateGhcLibCabal ghcFlavor = do
         , "bug-reports: https://github.com/digital-asset/ghc-lib/issues"
         , "data-dir: " ++ dataDir
         , "data-files:"] ++ indent dataFiles ++
-        [ "extra-source-files:"] ++ indent (ghcLibExtraFiles ghcFlavor) ++
+        [ "extra-source-files:"] ++ indent (ghcLibExtraFiles ghcFlavor \\ [hadrianGeneratedRoot ghcFlavor </> "ghcversion.h"]) ++
         [ "source-repository head"
         , "    type: git"
         , "    location: git@github.com:digital-asset/ghc-lib.git"
@@ -833,8 +833,7 @@ generateGhcLibParserCabal ghcFlavor = do
         , "data-dir: " ++ dataDir
         , "data-files:"
         ] ++ indent dataFiles ++
-        [ "extra-source-files:" ] ++
-        indent (ghcLibParserExtraFiles ghcFlavor) ++
+        [ "extra-source-files:"] ++ indent (ghcLibParserExtraFiles ghcFlavor \\ [hadrianGeneratedRoot ghcFlavor </> "ghcversion.h"]) ++
         [ "source-repository head"
         , "    type: git"
         , "    location: git@github.com:digital-asset/ghc-lib.git"
