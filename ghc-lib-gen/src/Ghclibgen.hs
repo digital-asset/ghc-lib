@@ -444,12 +444,12 @@ applyPatchGhcPrim ghcFlavor = do
             else "prelude/TysPrim.hs"
     when (ghcFlavor >= Ghc901) (
       writeFile tysPrim .
-          replace
-              "bcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep"
-              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\nbcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep\n#else\nbcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName UnliftedRep\n#endif\n" .
-          replace
-              "bcoPrimTyConName              = mkPrimTc (fsLit \"BCO\") bcoPrimTyConKey bcoPrimTyCon"
-              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\nbcoPrimTyConName              = mkPrimTc (fsLit \"BCO\") bcoPrimTyConKey bcoPrimTyCon\n#else\nbcoPrimTyConName              = mkPrimTc (fsLit \"BCO#\") bcoPrimTyConKey bcoPrimTyCon\n#endif\n"
+          replaceIfGhcPrim070Else 0
+            "bcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep"
+            "bcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName UnliftedRep" .
+          replaceIfGhcPrim070Else 0
+            "bcoPrimTyConName              = mkPrimTc (fsLit \"BCO\") bcoPrimTyConKey bcoPrimTyCon"
+            "bcoPrimTyConName              = mkPrimTc (fsLit \"BCO#\") bcoPrimTyConKey bcoPrimTyCon"
         =<< readFile' tysPrim
         )
 
@@ -459,26 +459,34 @@ applyPatchGhcPrim ghcFlavor = do
           replace
               "{-# LANGUAGE RecordWildCards #-}"
               "{-# LANGUAGE RecordWildCards #-}\n{-# LANGUAGE CPP #-}" .
-          replace
+          replaceIfGhcPrim070Else 5
               "do linked_bco <- linkBCO' arr bco"
-              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\n     do linked_bco <- linkBCO' arr bco\n#else\n     do BCO bco# <- linkBCO' arr bco\n#endif" .
-          replace
-              "then return (HValue (unsafeCoerce linked_bco))\n           else case mkApUpd0# linked_bco of { (# final_bco #) ->"
-              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\n           then return (HValue (unsafeCoerce linked_bco))\n           else case mkApUpd0# linked_bco of { (# final_bco #) ->\n#else\n           then return (HValue (unsafeCoerce# bco#))\n           else case mkApUpd0# bco# of { (# final_bco #) ->\n#endif" .
-          replace
-              "bco <- linkBCO' arr bco\n      writePtrsArrayBCO i bco marr"
-              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\n      bco <- linkBCO' arr bco\n      writePtrsArrayBCO i bco marr\n#else\n      BCO bco# <- linkBCO' arr bco\n      writePtrsArrayBCO i bco# marr\n#endif" .
-          replace
-              "writePtrsArrayBCO :: Int -> BCO -> PtrsArr -> IO ()"
-              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\nwritePtrsArrayBCO :: Int -> BCO -> PtrsArr -> IO ()\n#else\nwritePtrsArrayBCO :: Int -> BCO# -> PtrsArr -> IO ()\n#endif" .
-          replace
-              "writePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()"
-              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\nwritePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()\n#else\ndata BCO = BCO BCO#\nwritePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()\n#endif" .
-          replace
-              "newBCO# instrs lits ptrs arity bitmap s"
-              "\n#if MIN_VERSION_ghc_prim(0, 7, 0)\n  newBCO# instrs lits ptrs arity bitmap s\n#else\n  case newBCO# instrs lits ptrs arity bitmap s of\n    (# s1, bco #) -> (# s1, BCO bco #)\n#endif"
+              "do BCO bco# <- linkBCO' arr bco" .
+          replaceIfGhcPrim070Else 11
+            "then return (HValue (unsafeCoerce linked_bco))\n           else case mkApUpd0# linked_bco of { (# final_bco #) ->"
+            "then return (HValue (unsafeCoerce# bco#))\n           else case mkApUpd0# bco# of { (# final_bco #) ->" .
+          replaceIfGhcPrim070Else 6
+            "bco <- linkBCO' arr bco\n      writePtrsArrayBCO i bco marr"
+            "BCO bco# <- linkBCO' arr bco\n      writePtrsArrayBCO i bco# marr" .
+          replaceIfGhcPrim070Else 0
+            "writePtrsArrayBCO :: Int -> BCO -> PtrsArr -> IO ()"
+            "writePtrsArrayBCO :: Int -> BCO# -> PtrsArr -> IO ()" .
+          replaceIfGhcPrim070Else  0
+            "writePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()"
+            "data BCO = BCO BCO#\nwritePtrsArrayMBA :: Int -> MutableByteArray# s -> PtrsArr -> IO ()" .
+          replaceIfGhcPrim070Else 2
+            "newBCO# instrs lits ptrs arity bitmap s"
+            "case newBCO# instrs lits ptrs arity bitmap s of\n    (# s1, bco #) -> (# s1, BCO bco #)"
         =<< readFile' createBCO
         )
+  where
+    replaceIfGhcPrim070Else :: Int -> String -> String -> String -> String
+    replaceIfGhcPrim070Else n s r = replace s (ifGhcPrim070Else n s r)
+
+    ifGhcPrim070Else :: Int -> String -> String -> String
+    ifGhcPrim070Else n s r =
+      let indent n s = replicate n ' ' ++ s  in
+      unlines $ ["\n#if MIN_VERSION_ghc_prim(0, 7, 0)", indent n s, "#else", indent n r , "#endif" ]
 
 -- | Fix up these rts include paths. We don't ship rts headers since
 -- we run ghc-lib using the RTS of the compiler we build with - we go
