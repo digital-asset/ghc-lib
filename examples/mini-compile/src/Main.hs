@@ -80,7 +80,11 @@ main = do
 mkDynFlags :: String -> String -> IO DynFlags
 mkDynFlags filename s = do
   dirs_to_clean <- newIORef Map.empty
+#if defined (GHC_MASTER)
+       -- Intentionally empty (temp file flags have moved to HscEnv).
+#else
   files_to_clean <- newIORef emptyFilesToClean
+#endif
   next_temp_suffix <- newIORef 0
   let baseFlags =
         (defaultDynFlags fakeSettings fakeLlvmConfig) {
@@ -98,9 +102,13 @@ mkDynFlags filename s = do
 #else
         , pkgDatabase = Just []
 #endif
+#if defined (GHC_MASTER)
+       -- Intentionally empty (temp file flags have moved to HscEnv).
+#else
         , dirsToClean = dirs_to_clean
         , filesToClean = files_to_clean
         , nextTempSuffix = next_temp_suffix
+#endif
 #if defined(DAML_UNIT_IDS)
         , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "daml-prim")
 #else
