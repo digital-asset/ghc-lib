@@ -701,11 +701,37 @@ withCommas ms =
   let ms' = reverse ms in
     reverse (head ms' : map (++ ",") (tail ms'))
 
+-- For each version of GHC, there is a minimum version build compiler
+-- to bootstrap it. For example, for ghc-9.0.1, you need minimum ghc
+-- version ghc-8.8.1 to build it. We want to try to arrange to make a
+-- Cabal build plan impossible for ghc-lib flavor/ build compiler
+-- version combinations that don't make sense. The idea here is to use
+-- the base library version as a proxy for the minimum compiler
+-- version.
+baseBounds :: GhcFlavor -> String
+baseBounds ghcFlavor =
+  case ghcFlavor of
+    -- ghc >= 8.4.4
+    DaGhc881  -> "base >= 4.11 && < 4.16"
+    Ghc881    -> "base >= 4.11 && < 4.16"
+    Ghc882    -> "base >= 4.11 && < 4.16"
+    Ghc883    -> "base >= 4.11 && < 4.16"
+    Ghc884    -> "base >= 4.11 && < 4.16"
+    -- ghc >= 8.6.5
+    Ghc8101   -> "base >= 4.12 && < 4.16"
+    Ghc8102   -> "base >= 4.12 && < 4.16"
+    Ghc8103   -> "base >= 4.12 && < 4.16"
+    Ghc8104   -> "base >= 4.12 && < 4.16"
+    -- ghc >= 8.8.1
+    Ghc901    -> "base >= 4.13 && < 4.16"
+    -- ghc >= 8.10.1
+    GhcMaster -> "base >= 4.14 && < 4.16"
+
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]
 commonBuildDepends ghcFlavor =
   [ "ghc-prim > 0.2 && < 0.8"
-  , "base >= 4.12 && < 4.16"
+  , baseBounds ghcFlavor
   , "containers >= 0.5 && < 0.7"
   , "bytestring >= 0.9 && < 0.11"
   , "binary == 0.8.*"
