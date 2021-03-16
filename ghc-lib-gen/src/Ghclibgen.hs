@@ -725,7 +725,7 @@ baseBounds ghcFlavor =
     -- ghc >= 8.8.1
     Ghc901    -> "base >= 4.13 && < 4.16"
     -- ghc >= 8.10.1
-    GhcMaster -> "base >= 4.14 && < 4.16"
+    GhcMaster -> "base >= 4.14 && < 4.17"
 
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]
