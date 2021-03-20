@@ -10,6 +10,7 @@ module Ghclibgen (
     applyPatchHeapClosures
   , applyPatchHsVersions
   , applyPatchGhcPrim
+  , applyPatchRtsBytecodes
   , applyPatchGHCiMessage
   , applyPatchDisableCompileTimeOptimizations
   , applyPatchRtsIncludePaths
@@ -432,6 +433,26 @@ applyPatchGHCiMessage ghcFlavor =
       =<< readFile' messageHs
   where
       messageHs = "libraries/ghci/GHCi/Message.hs"
+
+-- Support for unboxed tuples got landed 03/20/2021
+-- (https://gitlab.haskell.org/ghc/ghc/-/commit/1f94e0f7601f8e22fdd81a47f130650265a44196#4ec156a7b95e9c7a690c99bc79e6e0edf60a51dc)
+-- Older versions of the rts don't define two of the numeric
+-- instruction codes that this support relies on.
+applyPatchRtsBytecodes :: GhcFlavor -> IO ()
+applyPatchRtsBytecodes ghcFlavor = do
+  when (ghcFlavor == GhcMaster) (
+    writeFile asmHs .
+      replace
+        "#include \"rts/Bytecodes.h\""
+        (unlines [
+              "#include \"rts/Bytecodes.h\""
+            , "#if __GLASGOW_HASKELL__ <= 901"
+            , "#  define bci_RETURN_T          69"
+            , "#  define bci_PUSH_ALTS_T       70"
+            , "#endif" ])
+    =<< readFile' asmHs )
+    where
+      asmHs = "compiler/GHC/ByteCode/Asm.hs"
 
 -- Workaround lack of newer ghc-prim 12/3/2019
 -- (https://gitlab.haskell.org/ghc/ghc/commit/705a16df02411ec2445c9a254396a93cabe559ef)
