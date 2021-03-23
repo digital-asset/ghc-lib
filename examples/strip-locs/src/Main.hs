@@ -205,7 +205,7 @@ dumpParseTree flags m =
 #if defined(GHC_MASTER)
   do
     logger <- initLogger
-    putDumpMsg logger flags (mkDumpStyle alwaysQualify) Opt_D_dump_parsed_ast "" FormatText $ showAstData NoBlankSrcSpan m
+    putDumpMsg logger flags (mkDumpStyle alwaysQualify) Opt_D_dump_parsed_ast "" FormatText $ showAstData NoBlankSrcSpan NoBlankApiAnnotations m
 #elif defined(GHC_901)
   dumpAction flags (mkDumpStyle alwaysQualify) (dumpOptionsFromFlag Opt_D_dump_parsed_ast) "" FormatText $ showAstData NoBlankSrcSpan m
 #else
