@@ -10,6 +10,7 @@ module Ghclibgen (
     applyPatchHeapClosures
   , applyPatchHsVersions
   , applyPatchGhcPrim
+  , applyPatchRtsBytecodes
   , applyPatchGHCiMessage
   , applyPatchDisableCompileTimeOptimizations
   , applyPatchRtsIncludePaths
@@ -433,6 +434,26 @@ applyPatchGHCiMessage ghcFlavor =
   where
       messageHs = "libraries/ghci/GHCi/Message.hs"
 
+-- Support for unboxed tuples got landed 03/20/2021
+-- (https://gitlab.haskell.org/ghc/ghc/-/commit/1f94e0f7601f8e22fdd81a47f130650265a44196#4ec156a7b95e9c7a690c99bc79e6e0edf60a51dc)
+-- Older versions of the rts don't define two of the numeric
+-- instruction codes that this support relies on.
+applyPatchRtsBytecodes :: GhcFlavor -> IO ()
+applyPatchRtsBytecodes ghcFlavor = do
+  when (ghcFlavor == GhcMaster) (
+    writeFile asmHs .
+      replace
+        "#include \"rts/Bytecodes.h\""
+        (unlines [
+              "#include \"rts/Bytecodes.h\""
+            , "#if __GLASGOW_HASKELL__ <= 901"
+            , "#  define bci_RETURN_T          69"
+            , "#  define bci_PUSH_ALTS_T       70"
+            , "#endif" ])
+    =<< readFile' asmHs )
+    where
+      asmHs = "compiler/GHC/ByteCode/Asm.hs"
+
 -- Workaround lack of newer ghc-prim 12/3/2019
 -- (https://gitlab.haskell.org/ghc/ghc/commit/705a16df02411ec2445c9a254396a93cabe559ef)
 applyPatchGhcPrim :: GhcFlavor -> IO ()
@@ -701,11 +722,37 @@ withCommas ms =
   let ms' = reverse ms in
     reverse (head ms' : map (++ ",") (tail ms'))
 
+-- For each version of GHC, there is a minimum version build compiler
+-- to bootstrap it. For example, for ghc-9.0.1, you need minimum ghc
+-- version ghc-8.8.1 to build it. We want to try to arrange to make a
+-- Cabal build plan impossible for ghc-lib flavor/ build compiler
+-- version combinations that don't make sense. The idea here is to use
+-- the base library version as a proxy for the minimum compiler
+-- version.
+baseBounds :: GhcFlavor -> String
+baseBounds ghcFlavor =
+  case ghcFlavor of
+    -- ghc >= 8.4.4
+    DaGhc881  -> "base >= 4.11 && < 4.16"
+    Ghc881    -> "base >= 4.11 && < 4.16"
+    Ghc882    -> "base >= 4.11 && < 4.16"
+    Ghc883    -> "base >= 4.11 && < 4.16"
+    Ghc884    -> "base >= 4.11 && < 4.16"
+    -- ghc >= 8.6.5
+    Ghc8101   -> "base >= 4.12 && < 4.16"
+    Ghc8102   -> "base >= 4.12 && < 4.16"
+    Ghc8103   -> "base >= 4.12 && < 4.16"
+    Ghc8104   -> "base >= 4.12 && < 4.16"
+    -- ghc >= 8.8.1
+    Ghc901    -> "base >= 4.13 && < 4.16"
+    -- ghc >= 8.10.1
+    GhcMaster -> "base >= 4.14 && < 4.17"
+
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]
 commonBuildDepends ghcFlavor =
   [ "ghc-prim > 0.2 && < 0.8"
-  , "base >= 4.12 && < 4.16"
+  , baseBounds ghcFlavor
   , "containers >= 0.5 && < 0.7"
   , "bytestring >= 0.9 && < 0.11"
   , "binary == 0.8.*"

@@ -97,13 +97,13 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-master      | ghc-8.8.4  |
+    # | linux   | ghc-master      | ghc-8.10.4 |
     # +---------+-----------------+------------+
-    linux-ghc-master-8.8.4:
+    linux-ghc-master-8.10.4:
       image: "ubuntu-latest"
       mode: "--ghc-flavor ghc-master"
       stack-yaml: "stack.yaml"
-      resolver: "nightly-2020-03-14"
+      resolver: "nightly-2021-03-07"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
