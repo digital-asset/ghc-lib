@@ -13,6 +13,7 @@ module Ghclibgen (
   , applyPatchGhcPrim
   , applyPatchHaddockHs
   , applyPatchRtsBytecodes
+  , applyPatchGHCiInfoTable
   , applyPatchGHCiMessage
   , applyPatchDisableCompileTimeOptimizations
   , applyPatchRtsIncludePaths
@@ -404,6 +405,41 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
           writeFile file .
           ("{-# OPTIONS_GHC -O0 #-}\n" ++)
           =<< readFile' file
+
+applyPatchGHCiInfoTable :: GhcFlavor -> IO ()
+applyPatchGHCiInfoTable ghcFlavor =
+  -- On master, we now require a definition of MIN_VERSION_RTS (since
+  -- 2021-03-31, see
+  -- https://gitlab.haskell.org/ghc/ghc/-/commit/e754ff7f178a629a2261cba77a29d9510391aebd).
+  when(ghcFlavor == GhcMaster)  $ do
+    -- Synthesize a definition of MIN_VERSION_rts. If X.Y.Z is
+    -- the current version, then MIN_VERSION_rts(a, b, c) is a
+    -- test of whether X.Y.Z >= a.b.c (that is, rts X.Y.Z is at
+    -- least a.b.c).
+    let rs = [
+            "#if !(defined MIN_VERSION_rts)"
+          , "#  if (__GLASGOW_HASKELL__ > 901)"
+          , "#    define MIN_VERSION_rts(major1,major2,minor) (\\"
+          -- For ghc > 9.0.1 rts is 1.0.1.
+          , "        (major1) <  1 ||\\"
+          , "        (major1) == 1 && (major2) <  0 ||\\"
+          , "        (major1) == 1 && (major2) == 0 && (minor) <= 1)"
+          , "#  else"
+          , "#    define MIN_VERSION_rts(major1,major2,minor) (\\"
+          -- For ghc <= 9.0.1 rts is 1.0.0.
+          , "        (major1) <  1 ||\\"
+          , "        (major1) == 1 && (major2) <  0 ||\\"
+          , "        (major1) == 1 && (major2) == 0 && (minor) <= 0)"
+          , "#  endif"
+          , "#endif" ]
+    -- Write this definition before it's tested on.
+    writeFile infoTableHsc .
+        replace
+           "#include \"Rts.h\""
+          ("#include \"Rts.h\"\n" <> unlines rs)
+      =<< readFile' infoTableHsc
+  where
+      infoTableHsc = "libraries/ghci/GHCi/InfoTable.hsc"
 
 applyPatchGHCiMessage :: GhcFlavor -> IO ()
 applyPatchGHCiMessage ghcFlavor =
