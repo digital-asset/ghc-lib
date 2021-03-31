@@ -36,6 +36,7 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
         applyPatchCmmParseNoImplicitPrelude ghcFlavor
         applyPatchRtsBytecodes ghcFlavor
         generateGhcLibCabal ghcFlavor
+        applyPatchGHCiInfoTable ghcFlavor
   where
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do

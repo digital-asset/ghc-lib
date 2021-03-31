@@ -156,8 +156,11 @@ steps:
   # macOS
   - bash: |
       /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-      brew install automake
+      brew install autoconf automake pkgconfig m4 libtool gettext
       brew upgrade gmp
+      curl -O -L http://ftpmirror.gnu.org/autoconf/autoconf-2.69.tar.gz
+      tar -xzf autoconf-2.69.tar.gz
+      (cd autoconf-* && ./configure && make && make install && autoconf --version)
     condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: Install brew
   - script: |
