@@ -232,7 +232,9 @@ main = do
           (defaultDynFlags fakeSettings fakeLlvmConfig) file s
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream) s of
-#if defined (GHC_MASTER) || defined (GHC_921)
+#if defined (GHC_MASTER)
+            PFailed s -> report flags $ fmap mkParserErr (snd (getMessages s))
+#elif defined (GHC_921)
             PFailed s -> report flags $ fmap pprError (snd (getMessages s))
 #elif defined (GHC_901) || defined (GHC_8101)
             PFailed s -> report flags $ snd (getMessages s flags)
@@ -240,7 +242,11 @@ main = do
             PFailed _ loc err -> report flags $ unitBag $ mkPlainErrMsg flags loc err
 #endif
             POk s m -> do
-#if defined (GHC_MASTER) || defined (GHC_921)
+#if defined (GHC_MASTER)
+              let (wrns, errs) = getMessages s
+              report flags (fmap (mkParserWarn flags) wrns)
+              report flags (fmap mkParserErr errs)
+#elif defined (GHC_921)
               let (wrns, errs) = getMessages s
               report flags (fmap pprWarning wrns)
               report flags (fmap pprError errs)
