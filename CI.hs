@@ -220,7 +220,7 @@ buildDists
     -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
     case ghcFlavor of
-        Ghc921 -> cmd "cd ghc && git fetch --tags && git checkout ghc-9.2"
+        Ghc921 -> cmd "cd ghc && git fetch --tags && git checkout ghc-9.2.1-alpha1"
         Ghc901 -> cmd "cd ghc && git fetch --tags && git checkout ghc-9.0.1-release"
         Ghc8101 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.1-release"
         Ghc8102 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.2-release"
@@ -249,7 +249,7 @@ buildDists
     -- hadrian/stack.yaml resolver (which can and we should expect
     -- to be, different to our resolver).
 
-    -- Calculate verison and package names.
+    -- Calculate version and package names.
     version <- tag
     let pkg_ghclib = "ghc-lib-" ++ version
         pkg_ghclib_parser = "ghc-lib-parser-" ++ version
