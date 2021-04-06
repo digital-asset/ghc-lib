@@ -45,6 +45,9 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
         applyPatchRtsIncludePaths ghcFlavor
         applyPatchGhcPrim ghcFlavor
         applyPatchDisableCompileTimeOptimizations ghcFlavor
+        -- Do this before ./boot && ./configure which occurs in
+        -- 'generatePrerequisites'.
+        applyPatchAclocal ghcFlavor
         -- This invokes 'stack' strictly configured by
         -- 'hadrian/stack.yaml'.
         generatePrerequisites ghcFlavor
