@@ -161,6 +161,7 @@ stage0Ghci = stage0Libraries </> "ghci/build"
 hadrianGeneratedRoot :: GhcFlavor -> FilePath
 hadrianGeneratedRoot = \case
   GhcMaster -> stage0Lib
+  Ghc921 -> stage0Lib
   Ghc901 -> stage0Lib
   Ghc8101 -> stage0Lib
   Ghc8102 -> stage0Lib
@@ -194,7 +195,7 @@ derivedConstantsDependencies :: GhcFlavor -> [FilePath]
 derivedConstantsDependencies ghcFlavor =
    map (hadrianGeneratedRoot ghcFlavor </>)
      ("DerivedConstants.h"
-      : [ x | ghcFlavor /= GhcMaster
+      : [ x | ghcFlavor <= Ghc901
           , x <- [ "GHCConstantsHaskellExports.hs"
                  , "GHCConstantsHaskellWrappers.hs"
                  , "GHCConstantsHaskellType.hs"
@@ -230,9 +231,9 @@ platformH ghcFlavor =
 packageCode :: GhcFlavor -> [FilePath]
 packageCode ghcFlavor =
   [ stage0Compiler </> "Config.hs" | ghcFlavor < Ghc901 ] ++
+  [ stage0GhcBoot  </> "GHC/Version.hs" | ghcFlavor >= Ghc8101 ] ++
   [ stage0Compiler </> "GHC/Settings/Config.hs" | ghcFlavor >= Ghc901 ] ++
-  [ stage0Compiler </> "GHC/Platform/Constants.hs" | ghcFlavor == GhcMaster ] ++
-  [ stage0GhcBoot  </> "GHC/Version.hs" | ghcFlavor >= Ghc8101 ]
+  [ stage0Compiler </> "GHC/Platform/Constants.hs" | ghcFlavor >= Ghc921 ]
 
 fingerprint :: GhcFlavor -> [FilePath]
 fingerprint ghcFlavor = [ stage0Compiler </> "Fingerprint.hs" | ghcFlavor < Ghc8101 ]
@@ -338,8 +339,8 @@ calcParserModules ghcFlavor = do
       -- ghc-lib. We intervene so that rather, they go into
       -- ghc-lib-parser.
       extraModules =
-        [ "GHC.Driver.Config" | ghcFlavor == GhcMaster ] ++
-        [ "GHC.Parser.Errors.Ppr" | ghcFlavor == GhcMaster ] ++
+        [ "GHC.Driver.Config" | ghcFlavor > Ghc901 ] ++
+        [ "GHC.Parser.Errors.Ppr" | ghcFlavor > Ghc901 ] ++
         [ if ghcFlavor >= Ghc901 then "GHC.Parser.Header" else "HeaderInfo"
         , if ghcFlavor >= Ghc8101 then "GHC.Hs.Dump" else "HsDumpAst"
         ]
@@ -392,6 +393,7 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
     let files =
           case ghcFlavor of
             GhcMaster -> [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
+            Ghc921 ->    [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
             Ghc901 ->    [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
             Ghc8101 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
             Ghc8102 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
@@ -407,7 +409,7 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
 
 applyPatchGHCiMessage :: GhcFlavor -> IO ()
 applyPatchGHCiMessage ghcFlavor =
-  when (ghcFlavor == GhcMaster) $ do
+  when (ghcFlavor >= Ghc921) $ do
     -- Synthesize a definition of MIN_VERSION_ghc_heap. If X.Y.Z is
     -- the current version, then MIN_VERSION_ghc_heap(a, b, c) is a
     -- test of whether X.Y.Z >= a.b.c (that is, ghc-heap X.Y.Z is at
@@ -458,7 +460,7 @@ applyPatchHaddockHs ghcFlavor = do
 -- instruction codes that this support relies on.
 applyPatchRtsBytecodes :: GhcFlavor -> IO ()
 applyPatchRtsBytecodes ghcFlavor = do
-  when (ghcFlavor == GhcMaster) (
+  when (ghcFlavor >= Ghc921) (
     writeFile asmHs .
       replace
         "#include \"rts/Bytecodes.h\""
@@ -589,10 +591,9 @@ mangleCSymbols ghcFlavor = do
         prefixSymbol setHeapSize
         =<< readFile' file
     let file =
-          case ghcFlavor of
-            GhcMaster -> "compiler/GHC/Driver/Session.hs"
-            Ghc901    -> "compiler/GHC/Driver/Session.hs"
-            _         -> "compiler/main/DynFlags.hs"
+          if ghcFlavor >= Ghc901
+            then "compiler/GHC/Driver/Session.hs"
+            else "compiler/main/DynFlags.hs"
       in
         writeFile file .
         prefixForeignImport enableTimingStats .
@@ -771,14 +772,15 @@ baseBounds ghcFlavor =
     Ghc882    -> "base >= 4.11 && < 4.16"
     Ghc883    -> "base >= 4.11 && < 4.16"
     Ghc884    -> "base >= 4.11 && < 4.16"
-    -- ghc >= 8.6.5
+
     Ghc8101   -> "base >= 4.12 && < 4.16"
     Ghc8102   -> "base >= 4.12 && < 4.16"
     Ghc8103   -> "base >= 4.12 && < 4.16"
     Ghc8104   -> "base >= 4.12 && < 4.16"
-    -- ghc >= 8.8.1
+
     Ghc901    -> "base >= 4.13 && < 4.16"
-    -- ghc >= 8.10.1
+    Ghc921    -> "base >= 4.14 && < 4.17"
+
     GhcMaster -> "base >= 4.14 && < 4.17"
 
 -- | Common build dependencies.
@@ -800,7 +802,7 @@ commonBuildDepends ghcFlavor =
   , "hpc == 0.6.*"
   ] ++
   [ "exceptions == 0.10.*" | ghcFlavor >= Ghc901 ] ++
-  [ "parsec" | ghcFlavor == GhcMaster ]
+  [ "parsec" | ghcFlavor >= Ghc921 ]
 
 -- | This utility factored out to avoid repetion.
 libBinParserModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String])
@@ -823,7 +825,7 @@ removeGeneratedIntermediateFiles ghcFlavor = do
     removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/InfoTable/Types.hs"
     removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/Constants.hs"
     removeFile $ stage0Ghci </> "GHCi/FFI.hs"
-    when (ghcFlavor /= GhcMaster) $
+    when (ghcFlavor < Ghc921) $
       removeFile $ stage0Ghci </> "GHCi/InfoTable.hs"
 
 -- | Produces a ghc-lib Cabal file.
