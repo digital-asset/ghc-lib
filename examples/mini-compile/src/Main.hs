@@ -217,8 +217,11 @@ fakeSettings = Settings
       }
     platformConstants =
        PlatformConstants {
+#if !defined (GHC_MASTER)
          pc_DYNAMIC_BY_DEFAULT=False
-       , pc_WORD_SIZE=8
+       ,
+#endif
+         pc_WORD_SIZE=8
        , pc_STD_HDR_SIZE=1
        , pc_TAG_BITS=3
        , pc_BLOCKS_PER_MBLOCK=252
