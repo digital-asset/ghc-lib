@@ -155,7 +155,13 @@ fakeSettings = Settings
       , platformUnregisterised=True
     }
     platformConstants =
-      PlatformConstants{pc_DYNAMIC_BY_DEFAULT=False,pc_WORD_SIZE=8}
+      PlatformConstants{
+#if !defined (GHC_MASTER)
+          pc_DYNAMIC_BY_DEFAULT=False
+        ,
+#endif
+          pc_WORD_SIZE=8
+    }
 
 #if defined (GHC_MASTER) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
