@@ -94,7 +94,9 @@ fakeSettings = Settings
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
   , sPlatformMisc=platformMisc
+#if !defined (GHC_MASTER)
   , sPlatformConstants=platformConstants
+#endif
   , sToolSettings=toolSettings
   }
 #else
@@ -130,7 +132,10 @@ fakeSettings = Settings
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
       , platformTablesNextToCode=False
-#if !defined (GHC_901)
+#if defined(GHC_MASTER)
+      , platform_constants = Nothing
+#endif
+#if !defined(GHC_MASTER) && !defined (GHC_901)
       , platformConstants=platformConstants
 #endif
       ,
@@ -147,14 +152,14 @@ fakeSettings = Settings
 #endif
       , platformUnregisterised=True
       }
+#if !defined (GHC_MASTER)
     platformConstants =
       PlatformConstants{
-#if !defined (GHC_MASTER)
           pc_DYNAMIC_BY_DEFAULT=False
         ,
-#endif
           pc_WORD_SIZE=8
     }
+#endif
 
 #if defined (GHC_MASTER) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
@@ -205,12 +210,20 @@ isNegated (HsApp _ (L _ (HsVar _ (L _ id))) _) = id == idNot
 isNegated (HsPar _ (L _ e)) = isNegated e
 isNegated _ = False
 
+#if defined (GHC_MASTER)
+analyzeExpr :: DynFlags -> LocatedA (HsExpr GhcPs) -> IO ()
+#else
 analyzeExpr :: DynFlags -> Located (HsExpr GhcPs) -> IO ()
-analyzeExpr flags (L loc expr) =
+#endif
+analyzeExpr flags (L loc expr) = do
   case expr of
     HsApp _ (L _ (HsVar _ (L _ id))) (L _ e)
         | id == idNot, isNegated e ->
+#if defined (GHC_MASTER)
+            putStrLn (showSDoc flags (ppr (locA loc))
+#else
             putStrLn (showSDoc flags (ppr loc)
+#endif
                       ++ " : lint : double negation "
                       ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
     _ -> return ()

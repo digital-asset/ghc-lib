@@ -141,21 +141,23 @@ fakeLlvmConfig = ([], [])
 
 fakeSettings :: Settings
 fakeSettings = Settings
-#if !defined (GHC_MASTER) &&  !defined (GHC_921) && !defined (GHC_901) && !defined (GHC_8101)
+#if defined (GHC_MASTER) ||  defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
+  { sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+#  if !defined (GHC_MASTER)
+  , sPlatformConstants=platformConstants
+#  endif
+  , sToolSettings=toolSettings
+  }
+#else
   { sTargetPlatform=platform
   , sPlatformConstants=platformConstants
   , sProjectVersion=cProjectVersion
   , sProgramName="ghc"
   , sOpt_P_fingerprint=fingerprint0
   , sTmpDir="."
-  }
-#else
-  { sGhcNameVersion=ghcNameVersion
-  , sFileSettings=fileSettings
-  , sTargetPlatform=platform
-  , sPlatformMisc=platformMisc
-  , sPlatformConstants=platformConstants
-  , sToolSettings=toolSettings
   }
 #endif
   where
@@ -198,7 +200,10 @@ fakeSettings = Settings
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
       , platformTablesNextToCode=False
-#if !defined(GHC_901)
+#if defined(GHC_MASTER)
+      , platform_constants = Nothing
+#endif
+#if !defined(GHC_MASTER) && !defined(GHC_901)
       , platformConstants=platformConstants
 #endif
       ,
@@ -215,12 +220,11 @@ fakeSettings = Settings
 #endif
       , platformUnregisterised=True
       }
+#if !defined (GHC_MASTER)
     platformConstants =
        PlatformConstants {
-#if !defined (GHC_MASTER)
          pc_DYNAMIC_BY_DEFAULT=False
        ,
-#endif
          pc_WORD_SIZE=8
        , pc_STD_HDR_SIZE=1
        , pc_TAG_BITS=3
@@ -231,3 +235,4 @@ fakeSettings = Settings
        , pc_MAX_Vanilla_REG=10
        , pc_MAX_Real_Long_REG=0
        }
+#endif
