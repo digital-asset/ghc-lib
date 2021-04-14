@@ -8,12 +8,14 @@
 
 module Ghclibgen (
     applyPatchHeapClosures
+  , applyPatchGhcPrelude
   , applyPatchAclocal
   , applyPatchHsVersions
   , applyPatchGhcPrim
   , applyPatchHaddockHs
   , applyPatchRtsBytecodes
   , applyPatchGHCiMessage
+  , applyPatchDerivedConstants
   , applyPatchDisableCompileTimeOptimizations
   , applyPatchRtsIncludePaths
   , applyPatchStage
@@ -176,13 +178,19 @@ dataDir = stage0Lib
 
 -- |'dataFiles' is a list of files to be installed for run-time use by
 -- the package.
-dataFiles :: [FilePath]
-dataFiles =
+dataFiles :: GhcFlavor -> [FilePath]
+dataFiles ghcFlavor =
+    -- From ghc/ghc.mk: "The GHC programs need to depend on all the
+    -- helper programs they might call and the settings files they
+    -- use."
     [ "settings"
     , "llvm-targets"
     , "llvm-passes"
-    , "platformConstants"
-    ]
+    ] ++
+    -- Since 2021-04-10 a platformConstants file is no longer a thing.
+    -- See
+    -- (https://gitlab.haskell.org/ghc/ghc/-/commit/2cdc95f9c068421a55c634933ab2d8596eb992fb).
+    [ "platformConstants" | ghcFlavor <= Ghc921 ]
 
 -- | See 'hadrian/src/Rules/Generate.hs'.
 
@@ -246,7 +254,7 @@ cHeaders ghcFlavor =
   , "includes/MachDeps.h"
   , "includes/stg/MachRegs.h"
   , "includes/CodeGen.Platform.hs"
-  , "compiler/GhclibHsVersions.h"
+  , "compiler/HsVersions.h"
   , "compiler/Unique.h"
   ] ++
   [ f | ghcFlavor < Ghc8101, f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"] ]
@@ -264,24 +272,24 @@ generatedParser ghcFlavor =
 -- | Cabal "extra-source-files" files for ghc-lib-parser.
 ghcLibParserExtraFiles :: GhcFlavor -> [FilePath]
 ghcLibParserExtraFiles ghcFlavor =
-    includesDependencies ghcFlavor ++
-    derivedConstantsDependencies ghcFlavor ++
-    compilerDependencies ghcFlavor ++
-    platformH ghcFlavor ++
-    fingerprint ghcFlavor ++
-    packageCode ghcFlavor ++
-    generatedParser ghcFlavor ++
-    cHeaders ghcFlavor
+      includesDependencies ghcFlavor ++
+      derivedConstantsDependencies ghcFlavor ++
+      compilerDependencies ghcFlavor ++
+      platformH ghcFlavor ++
+      fingerprint ghcFlavor ++
+      packageCode ghcFlavor ++
+      generatedParser ghcFlavor ++
+      cHeaders ghcFlavor
 
 -- | Cabal "extra-source-files" for ghc-lib.
 ghcLibExtraFiles :: GhcFlavor -> [FilePath]
 ghcLibExtraFiles ghcFlavor =
-    includesDependencies ghcFlavor ++
-    derivedConstantsDependencies ghcFlavor ++
-    compilerDependencies ghcFlavor ++
-    platformH ghcFlavor ++
-    fingerprint ghcFlavor ++
-    cHeaders ghcFlavor
+      includesDependencies ghcFlavor ++
+      derivedConstantsDependencies ghcFlavor ++
+      compilerDependencies ghcFlavor ++
+      platformH ghcFlavor ++
+      fingerprint ghcFlavor ++
+      cHeaders ghcFlavor
 
 -- | Calculate via `ghc -M` the list of modules that are required for
 -- 'ghc-lib-parser'.
@@ -367,22 +375,26 @@ applyPatchHeapClosures _ = do
       "\"Ghclib_reallyUnsafePtrEqualityUpToTag\""
     =<< readFile' "libraries/ghc-heap/GHC/Exts/Heap/Closures.hs"
 
--- Rename 'HsVersions.h' to 'GhclibHsVersions.h' then replace
--- occurences of that string in all .hs,.hsc and .y files reachable
--- from the 'compiler' directory. This enables use of ghc-lib-parser
--- with ghcjs (issue
+-- Rename a file then replace occurences of the name of the file in
+-- sources.
+renameFileRewriteSrcs :: FilePath -> FilePath -> [FilePath] -> [String] -> IO ()
+renameFileRewriteSrcs root f dirs exts = do
+  let (old, new) = (f, "Ghclib" ++ f)
+  renameFile (root </> old) (root </> new)
+  forM_ dirs $ \dir -> do
+    files <- filter ((`elem` exts) . takeExtension) <$> listFilesRecursive dir
+    forM_ files $ \file -> writeFile file . replace old new =<< readFile' file
+
+-- Rename 'HsVersions.h' to 'GhclibHsVersions.h' (see
 -- https://github.com/digital-asset/ghc-lib/issues/204).
 applyPatchHsVersions :: GhcFlavor -> IO ()
-applyPatchHsVersions _ = do
-  renameFile "compiler/HsVersions.h" "compiler/GhclibHsVersions.h"
-  files <- filter ((`elem` [".hs", ".y", ".hsc"]) . takeExtension) <$> listFilesRecursive "compiler"
-  forM_ files $
-    \file ->
-      writeFile file .
-        replace
-          "HsVersions.h"
-          "GhclibHsVersions.h"
-      =<< readFile' file
+applyPatchHsVersions _ =
+  renameFileRewriteSrcs "compiler" "HsVersions.h" ["compiler", stage0Compiler] [".hs", ".y", ".hsc"]
+
+-- Rename 'DerivedConstants.h' to 'GhclibDerivedConstants.h'.
+applyPatchDerivedConstants :: GhcFlavor -> IO ()
+applyPatchDerivedConstants ghcFlavor =
+  renameFileRewriteSrcs (hadrianGeneratedRoot ghcFlavor) "DerivedConstants.h" ["compiler", stage0Compiler] [".hs", ".y", ".hsc"]
 
 -- Selectively disable optimizations in some particular files so as
 -- to reduce (user) compile times. The files we apply this to were
@@ -678,6 +690,17 @@ applyPatchCmmParseNoImplicitPrelude _ = do
         "import GhcPrelude\nimport qualified Prelude"
     =<< readFile' cmmParse
 
+applyPatchGhcPrelude :: GhcFlavor -> IO ()
+applyPatchGhcPrelude _ = do
+  let ghcPrelude = "compiler/GHC/Prelude.hs"
+  fileExists <- doesFileExist ghcPrelude
+  when fileExists $
+    writeFile ghcPrelude .
+      replace
+        "#if MIN_VERSION_base(4,15,0)"
+        "#if MIN_VERSION_base(4,16,0)"
+    =<< readFile' ghcPrelude
+
 -- [Note : GHC now depends on exceptions package]
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- As of
@@ -854,8 +877,8 @@ generateGhcLibCabal ghcFlavor = do
         , "homepage: https://github.com/digital-asset/ghc-lib"
         , "bug-reports: https://github.com/digital-asset/ghc-lib/issues"
         , "data-dir: " ++ dataDir
-        , "data-files:"] ++ indent dataFiles ++
-        [ "extra-source-files:"] ++ indent (ghcLibExtraFiles ghcFlavor \\ [hadrianGeneratedRoot ghcFlavor </> "ghcversion.h"]) ++
+        , "data-files:"] ++ indent (dataFiles ghcFlavor) ++
+        [ "extra-source-files:"] ++ indent (performExtraFilesSubstitutions ghcFlavor ghcLibExtraFiles) ++
         [ "source-repository head"
         , "    type: git"
         , "    location: git@github.com:digital-asset/ghc-lib.git"
@@ -903,6 +926,18 @@ ghcStageDef ghcFlavor = if ghcFlavor >= Ghc8101 then "" else "-DSTAGE=2"
 ghcInGhciDef :: GhcFlavor -> String
 ghcInGhciDef ghcFlavor = if ghcFlavor > Ghc901 then "" else " -DGHC_IN_GHCI "
 
+-- Perform a set of specific substitutions on the given list of files.
+performExtraFilesSubstitutions :: GhcFlavor -> (GhcFlavor -> [FilePath]) -> [FilePath]
+performExtraFilesSubstitutions ghcFlavor files =
+  foldl' sub (files ghcFlavor)
+      [ (hadrianGeneratedRoot ghcFlavor </> "ghcversion.h", Nothing)
+      , (hadrianGeneratedRoot ghcFlavor </> "DerivedConstants.h", Just $ hadrianGeneratedRoot ghcFlavor </> "GhclibDerivedConstants.h")
+      , ("compiler" </> "HsVersions.h", Just $ "compiler" </> "GhclibHsVersions.h")
+      ]
+  where
+    sub :: Eq a => [a] -> (a, Maybe a) -> [a]
+    sub xs (s, r) = replace [s] (maybeToList r) xs
+
 -- | Produces a ghc-lib-parser Cabal file.
 generateGhcLibParserCabal :: GhcFlavor -> IO ()
 generateGhcLibParserCabal ghcFlavor = do
@@ -923,8 +958,8 @@ generateGhcLibParserCabal ghcFlavor = do
         , "bug-reports: https://github.com/digital-asset/ghc-lib/issues"
         , "data-dir: " ++ dataDir
         , "data-files:"
-        ] ++ indent dataFiles ++
-        [ "extra-source-files:"] ++ indent (ghcLibParserExtraFiles ghcFlavor \\ [hadrianGeneratedRoot ghcFlavor </> "ghcversion.h"]) ++
+        ] ++ indent (dataFiles ghcFlavor) ++
+        [ "extra-source-files:"] ++ indent (performExtraFilesSubstitutions ghcFlavor ghcLibParserExtraFiles) ++
         [ "source-repository head"
         , "    type: git"
         , "    location: git@github.com:digital-asset/ghc-lib.git"
@@ -1002,7 +1037,7 @@ generatePrerequisites ghcFlavor = do
           , "--build-root=ghc-lib"
         ] ++
         (if ghcFlavor >= Ghc901 then ["--bignum=native"] else ["--integer-simple"]) ++
-        ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) dataFiles
+        ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) (dataFiles ghcFlavor)
 
   -- We use the hadrian generated Lexer and Parser so get these out
   -- of the way.
