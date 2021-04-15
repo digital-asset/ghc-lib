@@ -44,7 +44,6 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
         applyPatchRtsIncludePaths ghcFlavor
         applyPatchGhcPrim ghcFlavor
         applyPatchDisableCompileTimeOptimizations ghcFlavor
-        applyPatchGhcPrelude ghcFlavor
         -- This line must come before 'generatePrerequisites':
         applyPatchAclocal ghcFlavor -- Do before ./boot && ./configure
         -- This invokes 'stack' strictly configured by
