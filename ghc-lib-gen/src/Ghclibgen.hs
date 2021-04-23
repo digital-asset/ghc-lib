@@ -8,7 +8,6 @@
 
 module Ghclibgen (
     applyPatchHeapClosures
-  , applyPatchGhcPrelude
   , applyPatchAclocal
   , applyPatchHsVersions
   , applyPatchGhcPrim
@@ -689,17 +688,6 @@ applyPatchCmmParseNoImplicitPrelude _ = do
         "import GhcPrelude"
         "import GhcPrelude\nimport qualified Prelude"
     =<< readFile' cmmParse
-
-applyPatchGhcPrelude :: GhcFlavor -> IO ()
-applyPatchGhcPrelude _ = do
-  let ghcPrelude = "compiler/GHC/Prelude.hs"
-  fileExists <- doesFileExist ghcPrelude
-  when fileExists $
-    writeFile ghcPrelude .
-      replace
-        "#if MIN_VERSION_base(4,15,0)"
-        "#if MIN_VERSION_base(4,16,0)"
-    =<< readFile' ghcPrelude
 
 -- [Note : GHC now depends on exceptions package]
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
