@@ -60,7 +60,7 @@ data GhcFlavor = Ghc921
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "0a8c14bd5a5438b1d042ad279b8ffff1bc867e7e" -- 2021-04-15
+current = "7bc7eea3897dcb8a87fdb0921f451b9bc77309f6" -- 2021-04-23
 
 -- Command line argument generators.
 
@@ -220,7 +220,7 @@ buildDists
     -- Get a clone of ghc.
     cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
     case ghcFlavor of
-        Ghc921 -> cmd "cd ghc && git fetch --tags && git checkout ghc-9.2.1-alpha1"
+        Ghc921 -> cmd "cd ghc && git fetch --tags && git checkout ghc-9.2.1-alpha2"
         Ghc901 -> cmd "cd ghc && git fetch --tags && git checkout ghc-9.0.1-release"
         Ghc8101 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.1-release"
         Ghc8102 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.2-release"
