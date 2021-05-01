@@ -328,7 +328,7 @@ calcParserModules ghcFlavor = do
   -- The idea here is harvest from lines like
   -- 'compiler/prelude/PrelRules.o : compiler/prelude/PrelRules.hs',
   -- just the module name e.g. in this example, 'PrelRules'.
-      -- Stip comment lines.
+      -- Strip comment lines.
   let depends = filter (not . isPrefixOf "#") (lines buf)
       -- Restrict to Haskell source file lines.
       moduleLines = filter (isSuffixOf ".hs") depends
@@ -342,12 +342,22 @@ calcParserModules ghcFlavor = do
       -- Lastly, manipulate text like 'GHC/Exts/Heap/Constants.hs'
       -- into 'GHC.Exts.Heap.Constants'.
       modules = map (replace "/" "." . dropSuffix ".hs") strippedModulePaths
-      -- The modules in this list would by default end up in
-      -- ghc-lib. We intervene so that rather, they go into
-      -- ghc-lib-parser.
+      -- The modules in this list elude being listed in
+      -- '.parser-depends' but are required by ghc-lib-parser. We
+      -- intervene and patch things up.
       extraModules =
-        [ "GHC.Driver.Config" | ghcFlavor > Ghc901 ] ++
-        [ "GHC.Parser.Errors.Ppr" | ghcFlavor > Ghc901 ] ++
+        [ x | ghcFlavor > Ghc921
+            , x <- [ "GHC.Runtime.Interpreter"
+                   , "GHCi.BinaryArray"
+                   , "GHCi.BreakArray"
+                   , "GHCi.ResolvedBCO"
+                   ]
+        ] ++
+        [ x | ghcFlavor > Ghc901
+            ,  x <- [ "GHC.Driver.Config"
+                    , "GHC.Parser.Errors.Ppr"
+                    ]
+        ] ++
         [ if ghcFlavor >= Ghc901 then "GHC.Parser.Header" else "HeaderInfo"
         , if ghcFlavor >= Ghc8101 then "GHC.Hs.Dump" else "HsDumpAst"
         ]
