@@ -253,9 +253,9 @@ cHeaders ghcFlavor =
   , "includes/MachDeps.h"
   , "includes/stg/MachRegs.h"
   , "includes/CodeGen.Platform.hs"
-  , "compiler/HsVersions.h"
   , "compiler/Unique.h"
   ] ++
+  [ "compiler/HsVersions.h" | ghcFlavor <= Ghc921] ++
   [ f | ghcFlavor < Ghc8101, f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"] ]
 
 -- | We generate the parser and lexer and ship those rather than their
@@ -397,8 +397,9 @@ renameFileRewriteSrcs root f dirs exts = do
 -- Rename 'HsVersions.h' to 'GhclibHsVersions.h' (see
 -- https://github.com/digital-asset/ghc-lib/issues/204).
 applyPatchHsVersions :: GhcFlavor -> IO ()
-applyPatchHsVersions _ =
-  renameFileRewriteSrcs "compiler" "HsVersions.h" ["compiler", stage0Compiler] [".hs", ".y", ".hsc"]
+applyPatchHsVersions ghcFlavor =
+  when (ghcFlavor <= Ghc921) $ do
+    renameFileRewriteSrcs "compiler" "HsVersions.h" ["compiler", stage0Compiler] [".hs", ".y", ".hsc"]
 
 -- Rename 'DerivedConstants.h' to 'GhclibDerivedConstants.h'.
 applyPatchDerivedConstants :: GhcFlavor -> IO ()
@@ -927,10 +928,12 @@ ghcInGhciDef ghcFlavor = if ghcFlavor > Ghc901 then "" else " -DGHC_IN_GHCI "
 -- Perform a set of specific substitutions on the given list of files.
 performExtraFilesSubstitutions :: GhcFlavor -> (GhcFlavor -> [FilePath]) -> [FilePath]
 performExtraFilesSubstitutions ghcFlavor files =
-  foldl' sub (files ghcFlavor)
+  foldl' sub (files ghcFlavor) $
       [ (hadrianGeneratedRoot ghcFlavor </> "ghcversion.h", Nothing)
       , (hadrianGeneratedRoot ghcFlavor </> "DerivedConstants.h", Just $ hadrianGeneratedRoot ghcFlavor </> "GhclibDerivedConstants.h")
-      , ("compiler" </> "HsVersions.h", Just $ "compiler" </> "GhclibHsVersions.h")
+      ] ++
+      [("compiler" </> "HsVersions.h", Just $ "compiler" </> "GhclibHsVersions.h")
+      | ghcFlavor <= Ghc921
       ]
   where
     sub :: Eq a => [a] -> (a, Maybe a) -> [a]
