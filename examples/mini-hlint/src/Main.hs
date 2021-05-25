@@ -207,7 +207,11 @@ idNot = mkVarUnqual (fsLit "not")
 
 isNegated :: HsExpr GhcPs -> Bool
 isNegated (HsApp _ (L _ (HsVar _ (L _ id))) _) = id == idNot
+#if defined (GHC_MASTER)
+isNegated (HsPar _ _ (L _ e) _) = isNegated e
+#else
 isNegated (HsPar _ (L _ e)) = isNegated e
+#endif
 isNegated _ = False
 
 #if defined (GHC_MASTER)
