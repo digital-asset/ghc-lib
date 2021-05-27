@@ -19,6 +19,11 @@ module Main (main) where
 #  define GHC_8101
 #endif
 
+#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Driver.Errors.Types
+import "ghc-lib-parser" GHC.Types.Error hiding (getMessages)
+import qualified "ghc-lib-parser" GHC.Types.Error (getMessages)
+#endif
 #if defined (GHC_MASTER) || defined (GHC_921)
 import "ghc-lib-parser" GHC.Driver.Config
 #endif
@@ -257,7 +262,7 @@ main = do
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
 #if defined (GHC_MASTER)
-            PFailed s -> report flags $ fmap mkParserErr (snd (getMessages s))
+            PFailed s -> report flags $ GHC.Types.Error.getMessages (GhcPsMessage <$> snd (getMessages s))
 #elif defined (GHC_921)
             PFailed s -> report flags $ fmap pprError (snd (getMessages s))
 #elif defined (GHC_901) || defined (GHC_8101)
@@ -268,8 +273,8 @@ main = do
             POk s m -> do
 #if defined (GHC_MASTER)
               let (wrns, errs) = getMessages s
-              report flags (fmap (mkParserWarn flags) wrns)
-              report flags (fmap mkParserErr errs)
+              report flags $ GHC.Types.Error.getMessages (GhcPsMessage <$> wrns)
+              report flags $ GHC.Types.Error.getMessages (GhcPsMessage <$> errs)
 #elif defined (GHC_921)
               let (wrns, errs) = getMessages s
               report flags (fmap pprWarning wrns)
