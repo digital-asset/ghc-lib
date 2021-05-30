@@ -45,6 +45,7 @@ strategy:
     # | macOS   | ghc-master      | ghc-9.0.1  |
     # | linux   | ghc-master      | ghc-8.10.4 |
     # | macOS   | ghc-master      | ghc-8.10.4 |
+    # | windows | ghc-master      | ghc-8.10.4 |
     # +---------+-----------------+------------+
     linux-ghc-master-9.0.1:
       image: "ubuntu-latest"
@@ -63,6 +64,11 @@ strategy:
       stack-yaml: "stack-exact.yaml"
     mac-ghc-master-8.10.4:
       image: "macOS-latest"
+      mode: "--ghc-flavor ghc-master"
+      resolver: "nightly-2021-03-07"
+      stack-yaml: "stack.yaml"
+    windows-ghc-master-8.10.4:
+      image: "windows-latest"
       mode: "--ghc-flavor ghc-master"
       resolver: "nightly-2021-03-07"
       stack-yaml: "stack.yaml"
@@ -145,13 +151,14 @@ steps:
     condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: Install brew
   - script: |
+      set -e
       curl -sSL https://get.haskellstack.org/ | sh -s - -f
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s CI.hs
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s ghc-lib-gen
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/src
+      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/test/Main.hs
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/strip-locs/src
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
-      set -e
       stack setup --stack-yaml $(stack-yaml) --resolver $(resolver) > /dev/null
       stack exec --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative ghc -- -package extra -package optparse-applicative -Wall -Wno-name-shadowing -Werror -c CI.hs
       stack runhaskell --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative -- CI.hs $(mode)  --stack-yaml $(stack-yaml) --resolver $(resolver)

@@ -1,0 +1,3 @@
+test/MiniHlintTest_non_fatal_error.hs:8:18: error:
+    Found `qualified' in postpositive position. 
+    To allow this, enable language extension 'ImportQualifiedPost'
