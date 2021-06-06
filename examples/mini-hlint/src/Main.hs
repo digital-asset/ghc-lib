@@ -15,7 +15,7 @@ module Main (main) where
 #  define GHC_921
 #elif MIN_VERSION_ghc_lib_parser(9,0,0)
 #  define GHC_901
-#elif MIN_VERSION_ghc_lib_parser(8,10,1)
+#elif MIN_VERSION_ghc_lib_parser(8,10,0)
 #  define GHC_8101
 #endif
 
@@ -25,6 +25,7 @@ import "ghc-lib-parser" GHC.Types.Error hiding (getMessages)
 import qualified "ghc-lib-parser" GHC.Types.Error (getMessages)
 #endif
 #if defined (GHC_MASTER) || defined (GHC_921)
+import "ghc-lib-parser" GHC.Driver.Ppr
 import "ghc-lib-parser" GHC.Driver.Config
 #endif
 #if defined (GHC_MASTER) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
@@ -44,7 +45,6 @@ import qualified "ghc-lib-parser" GHC.Parser
 import "ghc-lib-parser" GHC.Data.FastString
 import "ghc-lib-parser" GHC.Utils.Outputable
 #  if !defined (GHC_901)
-import "ghc-lib-parser" GHC.Driver.Ppr
 import "ghc-lib-parser" GHC.Parser.Errors.Ppr
 #  endif
 import "ghc-lib-parser" GHC.Types.SrcLoc
@@ -203,9 +203,26 @@ parsePragmasIntoDynFlags flags filepath str =
     return $ Just flags
   where
     catchErrors :: IO (Maybe DynFlags) -> IO (Maybe DynFlags)
-    catchErrors act = handleGhcException reportErr
-                        (handleSourceError reportErr act)
-    reportErr e = do putStrLn $ "error : " ++ show e; return Nothing
+    catchErrors act = handleGhcException reportGhcException
+                        (handleSourceError reportSourceErr act)
+
+    reportGhcException e = do
+      print e; return Nothing
+
+    reportSourceErr msgs = do
+      putStrLn $ head
+             [ showSDoc flags msg
+             | msg <-
+#if defined (GHC_MASTER)
+                      pprMsgEnvelopeBagWithLoc . GHC.Types.Error.getMessages
+#elif defined (GHC_921)
+                      pprMsgEnvelopeBagWithLoc
+#else
+                      pprErrMsgBagWithLoc
+#endif
+                      $ srcErrorMessages msgs
+             ]
+      return Nothing
 
 idNot :: RdrName
 idNot = mkVarUnqual (fsLit "not")
@@ -219,7 +236,7 @@ isNegated (HsPar _ (L _ e)) = isNegated e
 #endif
 isNegated _ = False
 
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_921)
 analyzeExpr :: DynFlags -> LocatedA (HsExpr GhcPs) -> IO ()
 #else
 analyzeExpr :: DynFlags -> Located (HsExpr GhcPs) -> IO ()
@@ -228,7 +245,7 @@ analyzeExpr flags (L loc expr) = do
   case expr of
     HsApp _ (L _ (HsVar _ (L _ id))) (L _ e)
         | id == idNot, isNegated e ->
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_921)
             putStrLn (showSDoc flags (ppr (locA loc))
 #else
             putStrLn (showSDoc flags (ppr loc)

@@ -249,7 +249,7 @@ main = do
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream) s of
 #if defined (GHC_MASTER)
-            PFailed s -> report flags $ GHC.Types.Error.getMessages (GhcPsMessage <$> (snd (getMessages s)))
+            PFailed s -> report flags $ GHC.Types.Error.getMessages (GhcPsMessage <$> snd (getMessages s))
 #elif defined (GHC_921)
             PFailed s -> report flags $ fmap pprError (snd (getMessages s))
 #elif defined (GHC_901) || defined (GHC_8101)

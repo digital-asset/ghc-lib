@@ -27,12 +27,13 @@ main = do
             <> Opts.progDesc "Build ghc-lib and ghc-lib-parser tarballs."
             <> Opts.header "CI - CI script for ghc-lib"
           )
-    Options { ghcFlavor, stackOptions } <- Opts.execParser opts
-    version <- buildDists ghcFlavor stackOptions
+    Options { ghcFlavor, noGhcCheckout, stackOptions } <- Opts.execParser opts
+    version <- buildDists ghcFlavor noGhcCheckout stackOptions
     putStrLn version
 
 data Options = Options
     { ghcFlavor :: GhcFlavor
+    , noGhcCheckout :: Bool
     , stackOptions :: StackOptions
     } deriving (Show)
 
@@ -60,7 +61,7 @@ data GhcFlavor = Ghc921
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "ce1b8f4208530fe6449506ba22e3a05048f81564" -- 2021-05-27
+current = "6db8a0f76ec45d47060e28bb303e9eef60bdb16b" -- 2021-06-01
 
 -- Command line argument generators.
 
@@ -125,7 +126,12 @@ parseOptions = Options
          Opts.option readFlavor
           ( Opts.long "ghc-flavor"
          <> Opts.help "The ghc-flavor to test against"
-          ))
+          )
+        )
+    <*> Opts.switch
+          ( Opts.long "no-checkout"
+          <> Opts.help "If enabled, don't perform a GHC checkout"
+          )
     <*> parseStackOptions
  where
    readFlavor :: Opts.ReadM GhcFlavor
@@ -192,9 +198,10 @@ parseStackOptions = StackOptions
        <> Opts.help "If specified, pass '--ghc-options=\"xxx\"' to stack"
         ))
 
-buildDists :: GhcFlavor -> StackOptions -> IO String
+buildDists :: GhcFlavor -> Bool -> StackOptions -> IO String
 buildDists
   ghcFlavor
+  noGhcCheckout
   StackOptions {stackYaml, resolver, verbosity, cabalVerbose, ghcOptions}
   =
   do
@@ -204,7 +211,7 @@ buildDists
     filesInDot <- getDirectoryContents "."
     let lockFiles = filter (isExtensionOf ".lock") filesInDot
         tarBalls  = filter (isExtensionOf ".tar.gz") filesInDot
-        ghcDirs   = [ "ghc", "ghc-lib", "ghc-lib-parser" ]
+        ghcDirs   = ["ghc" | not noGhcCheckout] ++ [ "ghc-lib", "ghc-lib-parser" ]
         toDelete  = ghcDirs ++ tarBalls ++ lockFiles
     forM_ toDelete removePath
     cmd $ "git checkout " ++ stackConfig
@@ -217,21 +224,29 @@ buildDists
     -- have been installed.
     stack "build alex happy"
 
-    -- Get a clone of ghc.
-    cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
+    -- If '--no-checkout' is given, it's on the caller to get the GHC
+    -- clone with e.g.
+    --  git clone https://gitlab.haskell.org/ghc/ghc.git && \
+    --      git fetch --tags && git submodule update --init --recursive
+    -- and it won't be deleted between runs.
+    if noGhcCheckout then
+      cmd "cd ghc && git clean -xdf && git submodule foreach git clean -xdf && git submodule foreach git checkout . && git checkout ."
+    else do
+      cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
+      cmd "cd ghc && git fetch --tags"
     case ghcFlavor of
-        Ghc921 -> cmd "cd ghc && git fetch --tags && git checkout ghc-9.2.1-alpha2"
-        Ghc901 -> cmd "cd ghc && git fetch --tags && git checkout ghc-9.0.1-release"
-        Ghc8101 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.1-release"
-        Ghc8102 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.2-release"
-        Ghc8103 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.3-release"
-        Ghc8104 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.10.4-release"
-        Ghc881 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.1-release"
-        Ghc882 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.2-release"
-        Ghc883 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.3-release"
-        Ghc884 -> cmd "cd ghc && git fetch --tags && git checkout ghc-8.8.4-release"
+        Ghc921 -> cmd "cd ghc && git checkout ghc-9.2.1-alpha2"
+        Ghc901 -> cmd "cd ghc && git checkout ghc-9.0.1-release"
+        Ghc8101 -> cmd "cd ghc && git checkout ghc-8.10.1-release"
+        Ghc8102 -> cmd "cd ghc && git checkout ghc-8.10.2-release"
+        Ghc8103 -> cmd "cd ghc && git checkout ghc-8.10.3-release"
+        Ghc8104 -> cmd "cd ghc && git checkout ghc-8.10.4-release"
+        Ghc881 -> cmd "cd ghc && git checkout ghc-8.8.1-release"
+        Ghc882 -> cmd "cd ghc && git checkout ghc-8.8.2-release"
+        Ghc883 -> cmd "cd ghc && git checkout ghc-8.8.3-release"
+        Ghc884 -> cmd "cd ghc && git checkout ghc-8.8.4-release"
         Da { mergeBaseSha, patches, upstream } -> do
-            cmd $ "cd ghc && git fetch --tags && git checkout " <> mergeBaseSha
+            cmd $ "cd ghc && git checkout " <> mergeBaseSha
             -- Apply Digital Asset extensions.
             cmd $ "cd ghc && git remote add upstream " <> upstream
             cmd "cd ghc && git fetch upstream"
@@ -310,16 +325,13 @@ buildDists
     -- Separate the two library build commands so they are
     -- independently timed. Note that optimizations in these builds
     -- are disabled in stack.yaml via `ghc-options: -O0`.
-    stack $ "--no-terminal --interleaved-output " ++ "build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib-parser"
-    stack $ "--no-terminal --interleaved-output " ++ "build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib"
+    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib-parser"
+    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib"
     stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions  ++ " mini-hlint mini-compile strip-locs"
 
     -- Run tests.
-    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest.hs"
-    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fatal_error.hs"
-    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_non_fatal_error.hs"
-    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_respect_dynamic_pragma.hs"
-    stack "--no-terminal exec -- mini-hlint examples/mini-hlint/test/MiniHlintTest_fail_unknown_pragma.hs"
+    let testArguments = "--test-arguments \"" ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ ghcFlavorOpt ghcFlavor ++ "\""
+    stack $ "test mini-hlint --no-terminal " ++ testArguments
     stack "--no-terminal exec -- strip-locs examples/mini-compile/test/MiniCompileTest.hs | tail -10"
     stack "--no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs | tail -10"
 
