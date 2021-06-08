@@ -1,0 +1,25 @@
+cabal-version:       >=1.10
+name:                test-utils
+version:             0.1.0.0
+synopsis:            Test utitilities
+description:         Code common to multiple tests
+license:             BSD3
+x-license:           BSD-3-Clause OR Apache-2.0
+license-file:        ../../LICENSE
+author:              Shayne Fletcher (shayne@shaynefletcher.org)
+maintainer:          Shayne Fletcher (shayne@shaynefletcher.org)
+copyright:           Digital Asset 2021
+category:            Development
+build-type:          Simple
+
+library
+  hs-source-dirs:    src
+  build-depends:
+      base >=4.7 && <5
+    , extra
+    , tasty
+    , utf8-string
+  exposed-modules:   TestUtils
+  other-modules:     Paths_test_utils
+  autogen-modules:   Paths_test_utils
+  default-language:  Haskell2010

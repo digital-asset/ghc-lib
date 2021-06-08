@@ -155,6 +155,7 @@ steps:
       curl -sSL https://get.haskellstack.org/ | sh -s - -f
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s CI.hs
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s ghc-lib-gen
+      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/test-utils/src
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/src
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/test/Main.hs
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/strip-locs/src
