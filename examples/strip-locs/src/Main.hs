@@ -24,6 +24,9 @@ import "ghc-lib-parser" GHC.Driver.Errors.Types
 import "ghc-lib-parser" GHC.Types.Error hiding (getMessages)
 import qualified "ghc-lib-parser" GHC.Types.Error (getMessages)
 #endif
+#if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Driver.Config.Parser
+#endif
 #if defined (GHC_MASTER) || defined (GHC_921)
 import "ghc-lib-parser" GHC.Driver.Config
 import "ghc-lib-parser" GHC.Utils.Logger
@@ -205,7 +208,13 @@ parse filename flags str =
 parsePragmasIntoDynFlags :: DynFlags -> FilePath -> String -> IO (Maybe DynFlags)
 parsePragmasIntoDynFlags flags filepath str =
   catchErrors $ do
-    let opts = getOptions flags (stringToStringBuffer str) filepath
+    let opts = getOptions
+#if defined (GHC_MASTER)
+                 (initParserOpts flags)
+#else
+                 flags
+#endif
+                 (stringToStringBuffer str) filepath
     (flags, _, _) <- parseDynamicFilePragma flags opts
     return $ Just flags
   where
@@ -223,7 +232,11 @@ dumpParseTree flags m =
 #if defined(GHC_MASTER) || defined (GHC_921)
   do
     logger <- initLogger
+#  if defined (GHC_MASTER)
+    logDumpMsg logger "" $ showAstData NoBlankSrcSpan NoBlankEpAnnotations m
+#  else
     putDumpMsg logger flags (mkDumpStyle alwaysQualify) Opt_D_dump_parsed_ast "" FormatText $ showAstData NoBlankSrcSpan NoBlankEpAnnotations m
+#  endif
 #elif defined(GHC_901)
   dumpAction flags (mkDumpStyle alwaysQualify) (dumpOptionsFromFlag Opt_D_dump_parsed_ast) "" FormatText $ showAstData NoBlankSrcSpan m
 #else
