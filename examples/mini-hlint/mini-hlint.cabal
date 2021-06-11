@@ -3,9 +3,9 @@ version:             0.1.0.0
 license:             BSD3
 x-license:           BSD3-Clause OR Apache-2.0
 license-file:        ../../LICENSE
-author:              Shayne Fletcher (shayne.fletcher@digitalasset.com)
-maintainer:          Shayne Fletcher (shayne.fletcher@digitalasset.com)
-copyright:           Digital Asset 2018-2019
+author:              Shayne Fletcher (shayne@shaynefletcher.org)
+maintainer:          Shayne Fletcher (shayne@shaynefletcher.org)
+copyright:           Digital Asset 2018-2021
 build-type:          Simple
 cabal-version:       >=1.10
 
@@ -34,4 +34,4 @@ test-suite mini-hlint-test
     , tagged
     , tasty
     , tasty-golden
-    , utf8-string
+    , test-utils

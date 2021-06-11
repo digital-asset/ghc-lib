@@ -301,6 +301,7 @@ buildDists
       stackYaml ++
       unlines [ "- ghc-lib-parser"
               , "- ghc-lib"
+              , "- examples/test-utils"
               , "- examples/mini-hlint"
               , "- examples/mini-compile"
               , "- examples/strip-locs"
