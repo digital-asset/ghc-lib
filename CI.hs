@@ -304,7 +304,6 @@ buildDists
               , "- examples/test-utils"
               , "- examples/mini-hlint"
               , "- examples/mini-compile"
-              , "- examples/strip-locs"
               ] ++
       case ghcFlavor of
 #if __GLASGOW_HASKELL__ == 804 && __GLASGOW_HASKELL_PATCHLEVEL1__ == 4
@@ -333,12 +332,10 @@ buildDists
     -- are disabled in stack.yaml via `ghc-options: -O0`.
     stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib-parser"
     stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib"
-    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions  ++ " mini-hlint mini-compile strip-locs"
 
     -- Run tests.
     let testArguments = "--test-arguments \"" ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ ghcFlavorOpt ghcFlavor ++ "\""
     stack $ "test mini-hlint --no-terminal " ++ testArguments
-    stack "--no-terminal exec -- strip-locs examples/mini-compile/test/MiniCompileTest.hs | tail -10"
     stack "--no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs | tail -10"
 
 #if __GLASGOW_HASKELL__ == 808 && \
