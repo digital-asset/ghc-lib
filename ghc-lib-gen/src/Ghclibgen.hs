@@ -352,6 +352,7 @@ calcParserModules ghcFlavor = do
                    , "GHCi.BinaryArray"
                    , "GHCi.BreakArray"
                    , "GHCi.ResolvedBCO"
+                   , "GHC.Driver.Config.Parser"
                    ]
         ] ++
         [ x | ghcFlavor > Ghc901

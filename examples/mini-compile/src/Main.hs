@@ -21,6 +21,9 @@ module Main (main) where
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
 #if defined (GHC_MASTER) ||  defined (GHC_921) || defined (GHC_901)
+#  if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Driver.Config.Parser
+#  endif
 import "ghc-lib-parser" GHC.Parser.Header
 import "ghc-lib-parser" GHC.Unit.Module
 import "ghc-lib-parser" GHC.Driver.Session
@@ -127,7 +130,13 @@ mkDynFlags filename s = do
   where
     parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
     parsePragmasIntoDynFlags fp contents dflags0 = do
-      let opts = getOptions dflags0 (stringToStringBuffer contents) fp
+      let opts = getOptions
+#if defined (GHC_MASTER)
+                 (initParserOpts dflags0)
+#else
+                 dflags0
+#endif
+                 (stringToStringBuffer contents) fp
       (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
       return dflags
 
