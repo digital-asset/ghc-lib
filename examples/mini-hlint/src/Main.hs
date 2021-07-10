@@ -1,5 +1,5 @@
--- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
--- affiliates. All rights reserved.  SPDX-License-Identifier:
+-- Copyright (c) 2019 - 2021, Digital Asset (Switzerland) GmbH and/or
+-- its affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
 {-# LANGUAGE CPP #-}
@@ -21,8 +21,7 @@ module Main (main) where
 
 #if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Driver.Errors.Types
-import "ghc-lib-parser" GHC.Types.Error hiding (getMessages)
-import qualified "ghc-lib-parser" GHC.Types.Error (getMessages)
+import "ghc-lib-parser" GHC.Types.Error
 #endif
 #if defined (GHC_MASTER)
 import "ghc-lib-parser" GHC.Driver.Config.Parser
@@ -223,7 +222,7 @@ parsePragmasIntoDynFlags flags filepath str =
              [ showSDoc flags msg
              | msg <-
 #if defined (GHC_MASTER)
-                      pprMsgEnvelopeBagWithLoc . GHC.Types.Error.getMessages
+                      pprMsgEnvelopeBagWithLoc . getMessages
 #elif defined (GHC_921)
                       pprMsgEnvelopeBagWithLoc
 #else
@@ -288,7 +287,7 @@ main = do
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
 #if defined (GHC_MASTER)
-            PFailed s -> report flags $ GHC.Types.Error.getMessages (GhcPsMessage <$> snd (getMessages s))
+            PFailed s -> report flags $ getMessages (GhcPsMessage <$> snd (getPsMessages s))
 #elif defined (GHC_921)
             PFailed s -> report flags $ fmap pprError (snd (getMessages s))
 #elif defined (GHC_901) || defined (GHC_8101)
@@ -298,9 +297,9 @@ main = do
 #endif
             POk s m -> do
 #if defined (GHC_MASTER)
-              let (wrns, errs) = getMessages s
-              report flags $ GHC.Types.Error.getMessages (GhcPsMessage <$> wrns)
-              report flags $ GHC.Types.Error.getMessages (GhcPsMessage <$> errs)
+              let (wrns, errs) = getPsMessages s
+              report flags $ getMessages (GhcPsMessage <$> wrns)
+              report flags $ getMessages (GhcPsMessage <$> errs)
 #elif defined (GHC_921)
               let (wrns, errs) = getMessages s
               report flags (fmap pprWarning wrns)
