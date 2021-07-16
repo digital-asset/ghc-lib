@@ -8,7 +8,8 @@ import Test.Tasty
 import Test.Tasty.Options
 import Test.Tasty.Golden
 import System.Info.Extra
-import System.FilePath (replaceExtension)
+import System.FilePath (replaceExtension, takeFileName, takeDirectory)
+import System.FilePath.Posix((</>)) -- Generate / on all platforms
 import Data.Proxy
 import Data.Maybe
 import Data.List.Extra
@@ -48,6 +49,16 @@ goldenTests stackYaml resolver (GhcFlavor ghcFlavor) hsFiles =
          genStringAction
     | hsFile <- filter (runTest ghcFlavor) hsFiles
     , let testName = hsFile
-    , let expectFile = replaceExtension hsFile $ (if isWindows then ".windows" else "") ++ ".expect"
+    , let expectFile =
+            let f = case ghcFlavor of
+                  GhcMaster ->
+                    case takeFileName hsFile of
+                      "MiniHlintTest_fatal_error.hs" ->
+                        takeDirectory hsFile </> "MiniHlintTest_fatal_error-ghc-master.hs"
+                      "MiniHlintTest_non_fatal_error.hs" ->
+                        takeDirectory hsFile </> "MiniHlintTest_non_fatal_error-ghc-master.hs"
+                      _ -> hsFile
+                  _ -> hsFile
+            in replaceExtension f $ (if isWindows then ".windows" else "") ++ ".expect"
     , let genStringAction = stack stackYaml resolver $ "--no-terminal exec -- mini-hlint " ++ hsFile
   ]

@@ -20,6 +20,9 @@ module Main (main) where
 #endif
 
 #if defined (GHC_MASTER)
+import "ghc-lib-parser" GHC.Driver.Config.Diagnostic
+import "ghc-lib-parser" GHC.Utils.Logger
+import "ghc-lib-parser" GHC.Driver.Errors
 import "ghc-lib-parser" GHC.Driver.Errors.Types
 import "ghc-lib-parser" GHC.Types.Error
 #endif
@@ -287,7 +290,7 @@ main = do
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
 #if defined (GHC_MASTER)
-            PFailed s -> report flags $ getMessages (GhcPsMessage <$> snd (getPsMessages s))
+            PFailed s -> report flags $ GhcPsMessage <$> snd (getPsMessages s)
 #elif defined (GHC_921)
             PFailed s -> report flags $ fmap pprError (snd (getMessages s))
 #elif defined (GHC_901) || defined (GHC_8101)
@@ -298,8 +301,8 @@ main = do
             POk s m -> do
 #if defined (GHC_MASTER)
               let (wrns, errs) = getPsMessages s
-              report flags $ getMessages (GhcPsMessage <$> wrns)
-              report flags $ getMessages (GhcPsMessage <$> errs)
+              report flags $ GhcPsMessage <$> wrns
+              report flags $ GhcPsMessage <$> errs
 #elif defined (GHC_921)
               let (wrns, errs) = getMessages s
               report flags (fmap pprWarning wrns)
@@ -317,16 +320,27 @@ main = do
     _ -> fail "Exactly one file argument required"
   where
 
+#if defined (GHC_MASTER)
+    -- Nowdays, to print hints along with errors you need 'printMessages'.
+    -- See
+    -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6087#note_365215
+    -- for details.
+    report flags msgs = do
+      logger <- initLogger
+      let opts = initDiagOpts flags
+      printMessages logger opts msgs
+#else
     report flags msgs =
       sequence_
         [ putStrLn $ showSDoc flags msg
         | msg <-
-#if defined (GHC_MASTER) || defined (GHC_921)
+#  if defined (GHC_921)
                   pprMsgEnvelopeBagWithLoc msgs
-#else
+#  else
                   pprErrMsgBagWithLoc msgs
-#endif
+#  endif
         ]
+#endif
 #if !(defined(GHC_MASTER) || defined (GHC_921))
     harvestAnns pst =
 #  if defined (GHC_901)
