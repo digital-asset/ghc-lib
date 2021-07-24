@@ -825,10 +825,20 @@ commonBuildDepends ghcFlavor =
   , "time >= 1.4 && < 1.10"
   , "transformers == 0.5.*"
   , "process >= 1 && < 1.7"
-  , "hpc == 0.6.*"
   ] ++
   [ "exceptions == 0.10.*" | ghcFlavor >= Ghc901 ] ++
   [ "parsec" | ghcFlavor >= Ghc921 ]
+
+ghcLibParserBuildDepends :: GhcFlavor -> [String]
+ghcLibParserBuildDepends  = commonBuildDepends
+
+ghcLibBuildDepends :: GhcFlavor -> [String]
+ghcLibBuildDepends ghcFlavor =
+  commonBuildDepends ghcFlavor ++
+  [ "rts"
+  , "hpc == 0.6.*"
+  , "ghc-lib-parser"
+  ]
 
 -- | This utility factored out to avoid repetion.
 libBinParserModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String])
@@ -899,10 +909,8 @@ generateGhcLibCabal ghcFlavor = do
         , "        build-depends: unix"
         , "    else"
         , "        build-depends: Win32"
-        , "    build-depends:"
-        , "        rts,"
-        ] ++
-        indent2 (withCommas (commonBuildDepends ghcFlavor ++ [ "ghc-lib-parser" ]))++
+        , "    build-depends:" ] ++
+        indent2 (withCommas (ghcLibBuildDepends ghcFlavor))++
         [ "    build-tools: alex >= 3.1, happy >= 1.19.4"
         , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
@@ -980,8 +988,8 @@ generateGhcLibParserCabal ghcFlavor = do
         , "        build-depends: unix"
         , "    else"
         , "        build-depends: Win32"
-        , "    build-depends:"
-        ] ++ indent2 (withCommas (commonBuildDepends ghcFlavor)) ++
+        , "    build-depends:" ] ++
+        indent2 (withCommas (ghcLibParserBuildDepends ghcFlavor)) ++
         [ "    build-tools: alex >= 3.1, happy >= 1.19.4"
         , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
