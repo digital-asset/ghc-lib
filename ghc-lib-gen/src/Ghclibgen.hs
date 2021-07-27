@@ -13,6 +13,7 @@ module Ghclibgen (
   , applyPatchGhcPrim
   , applyPatchHaddockHs
   , applyPatchRtsBytecodes
+  , applyPatchGHCiInfoTable
   , applyPatchGHCiMessage
   , applyPatchDerivedConstants
   , applyPatchDisableCompileTimeOptimizations
@@ -431,6 +432,89 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
           writeFile file .
           ("{-# OPTIONS_GHC -O0 #-}\n" ++)
           =<< readFile' file
+
+applyPatchGHCiInfoTable :: GhcFlavor -> IO ()
+applyPatchGHCiInfoTable ghcFlavor =
+  when(ghcFlavor == GhcMaster) $ do
+    writeFile infoTableHsc .
+      replace
+        (unlines newExecConItblBefore)
+        ("#if MIN_VERSION_rts(1,0,1)\n"   <>
+           unlines newExecConItblBefore   <>
+         "#else\n"                        <>
+           unlines newExecConItblAfter    <>
+         "#endif\n") .
+      replace
+        "fillExecBuffer :: CSize -> (Ptr a -> Ptr a -> IO ()) -> IO (Ptr a)\n"
+        ("#if MIN_VERSION_rts(1,0,1)\n"                                           <>
+           "fillExecBuffer :: CSize -> (Ptr a -> Ptr a -> IO ()) -> IO (Ptr a)\n" <>
+         "#endif\n") .
+      replace
+        "#error hi"
+        (unlines
+         [  "foreign import ccall unsafe \"allocateExec\""
+          , "  _allocateExec :: CUInt -> Ptr (Ptr a) -> IO (Ptr a)"
+          , ""
+          , "foreign import ccall unsafe \"flushExec\""
+          , "  _flushExec :: CUInt -> Ptr a -> IO ()" ])
+      =<< readFile' infoTableHsc
+  where
+    infoTableHsc = "libraries/ghci/GHCi/InfoTable.hsc"
+
+    newExecConItblBefore = [
+        "newExecConItbl :: Bool -> StgInfoTable -> ByteString -> IO (FunPtr ())"
+      , "newExecConItbl tables_next_to_code obj con_desc = do"
+      , "    sz0 <- sizeOfEntryCode tables_next_to_code"
+      , "    let lcon_desc = BS.length con_desc + 1{- null terminator -}"
+      , "        -- SCARY"
+      , "        -- This size represents the number of bytes in an StgConInfoTable."
+      , "        sz = fromIntegral $ conInfoTableSizeB + sz0"
+      , "            -- Note: we need to allocate the conDesc string next to the info"
+      , "            -- table, because on a 64-bit platform we reference this string"
+      , "            -- with a 32-bit offset relative to the info table, so if we"
+      , "            -- allocated the string separately it might be out of range."
+      , ""
+      , "    ex_ptr <- fillExecBuffer (sz + fromIntegral lcon_desc) $ \\wr_ptr ex_ptr -> do"
+      , "        let cinfo = StgConInfoTable { conDesc = ex_ptr `plusPtr` fromIntegral sz"
+      , "                                    , infoTable = obj }"
+      , "        pokeConItbl tables_next_to_code wr_ptr ex_ptr cinfo"
+      , "        BS.useAsCStringLen con_desc $ \\(src, len) ->"
+      , "            copyBytes (castPtr wr_ptr `plusPtr` fromIntegral sz) src len"
+      , "        let null_off = fromIntegral sz + fromIntegral (BS.length con_desc)"
+      , "        poke (castPtr wr_ptr `plusPtr` null_off) (0 :: Word8)"
+      , ""
+      , "    pure $ if tables_next_to_code"
+      , "      then castPtrToFunPtr $ ex_ptr `plusPtr` conInfoTableSizeB"
+      , "      else castPtrToFunPtr ex_ptr"
+      ]
+
+    newExecConItblAfter = [
+        "newExecConItbl :: Bool -> StgInfoTable -> ByteString -> IO (FunPtr ())"
+      , "newExecConItbl tables_next_to_code obj con_desc"
+      , "   = alloca $ \\pcode -> do"
+      , "        sz0 <- sizeOfEntryCode tables_next_to_code"
+      , "        let lcon_desc = BS.length con_desc + 1{- null terminator -}"
+      , "            -- SCARY"
+      , "            -- This size represents the number of bytes in an StgConInfoTable."
+      , "            sz = fromIntegral $ conInfoTableSizeB + sz0"
+      , "               -- Note: we need to allocate the conDesc string next to the info"
+      , "               -- table, because on a 64-bit platform we reference this string"
+      , "               -- with a 32-bit offset relative to the info table, so if we"
+      , "               -- allocated the string separately it might be out of range."
+      , "        wr_ptr <- _allocateExec (sz + fromIntegral lcon_desc) pcode"
+      , "        ex_ptr <- peek pcode"
+      , "        let cinfo = StgConInfoTable { conDesc = ex_ptr `plusPtr` fromIntegral sz"
+      , "                                    , infoTable = obj }"
+      , "        pokeConItbl tables_next_to_code wr_ptr ex_ptr cinfo"
+      , "        BS.useAsCStringLen con_desc $ \\(src, len) ->"
+      , "            copyBytes (castPtr wr_ptr `plusPtr` fromIntegral sz) src len"
+      , "        let null_off = fromIntegral sz + fromIntegral (BS.length con_desc)"
+      , "        poke (castPtr wr_ptr `plusPtr` null_off) (0 :: Word8)"
+      , "        _flushExec sz ex_ptr -- Cache flush (if needed)"
+      , "        pure $ if tables_next_to_code"
+      , "          then castPtrToFunPtr $ ex_ptr `plusPtr` conInfoTableSizeB"
+      , "          else castPtrToFunPtr ex_ptr"
+      ]
 
 applyPatchGHCiMessage :: GhcFlavor -> IO ()
 applyPatchGHCiMessage ghcFlavor =
