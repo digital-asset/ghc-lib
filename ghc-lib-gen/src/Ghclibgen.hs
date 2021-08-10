@@ -450,7 +450,7 @@ applyPatchGHCiInfoTable ghcFlavor =
            "fillExecBuffer :: CSize -> (Ptr a -> Ptr a -> IO ()) -> IO (Ptr a)\n" <>
          "#endif\n") .
       replace
-        "#error hi"
+        "#error Sorry, rts versions <= 1.0 are not supported"
         (unlines
          [  "foreign import ccall unsafe \"allocateExec\""
           , "  _allocateExec :: CUInt -> Ptr (Ptr a) -> IO (Ptr a)"
