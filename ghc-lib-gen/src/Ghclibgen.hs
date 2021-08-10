@@ -64,8 +64,12 @@ cabalFileLibraries =
 -- | C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: GhcFlavor -> [FilePath]
 ghcLibParserIncludeDirs ghcFlavor =
-  [ "includes" ] ++ -- ghcconfig.h, MachDeps.h, MachRegs.h, CodeGen.Platform.hs
-  [ hadrianGeneratedRoot ghcFlavor, stage0Compiler, "compiler"] ++
+  -- For
+  (if ghcFlavor == GhcMaster
+  then [ "rts/include" ]  -- ghcconfig.h
+  else [ "includes" ]) ++ -- ghcconfig.h, MachDeps.h, MachRegs.h, CodeGen.Platform.hs
+  -- Others
+  [ hadrianGeneratedRoot ghcFlavor, stage0Compiler, "compiler" ] ++
   [ "compiler/utils" | ghcFlavor < Ghc8101 ]
 
 -- Sort by length so the longest paths are at the front. We do this
@@ -251,12 +255,23 @@ fingerprint ghcFlavor = [ stage0Compiler </> "Fingerprint.hs" | ghcFlavor < Ghc8
 -- the 'extraFiles' above as 'extra-source-files'.
 cHeaders :: GhcFlavor -> [String]
 cHeaders ghcFlavor =
-  [ "includes/ghcconfig.h"
-  , "includes/MachDeps.h"
-  , "includes/stg/MachRegs.h"
-  , "includes/CodeGen.Platform.hs"
-  , "compiler/Unique.h"
-  ] ++
+  (if ghcFlavor == GhcMaster
+  then
+    [ "rts/include/ghcconfig.h"
+    , "compiler/MachDeps.h"
+    , "compiler/MachRegs.h"
+    , "compiler/CodeGen.Platform.h"
+    , "compiler/Bytecodes.h"
+    , "compiler/ClosureTypes.h"
+    , "compiler/FunTypes.h"
+    , "compiler/Unique.h"
+    ]
+  else
+    [ "includes/MachDeps.h"
+    , "includes/stg/MachRegs.h"
+    , "includes/CodeGen.Platform.hs"
+    , "compiler/Unique.h"
+    ]) ++
   [ "compiler/HsVersions.h" | ghcFlavor <= Ghc921] ++
   [ f | ghcFlavor < Ghc8101, f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"] ]
 
