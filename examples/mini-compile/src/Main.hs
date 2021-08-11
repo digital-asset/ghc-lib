@@ -172,13 +172,15 @@ fakeSettings = Settings
   where
 #if defined (GHC_MASTER)  || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
     fileSettings = FileSettings {
-        fileSettings_tmpDir="."
-#if defined (GHC_MASTER)  || defined (GHC_921) || defined (GHC_901)
-      , fileSettings_topDir="."
-      , fileSettings_toolDir=Nothing
-      , fileSettings_ghcUsagePath="."
-      , fileSettings_ghciUsagePath="."
-      , fileSettings_globalPackageDatabase="."
+#if !defined (GHC_MASTER)
+        fileSettings_tmpDir=".",
+#endif
+#if !defined (GHC_8101)
+        fileSettings_topDir=".",
+        fileSettings_toolDir=Nothing,
+        fileSettings_ghcUsagePath=".",
+        fileSettings_ghciUsagePath=".",
+        fileSettings_globalPackageDatabase="."
 #endif
       }
 
