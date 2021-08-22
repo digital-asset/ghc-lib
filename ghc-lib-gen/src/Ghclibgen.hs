@@ -940,7 +940,8 @@ ghcLibBuildDepends ghcFlavor =
   [ "rts"
   , "hpc == 0.6.*"
   , "ghc-lib-parser"
-  ]
+  ] ++
+  [ "stm" | ghcFlavor > Ghc921]
 
 -- | This utility factored out to avoid repetion.
 libBinParserModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String])
