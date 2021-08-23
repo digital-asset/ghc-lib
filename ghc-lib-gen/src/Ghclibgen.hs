@@ -9,6 +9,7 @@
 module Ghclibgen (
     applyPatchHeapClosures
   , applyPatchAclocal
+  , applyPatchPrelude
   , applyPatchHsVersions
   , applyPatchGhcPrim
   , applyPatchHaddockHs
@@ -193,10 +194,7 @@ dataFiles ghcFlavor =
     , "llvm-targets"
     , "llvm-passes"
     ] ++
-    -- Since 2021-04-10 a platformConstants file is no longer a thing.
-    -- See
-    -- (https://gitlab.haskell.org/ghc/ghc/-/commit/2cdc95f9c068421a55c634933ab2d8596eb992fb).
-    [ "platformConstants" | ghcFlavor <= Ghc921 ]
+    [ "platformConstants" | ghcFlavor < Ghc921 ]
 
 -- | See 'hadrian/src/Rules/Generate.hs'.
 
@@ -382,6 +380,15 @@ calcParserModules ghcFlavor = do
         ]
   return $ nubSort (modules ++ extraModules)
 
+applyPatchPrelude :: GhcFlavor -> IO ()
+applyPatchPrelude ghcFlavor = do
+  when (ghcFlavor == Ghc921) $ do
+    writeFile "compiler/GHC/Prelude.hs" .
+      replace
+        "#if MIN_VERSION_base(4,15,0)"
+        "#if MIN_VERSION_base(4,16,0)"
+    =<< readFile' "compiler/GHC/Prelude.hs"
+
 -- Avoid duplicate symbols with HSghc-heap (see issue
 -- https://github.com/digital-asset/ghc-lib/issues/210).
 applyPatchHeapClosures :: GhcFlavor -> IO ()
@@ -452,7 +459,7 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
 
 applyPatchGHCiInfoTable :: GhcFlavor -> IO ()
 applyPatchGHCiInfoTable ghcFlavor =
-  when(ghcFlavor == GhcMaster) $ do
+  when(ghcFlavor >= Ghc921) $ do
     writeFile infoTableHsc .
       replace
         (unlines newExecConItblBefore)
@@ -467,8 +474,12 @@ applyPatchGHCiInfoTable ghcFlavor =
            "fillExecBuffer :: CSize -> (Ptr a -> Ptr a -> IO ()) -> IO (Ptr a)\n" <>
          "#endif\n") .
       replace
-        "#error Sorry, rts versions <= 1.0 are not supported"
-        (unlines
+        (if ghcFlavor > Ghc921
+           then
+             "#error Sorry, rts versions <= 1.0 are not supported"
+           else
+             "#error hi")
+      (unlines
          [  "foreign import ccall unsafe \"allocateExec\""
           , "  _allocateExec :: CUInt -> Ptr (Ptr a) -> IO (Ptr a)"
           , ""
