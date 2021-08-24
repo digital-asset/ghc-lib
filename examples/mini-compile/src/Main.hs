@@ -155,7 +155,7 @@ fakeSettings = Settings
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
   , sPlatformMisc=platformMisc
-#  if !defined (GHC_MASTER)
+#  if !defined (GHC_MASTER) && !defined (GHC_921)
   , sPlatformConstants=platformConstants
 #  endif
   , sToolSettings=toolSettings
@@ -211,10 +211,10 @@ fakeSettings = Settings
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
       , platformTablesNextToCode=False
-#if defined(GHC_MASTER)
+#if defined(GHC_MASTER) || defined(GHC_921)
       , platform_constants = Nothing
 #endif
-#if !defined(GHC_MASTER) && !defined(GHC_901)
+#if !defined(GHC_MASTER) && !defined(GHC_921) && !defined(GHC_901)
       , platformConstants=platformConstants
 #endif
       ,
@@ -231,7 +231,7 @@ fakeSettings = Settings
 #endif
       , platformUnregisterised=True
       }
-#if !defined (GHC_MASTER)
+#if !defined (GHC_MASTER) && !defined (GHC_921)
     platformConstants =
        PlatformConstants {
          pc_DYNAMIC_BY_DEFAULT=False

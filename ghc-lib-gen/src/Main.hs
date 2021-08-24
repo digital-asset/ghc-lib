@@ -41,6 +41,7 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do
         applyPatchHadrianStackYaml ghcFlavor
+        applyPatchPrelude ghcFlavor
         applyPatchHeapClosures ghcFlavor
         applyPatchRtsIncludePaths ghcFlavor
         applyPatchGhcPrim ghcFlavor

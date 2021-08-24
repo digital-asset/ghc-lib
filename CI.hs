@@ -243,7 +243,7 @@ buildDists
       cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
       cmd "cd ghc && git fetch --tags"
     case ghcFlavor of
-        Ghc921 -> cmd "cd ghc && git checkout ghc-9.2.1-alpha2"
+        Ghc921 -> cmd "cd ghc && git checkout ghc-9.2.1-rc1"
         Ghc901 -> cmd "cd ghc && git checkout ghc-9.0.1-release"
         Ghc8101 -> cmd "cd ghc && git checkout ghc-8.10.1-release"
         Ghc8102 -> cmd "cd ghc && git checkout ghc-8.10.2-release"
