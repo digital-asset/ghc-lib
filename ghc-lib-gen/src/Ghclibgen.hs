@@ -172,6 +172,7 @@ hadrianGeneratedRoot = \case
   Ghc901 -> stage0Lib
   Ghc8105 -> stage0Lib
   Ghc8106 -> stage0Lib
+  Ghc8107 -> stage0Lib
   Ghc8104 -> stage0Lib
   Ghc8103 -> stage0Lib
   Ghc8102 -> stage0Lib
@@ -449,6 +450,7 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
             Ghc8104 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
             Ghc8105 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
             Ghc8106 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
+            Ghc8107 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
             _ ->         [ "compiler/main/DynFlags.hs", "compiler/hsSyn/HsInstances.hs" ]
     in
       forM_ files $
@@ -910,14 +912,15 @@ baseBounds ghcFlavor =
     Ghc883    -> "base >= 4.11 && < 4.16"
     Ghc884    -> "base >= 4.11 && < 4.16"
 
-    Ghc8101   -> "base >= 4.12 && < 4.16"
-    Ghc8102   -> "base >= 4.12 && < 4.16"
-    Ghc8103   -> "base >= 4.12 && < 4.16"
-    Ghc8104   -> "base >= 4.12 && < 4.16"
-    Ghc8105   -> "base >= 4.12 && < 4.16"
-    Ghc8106   -> "base >= 4.12 && < 4.16"
+    Ghc8101   -> "base >= 4.12 && < 4.17"
+    Ghc8102   -> "base >= 4.12 && < 4.17"
+    Ghc8103   -> "base >= 4.12 && < 4.17"
+    Ghc8104   -> "base >= 4.12 && < 4.17"
+    Ghc8105   -> "base >= 4.12 && < 4.17"
+    Ghc8106   -> "base >= 4.12 && < 4.17"
+    Ghc8107   -> "base >= 4.12 && < 4.17"
 
-    Ghc901    -> "base >= 4.13 && < 4.16"
+    Ghc901    -> "base >= 4.13 && < 4.17"
     Ghc921    -> "base >= 4.14 && < 4.17"
 
     GhcMaster -> "base >= 4.14 && < 4.17"

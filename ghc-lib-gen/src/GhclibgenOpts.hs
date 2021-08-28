@@ -75,6 +75,7 @@ data GhcFlavor = DaGhc881
                | Ghc8104
                | Ghc8105
                | Ghc8106
+               | Ghc8107
                | Ghc901
                | Ghc921
                | GhcMaster
@@ -96,10 +97,11 @@ readFlavor = eitherReader $ \case
     "ghc-8.10.4" -> Right Ghc8104
     "ghc-8.10.5" -> Right Ghc8105
     "ghc-8.10.6" -> Right Ghc8106
+    "ghc-8.10.7" -> Right Ghc8107
     "ghc-8.8.1" -> Right Ghc881
     "ghc-8.8.2" -> Right Ghc882
     "ghc-8.8.3" -> Right Ghc883
     "ghc-8.8.4" -> Right Ghc884
     "da-ghc-8.8.1" -> Right DaGhc881
     "ghc-master" -> Right GhcMaster
-    flavor -> Left $ "Failed to parse ghc flavor " <> show flavor <> " expected ghc-master, ghc-9.0.1, ghc-8.8.1, ghc-8.8.2, ghc-8.8.3, ghc-8.8.4, da-ghc-8.8.1, ghc-8.10.1, ghc-8.10.2, ghc-8.10.3, ghc-8.10.4, ghc-8.10.5, ghc-8.10.6, ghc-9.0.1 or ghc-9.2.1"
+    flavor -> Left $ "Failed to parse ghc flavor " <> show flavor <> " expected ghc-master, ghc-9.0.1, ghc-8.8.1, ghc-8.8.2, ghc-8.8.3, ghc-8.8.4, da-ghc-8.8.1, ghc-8.10.1, ghc-8.10.2, ghc-8.10.3, ghc-8.10.4, ghc-8.10.5, ghc-8.10.6, ghc-8.10.7, ghc-9.0.1 or ghc-9.2.1"
