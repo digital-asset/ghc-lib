@@ -53,6 +53,7 @@ data GhcFlavor = Ghc921
                | Ghc8104
                | Ghc8105
                | Ghc8106
+               | Ghc8107
                | Ghc881
                | Ghc882
                | Ghc883
@@ -87,6 +88,7 @@ ghcFlavorOpt = \case
     Ghc8104 -> "--ghc-flavor ghc-8.10.4"
     Ghc8105 -> "--ghc-flavor ghc-8.10.5"
     Ghc8106 -> "--ghc-flavor ghc-8.10.6"
+    Ghc8107 -> "--ghc-flavor ghc-8.10.7"
     Ghc881 -> "--ghc-flavor ghc-8.8.1"
     Ghc882 -> "--ghc-flavor ghc-8.8.2"
     Ghc883 -> "--ghc-flavor ghc-8.8.3"
@@ -120,6 +122,7 @@ genVersionStr = \case
    Ghc8104     -> \day -> "8.10.4." ++ replace "-" "" (showGregorian day)
    Ghc8105     -> \day -> "8.10.5." ++ replace "-" "" (showGregorian day)
    Ghc8106     -> \day -> "8.10.6." ++ replace "-" "" (showGregorian day)
+   Ghc8107     -> \day -> "8.10.7." ++ replace "-" "" (showGregorian day)
    Ghc882      -> \day -> "8.8.2." ++ replace "-" "" (showGregorian day)
    Ghc883      -> \day -> "8.8.3." ++ replace "-" "" (showGregorian day)
    Ghc884      -> \day -> "8.8.4." ++ replace "-" "" (showGregorian day)
@@ -150,6 +153,7 @@ parseOptions = Options
        "ghc-8.10.4" -> Right Ghc8104
        "ghc-8.10.5" -> Right Ghc8105
        "ghc-8.10.6" -> Right Ghc8106
+       "ghc-8.10.7" -> Right Ghc8107
        "ghc-8.8.1" -> Right Ghc881
        "ghc-8.8.2" -> Right Ghc882
        "ghc-8.8.3" -> Right Ghc883
@@ -251,6 +255,7 @@ buildDists
         Ghc8104 -> cmd "cd ghc && git checkout ghc-8.10.4-release"
         Ghc8105 -> cmd "cd ghc && git checkout ghc-8.10.5-release"
         Ghc8106 -> cmd "cd ghc && git checkout ghc-8.10.6-release"
+        Ghc8107 -> cmd "cd ghc && git checkout ghc-8.10.7-release"
         Ghc881 -> cmd "cd ghc && git checkout ghc-8.8.1-release"
         Ghc882 -> cmd "cd ghc && git checkout ghc-8.8.2-release"
         Ghc883 -> cmd "cd ghc && git checkout ghc-8.8.3-release"
