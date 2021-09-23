@@ -129,9 +129,13 @@ fakeSettings = Settings
                     ,ghcNameVersion_projectVersion=cProjectVersion
                     }
 #endif
+
     platform =
+#if defined (GHC_MASTER)
+      genericPlatform
+#else
       Platform{
-#if defined (GHC_MASTER) || defined (GHC_921) || defined (GHC_901)
+#if defined (GHC_921) || defined (GHC_901)
     -- It doesn't matter what values we write here as these fields are
     -- not referenced for our purposes. However the fields are strict
     -- so we must say something.
@@ -142,15 +146,15 @@ fakeSettings = Settings
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
       , platformTablesNextToCode=False
-#if defined(GHC_MASTER) || defined(GHC_921)
+#if defined(GHC_921)
       , platform_constants = Nothing
 #endif
-#if !defined(GHC_MASTER) && !defined(GHC_921) && !defined (GHC_901)
+#if !defined(GHC_921) && !defined (GHC_901)
       , platformConstants=platformConstants
 #endif
       ,
 #endif
-#if defined (GHC_MASTER) || defined (GHC_921)
+#if defined (GHC_921)
         platformWordSize=PW8
       , platformArchOS=ArchOS {archOS_arch=ArchUnknown, archOS_OS=OSUnknown}
 #elif defined (GHC_8101) || defined (GHC_901)
@@ -169,6 +173,7 @@ fakeSettings = Settings
         ,
           pc_WORD_SIZE=8
     }
+#endif
 #endif
 
 #if defined (GHC_MASTER) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
