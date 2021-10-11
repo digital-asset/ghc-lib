@@ -342,6 +342,7 @@ buildDists
     -- are disabled in stack.yaml via `ghc-options: -O0`.
     stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib-parser"
     stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib"
+    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions ++ " mini-hlint mini-compile"
 
     -- Run tests.
     let testArguments = "--test-arguments \"" ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ ghcFlavorOpt ghcFlavor ++ "\""
