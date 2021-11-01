@@ -18,41 +18,53 @@ module Main (main) where
 #  define GHC_8101
 #endif
 
+-- ghc-lib re-exports the modules of ghc-lib-parser. Before 9.2.1 we
+-- couldn't refer to them as being in the ghc-lib package (and instead
+-- had to refer to them as being in the ghc-lib-parser package). Now
+-- it seems we can (and in fact, if we were refer to them in the
+-- ghc-lib-parser package now, we would then be required to link that
+-- library).
+#if __GLASGOW_HASKELL__ >= 902
+# define GHC_LIB_PARSER_PKG "ghc-lib"
+#else
+# define GHC_LIB_PARSER_PKG "ghc-lib-parser"
+#endif
+
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
 #if defined (GHC_MASTER) ||  defined (GHC_921) || defined (GHC_901)
 #  if defined (GHC_MASTER)
-import "ghc-lib-parser" GHC.Driver.Config.Parser
+import GHC_LIB_PARSER_PKG GHC.Driver.Config.Parser
 #  endif
-import "ghc-lib-parser" GHC.Parser.Header
-import "ghc-lib-parser" GHC.Unit.Module
-import "ghc-lib-parser" GHC.Driver.Session
-import "ghc-lib-parser" GHC.Data.StringBuffer
-import "ghc-lib-parser" GHC.Utils.Fingerprint
-import "ghc-lib-parser" GHC.Utils.Outputable
+import GHC_LIB_PARSER_PKG GHC.Parser.Header
+import GHC_LIB_PARSER_PKG GHC.Unit.Module
+import GHC_LIB_PARSER_PKG GHC.Driver.Session
+import GHC_LIB_PARSER_PKG GHC.Data.StringBuffer
+import GHC_LIB_PARSER_PKG GHC.Utils.Fingerprint
+import GHC_LIB_PARSER_PKG GHC.Utils.Outputable
 #  if !defined (GHC_901)
-import "ghc-lib-parser" GHC.Driver.Ppr
+import GHC_LIB_PARSER_PKG GHC.Driver.Ppr
 #  endif
 #else
-import "ghc-lib-parser" HeaderInfo
-import "ghc-lib-parser" Module
-import "ghc-lib-parser" DynFlags
-import "ghc-lib-parser" StringBuffer
-import "ghc-lib-parser" Fingerprint
-import "ghc-lib-parser" Outputable
+import GHC_LIB_PARSER_PKG HeaderInfo
+import GHC_LIB_PARSER_PKG Module
+import GHC_LIB_PARSER_PKG DynFlags
+import GHC_LIB_PARSER_PKG StringBuffer
+import GHC_LIB_PARSER_PKG Fingerprint
+import GHC_LIB_PARSER_PKG Outputable
 #endif
 #if defined (GHC_MASTER)  || defined (GHC_921) || defined (GHC_901)
-import "ghc-lib-parser" GHC.Settings
-import "ghc-lib-parser" GHC.Settings.Config
+import GHC_LIB_PARSER_PKG GHC.Settings
+import GHC_LIB_PARSER_PKG GHC.Settings.Config
 #elif defined (GHC_8101)
-import "ghc-lib-parser" Config
-import "ghc-lib-parser" ToolSettings
+import GHC_LIB_PARSER_PKG Config
+import GHC_LIB_PARSER_PKG ToolSettings
 #endif
 #if defined (GHC_MASTER) ||  defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
-import "ghc-lib-parser" GHC.Platform
+import GHC_LIB_PARSER_PKG GHC.Platform
 #else
-import "ghc-lib-parser" Config
-import "ghc-lib-parser" Platform
+import GHC_LIB_PARSER_PKG Config
+import GHC_LIB_PARSER_PKG Platform
 #endif
 
 import System.Environment
