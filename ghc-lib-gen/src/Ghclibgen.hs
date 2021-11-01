@@ -928,22 +928,49 @@ baseBounds ghcFlavor =
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]
 commonBuildDepends ghcFlavor =
-  [ "ghc-prim > 0.2 && < 0.8"
-  , baseBounds ghcFlavor
-  , "containers >= 0.5 && < 0.7"
-  , "bytestring >= 0.9 && < 0.11"
-  , "binary == 0.8.*"
-  , "filepath >= 1 && < 1.5"
-  , "directory >= 1 && < 1.4"
-  , "array >= 0.1 && < 0.6"
-  , "deepseq >= 1.4 && < 1.5"
-  , "pretty == 1.1.*"
-  , "time >= 1.4 && < 1.10"
-  , "transformers == 0.5.*"
-  , "process >= 1 && < 1.7"
-  ] ++
-  [ "exceptions == 0.10.*" | ghcFlavor >= Ghc901 ] ++
-  [ "parsec" | ghcFlavor >= Ghc921 ]
+  base ++ specific ++ conditional ++ shared
+  where
+    -- base
+    base =
+      [
+        baseBounds ghcFlavor
+      ]
+    -- bumped in 9.2.1
+    specific =
+      if ghcFlavor >= Ghc921 then
+        [
+          "ghc-prim > 0.2 && < 0.9"
+        , "bytestring >= 0.9 && < 0.12"
+        , "time >= 1.4 && < 1.12"
+        ]
+      else
+        [
+          "ghc-prim > 0.2 && < 0.8"
+        , "bytestring >= 0.9 && < 0.11"
+        , "time >= 1.4 && < 1.10"
+        ]
+    -- added in 9.0.1
+    conditional =
+      if ghcFlavor >= Ghc901 then
+        [
+          "exceptions == 0.10.*"
+        , "parsec"
+        ]
+      else
+        []
+    -- shared for all flavors
+    shared =
+      [
+        "containers >= 0.5 && < 0.7"
+      , "binary == 0.8.*"
+      , "filepath >= 1 && < 1.5"
+      , "directory >= 1 && < 1.4"
+      , "array >= 0.1 && < 0.6"
+      , "deepseq >= 1.4 && < 1.5"
+      , "pretty == 1.1.*"
+      , "transformers == 0.5.*"
+      , "process >= 1 && < 1.7"
+      ]
 
 ghcLibParserBuildDepends :: GhcFlavor -> [String]
 ghcLibParserBuildDepends  = commonBuildDepends
