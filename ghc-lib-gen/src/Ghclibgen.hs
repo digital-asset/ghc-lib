@@ -265,6 +265,7 @@ cHeaders ghcFlavor =
     , "compiler/ClosureTypes.h"
     , "compiler/FunTypes.h"
     , "compiler/Unique.h"
+    , "compiler/ghc-llvm-version.h"
     ]
   else
     [ "includes/MachDeps.h"
