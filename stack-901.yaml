@@ -1,0 +1,18 @@
+# This is 'stack.yaml' but with an explicit version for happy
+
+# happy-1.21.0 has crept into the ghc-9.0.1 resolvers but ghc-9.2.1
+# (at least and master for now), do not admit building with this
+# version (probibted by .configure).
+
+resolver: nightly-2021-11-14 # ghc-9.0.1
+
+ghc-options:
+  # try and speed up recompilation on the CI server
+  "$everything": -O0 -j
+
+extra-deps:
+  - happy-1.20.0 # override happy-1.21.0 (can't build ghc-9.2 or head)
+
+# Packages MUST go at the end, since we append to it during the CI.hs script
+packages:
+- .
