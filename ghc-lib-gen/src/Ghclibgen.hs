@@ -2,9 +2,13 @@
 -- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE LambdaCase #-}
+#if __GLASGOW_HASKELL__ >= 902
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+#endif
 
 module Ghclibgen (
     applyPatchHeapClosures
@@ -43,6 +47,9 @@ import qualified Data.Set as Set
 
 import qualified Data.Text as T
 import Data.Aeson.Types(parse, Result(..))
+#if MIN_VERSION_aeson(2, 0, 2)
+import Data.Aeson.KeyMap(toHashMap)
+#endif
 import qualified Data.Yaml as Y
 import Data.Yaml (ToJSON(..), (.:?), (.!=))
 import qualified Data.HashMap.Strict as HMS
@@ -845,7 +852,15 @@ applyPatchHadrianStackYaml ghcFlavor = do
         case parse (\cfg -> cfg .:? "ghc-options" .!= HMS.empty) config of
           Success os -> os :: HMS.HashMap T.Text Y.Value
           Error msg -> error msg
-  let config' = HMS.insert "extra-deps" (toJSON deps) (HMS.insert "ghc-options" (toJSON opts) config)
+  let config' =
+        HMS.insert "extra-deps" (toJSON deps)
+          (HMS.insert "ghc-options" (toJSON opts)
+#if !MIN_VERSION_aeson(2, 0, 2)
+                                     config
+#else
+                                     (toHashMap config)
+#endif
+          )
   Y.encodeFile hadrianStackYaml config'
 
 -- | Data type representing an approximately parsed Cabal file.

@@ -41,6 +41,29 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
     # +=========+=================+============+
+    # | linux   | ghc-master      | ghc-9.2.1  |
+    # | macOS   | ghc-master      | ghc-9.2.1  |
+    # | windows | ghc-master      | ghc-9.2.1  |
+    # +---------+-----------------+------------+
+    linux-ghc-master-9.2.1:
+      image: "ubuntu-latest"
+      mode: "--ghc-flavor ghc-master"
+      resolver: "ghc-9.2.1"
+      stack-yaml: "stack-exact.yaml"
+    mac-ghc-master-9.2.1:
+      image: "macOS-latest"
+      mode: "--ghc-flavor ghc-master"
+      resolver: "ghc-9.2.1"
+      stack-yaml: "stack-exact.yaml"
+    windows-ghc-master-9.2.1:
+      image: "windows-latest"
+      mode: "--ghc-flavor ghc-master"
+      resolver: "ghc-9.2.1"
+      stack-yaml: "stack-exact.yaml"
+
+    # +---------+-----------------+------------+
+    # | OS      | ghc-lib flavour | GHC        |
+    # +=========+=================+============+
     # | linux   | ghc-master      | ghc-9.0.1  |
     # | macOS   | ghc-master      | ghc-9.0.1  |
     # | linux   | ghc-master      | ghc-8.10.4 |
@@ -50,8 +73,8 @@ strategy:
     linux-ghc-master-9.0.1:
       image: "ubuntu-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.0.1"
-      stack-yaml: "stack-exact.yaml"
+      resolver: "nightly-2021-11-14"
+      stack-yaml: "stack.yaml"
     linux-ghc-master-8.10.4:
       image: "ubuntu-latest"
       mode: "--ghc-flavor ghc-master"
@@ -60,8 +83,8 @@ strategy:
     mac-ghc-master-9.0.1:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.0.1"
-      stack-yaml: "stack-exact.yaml"
+      resolver: "nightly-2021-11-14"
+      stack-yaml: "stack.yaml"
     mac-ghc-master-8.10.4:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-master"
@@ -82,13 +105,13 @@ strategy:
     linux-ghc-9.2.1-9.0.1:
       image: "ubuntu-latest"
       mode: "--ghc-flavor ghc-9.2.1"
-      resolver: "ghc-9.0.1"
-      stack-yaml: "stack-exact.yaml"
+      resolver: "nightly-2021-11-14"
+      stack-yaml: "stack.yaml"
     mac-ghc-9.2.1-8.10.6:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-9.2.1"
-      resolver: "ghc-8.10.6"
-      stack-yaml: "stack-exact.yaml"
+      resolver: "nightly-2020-03-14"
+      stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
@@ -99,13 +122,13 @@ strategy:
     linux-ghc-9.0.1-8.10.6:
       image: "ubuntu-latest"
       mode: "--ghc-flavor ghc-9.0.1"
-      resolver: "ghc-8.10.6"
-      stack-yaml: "stack-exact.yaml"
+      resolver: "nightly-2020-03-14"
+      stack-yaml: "stack.yaml"
     mac-ghc-9.0.1-8.10.6:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-9.0.1"
-      resolver: "ghc-8.10.6"
-      stack-yaml: "stack-exact.yaml"
+      resolver: "nightly-2020-03-14"
+      stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |

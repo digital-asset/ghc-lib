@@ -346,7 +346,18 @@ buildDists
 
     -- Run tests.
     let testArguments = "--test-arguments \"" ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ ghcFlavorOpt ghcFlavor ++ "\""
+#if __GLASGOW_HASKELL >= 902
+    -- Running ghc-9.2.1 with stack 2.7.3 produces
+    --   "Stack has not been tested with GHC versions above 9.0, and using 9.2.1, this may fail"
+    --   "Stack has not been tested with Cabal versions above 3.4, but version 3.6.0.0 was found, this may fail"
+    -- which being unexpected in the output cause the golden tests to fail.
+    --
+    -- So, for now just don't run this test. The next stack release
+    -- we'll expect to remove the warnings at which point we'll
+    -- re-enable it.
+#else
     stack $ "test mini-hlint --no-terminal " ++ testArguments
+#endif
     stack "--no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs | tail -10"
 
 #if __GLASGOW_HASKELL__ == 808 && \
