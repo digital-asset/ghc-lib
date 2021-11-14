@@ -42,10 +42,10 @@ import Data.Ord
 import qualified Data.Set as Set
 
 import qualified Data.Text as T
+import qualified Data.Aeson.KeyMap as AKM
 import Data.Aeson.Types(parse, Result(..))
 import qualified Data.Yaml as Y
 import Data.Yaml (ToJSON(..), (.:?), (.!=))
-import qualified Data.HashMap.Strict as HMS
 
 import GhclibgenOpts
 
@@ -841,11 +841,11 @@ applyPatchHadrianStackYaml ghcFlavor = do
           Error msg -> error msg
  -- Build hadrian (and any artifacts we generate via hadrian e.g.
  -- Parser.hs) as quickly as possible.
-  let opts = HMS.insert "$everything" "-O0 -j" $
-        case parse (\cfg -> cfg .:? "ghc-options" .!= HMS.empty) config of
-          Success os -> os :: HMS.HashMap T.Text Y.Value
+  let opts = AKM.insert "$everything" "-O0 -j" $
+        case parse (\cfg -> cfg .:? "ghc-options" .!= AKM.empty) config of
+          Success os -> os :: AKM.KeyMap Y.Value
           Error msg -> error msg
-  let config' = HMS.insert "extra-deps" (toJSON deps) (HMS.insert "ghc-options" (toJSON opts) config)
+  let config' = AKM.insert "extra-deps" (toJSON deps) (AKM.insert "ghc-options" (toJSON opts) config)
   Y.encodeFile hadrianStackYaml config'
 
 -- | Data type representing an approximately parsed Cabal file.

@@ -22,7 +22,7 @@ library
                      , optparse-applicative
                      , bytestring
                      , yaml
-                     , aeson
+                     , aeson >=2
                      , text
                      , unordered-containers
                      , extra >=1.6
