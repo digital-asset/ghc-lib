@@ -35,7 +35,7 @@ strategy:
     #      | ghc-8.8.*    |  >= 8.4.4   |
     #      | ghc-8.10.*   |  >= 8.6.5   | (since 2019/09/29, https://gitlab.haskell.org/ghc/ghc/commit/24620182abdfcc65a0cfc0e2f3bc391d464d0ad5)
     #      | ghc-9.0.*    |  >= 8.8.1   | (since 2020/03/31, https://gitlab.haskell.org/ghc/ghc/-/commit/57b888c0e90be7189285a6b078c30b26d092380)
-    #      | HEAD         |  >= 8.10.1  | (since 2021/03/10, https://gitlab.haskell.org/ghc/ghc/-/commit/0a709dd9876e40c19c934692415c437ac434318c)
+    #      | >= ghc-9.2.1 |  >= 8.10.1  | (since 2021/03/10, https://gitlab.haskell.org/ghc/ghc/-/commit/0a709dd9876e40c19c934692415c437ac434318c)
     #      +--------------+-------------+
 
     # +---------+-----------------+------------+

@@ -56,12 +56,13 @@ Build `ghc-lib` using the [above instructions](#building-ghc-lib)  and upload th
 
 Building `ghc-lib` is subject to the same minimum version requirements that apply to bootstrapping GHC itself. Those requirements are given in the following table.
 
-| Ghc flavor | >= version |
-| ---------- |:----------:|
-| ghc-8.8.*  | 8.4.4      |
-| ghc-8.10.* | 8.6.5      |
-| ghc-9.0.1  | 8.8.1      |
-| ghc-master | 8.10.1     |
+| Ghc flavor | >= version | < version |
+| ---------- |:----------:|:---------:|
+| ghc-8.8.*  | 8.4.4      | 8.10.1    |
+| ghc-8.10.* | 8.6.5      | 9.0.1     |
+| ghc-9.0.1  | 8.8.1      | 9.2.1     |
+| ghc-9.2.1  | 8.10.1     |           |
+| ghc-master | 8.10.1     |           |
 
 ### How do I use the `ghc-lib`/`ghc-lib-parser` version macros?
 

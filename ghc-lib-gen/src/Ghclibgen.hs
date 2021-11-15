@@ -922,24 +922,25 @@ baseBounds :: GhcFlavor -> String
 baseBounds ghcFlavor =
   case ghcFlavor of
     -- ghc >= 8.4.4
-    DaGhc881  -> "base >= 4.11 && < 4.16"
-    Ghc881    -> "base >= 4.11 && < 4.16"
-    Ghc882    -> "base >= 4.11 && < 4.16"
-    Ghc883    -> "base >= 4.11 && < 4.16"
-    Ghc884    -> "base >= 4.11 && < 4.16"
+    DaGhc881  -> "base >= 4.11 && < 4.14" -- [ghc-8.4.4, ghc-8.10.1)
+    Ghc881    -> "base >= 4.11 && < 4.14"
+    Ghc882    -> "base >= 4.11 && < 4.14"
+    Ghc883    -> "base >= 4.11 && < 4.14"
+    Ghc884    -> "base >= 4.11 && < 4.14"
 
-    Ghc8101   -> "base >= 4.12 && < 4.17"
-    Ghc8102   -> "base >= 4.12 && < 4.17"
-    Ghc8103   -> "base >= 4.12 && < 4.17"
-    Ghc8104   -> "base >= 4.12 && < 4.17"
-    Ghc8105   -> "base >= 4.12 && < 4.17"
-    Ghc8106   -> "base >= 4.12 && < 4.17"
-    Ghc8107   -> "base >= 4.12 && < 4.17"
+    Ghc8101   -> "base >= 4.12 && < 4.15" -- [ghc-8.6.5, ghc-9.0.1)
+    Ghc8102   -> "base >= 4.12 && < 4.15"
+    Ghc8103   -> "base >= 4.12 && < 4.15"
+    Ghc8104   -> "base >= 4.12 && < 4.15"
+    Ghc8105   -> "base >= 4.12 && < 4.15"
+    Ghc8106   -> "base >= 4.12 && < 4.15"
+    Ghc8107   -> "base >= 4.12 && < 4.15"
 
-    Ghc901    -> "base >= 4.13 && < 4.17"
-    Ghc921    -> "base >= 4.14 && < 4.17"
+    Ghc901    -> "base >= 4.13 && < 4.16" -- [ghc-8.8.1, ghc-9.2.1)
 
-    GhcMaster -> "base >= 4.14 && < 4.17"
+    Ghc921    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ...)
+
+    GhcMaster -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ...)
 
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]
