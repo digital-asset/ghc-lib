@@ -35,13 +35,12 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
         init ghcFlavor
         applyPatchCmmParseNoImplicitPrelude ghcFlavor
         applyPatchRtsBytecodes ghcFlavor
-        generateGhcLibCabal ghcFlavor
         applyPatchGHCiInfoTable ghcFlavor
+        generateGhcLibCabal ghcFlavor
   where
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do
         applyPatchHadrianStackYaml ghcFlavor
-        applyPatchPrelude ghcFlavor
         applyPatchHeapClosures ghcFlavor
         applyPatchRtsIncludePaths ghcFlavor
         applyPatchGhcPrim ghcFlavor

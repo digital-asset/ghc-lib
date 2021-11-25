@@ -13,7 +13,6 @@
 module Ghclibgen (
     applyPatchHeapClosures
   , applyPatchAclocal
-  , applyPatchPrelude
   , applyPatchHsVersions
   , applyPatchGhcPrim
   , applyPatchHaddockHs
@@ -395,15 +394,6 @@ calcParserModules ghcFlavor = do
         , if ghcFlavor >= Ghc8101 then "GHC.Hs.Dump" else "HsDumpAst"
         ]
   return $ nubSort (modules ++ extraModules)
-
-applyPatchPrelude :: GhcFlavor -> IO ()
-applyPatchPrelude ghcFlavor = do
-  when (ghcFlavor == Ghc921) $ do
-    writeFile "compiler/GHC/Prelude.hs" .
-      replace
-        "#if MIN_VERSION_base(4,15,0)"
-        "#if MIN_VERSION_base(4,16,0)"
-    =<< readFile' "compiler/GHC/Prelude.hs"
 
 -- Avoid duplicate symbols with HSghc-heap (see issue
 -- https://github.com/digital-asset/ghc-lib/issues/210).
