@@ -27,14 +27,15 @@ main = do
             <> Opts.progDesc "Build ghc-lib and ghc-lib-parser tarballs."
             <> Opts.header "CI - CI script for ghc-lib"
           )
-    Options { ghcFlavor, noGhcCheckout, stackOptions } <- Opts.execParser opts
-    version <- buildDists ghcFlavor noGhcCheckout stackOptions
+    Options { ghcFlavor, noGhcCheckout, stackOptions, versionSuffix } <- Opts.execParser opts
+    version <- buildDists ghcFlavor noGhcCheckout stackOptions versionSuffix
     putStrLn version
 
 data Options = Options
     { ghcFlavor :: GhcFlavor
     , noGhcCheckout :: Bool
     , stackOptions :: StackOptions
+    , versionSuffix :: Maybe String
     } deriving (Show)
 
 data StackOptions = StackOptions
@@ -110,23 +111,34 @@ ghcOptionsOpt = \case
   Just options -> "--ghc-options=\"" ++ options ++ "\""
   Nothing -> ""
 
--- Calculate a version string based on a date and a ghc flavor.
-genVersionStr :: GhcFlavor -> (Day -> String)
-genVersionStr = \case
-   GhcMaster _ -> \day -> "0." ++ replace "-" "" (showGregorian day)
-   Ghc921      -> \day -> "9.2.1." ++ replace "-" "" (showGregorian day)
-   Ghc901      -> \day -> "9.0.1." ++ replace "-" "" (showGregorian day)
-   Ghc8101     -> \day -> "8.10.1." ++ replace "-" "" (showGregorian day)
-   Ghc8102     -> \day -> "8.10.2." ++ replace "-" "" (showGregorian day)
-   Ghc8103     -> \day -> "8.10.3." ++ replace "-" "" (showGregorian day)
-   Ghc8104     -> \day -> "8.10.4." ++ replace "-" "" (showGregorian day)
-   Ghc8105     -> \day -> "8.10.5." ++ replace "-" "" (showGregorian day)
-   Ghc8106     -> \day -> "8.10.6." ++ replace "-" "" (showGregorian day)
-   Ghc8107     -> \day -> "8.10.7." ++ replace "-" "" (showGregorian day)
-   Ghc882      -> \day -> "8.8.2." ++ replace "-" "" (showGregorian day)
-   Ghc883      -> \day -> "8.8.3." ++ replace "-" "" (showGregorian day)
-   Ghc884      -> \day -> "8.8.4." ++ replace "-" "" (showGregorian day)
-   _           -> \day -> "8.8.1." ++ replace "-" "" (showGregorian day)
+genDateSuffix :: IO String
+genDateSuffix = do
+  UTCTime day _ <- getCurrentTime
+  pure $ replace "-" "" (showGregorian day)
+
+-- Calculate a version string based on a ghc flavor and a suffix.
+genVersionStr :: GhcFlavor -> String -> String
+genVersionStr flavor suffix =
+  base <> case suffix of
+    "" -> ""
+    _ -> "." <> suffix
+  where
+    base = case flavor of
+      Da {}       -> "8.8.1"
+      GhcMaster _ -> "0"
+      Ghc921      -> "9.2.1"
+      Ghc901      -> "9.0.1"
+      Ghc8101     -> "8.10.1"
+      Ghc8102     -> "8.10.2"
+      Ghc8103     -> "8.10.3"
+      Ghc8104     -> "8.10.4"
+      Ghc8105     -> "8.10.5"
+      Ghc8106     -> "8.10.6"
+      Ghc8107     -> "8.10.7"
+      Ghc881      -> "8.8.1"
+      Ghc882      -> "8.8.2"
+      Ghc883      -> "8.8.3"
+      Ghc884      -> "8.8.4"
 
 parseOptions :: Opts.Parser Options
 parseOptions = Options
@@ -142,6 +154,12 @@ parseOptions = Options
           <> Opts.help "If enabled, don't perform a GHC checkout"
           )
     <*> parseStackOptions
+    <*> Opts.optional
+          ( Opts.strOption
+            ( Opts.long "version-suffix"
+            <> Opts.help "If specified, append to version string for generated ghc-lib. Otherwise use current date."
+            )
+          )
  where
    readFlavor :: Opts.ReadM GhcFlavor
    readFlavor = Opts.eitherReader $ \case
@@ -210,11 +228,12 @@ parseStackOptions = StackOptions
        <> Opts.help "If specified, pass '--ghc-options=\"xxx\"' to stack"
         ))
 
-buildDists :: GhcFlavor -> Bool -> StackOptions -> IO String
+buildDists :: GhcFlavor -> Bool -> StackOptions -> Maybe String -> IO String
 buildDists
   ghcFlavor
   noGhcCheckout
   StackOptions {stackYaml, resolver, verbosity, cabalVerbose, ghcOptions}
+  versionSuffix
   =
   do
     let stackConfig = fromMaybe "stack.yaml" stackYaml
@@ -391,8 +410,8 @@ buildDists
 
       tag :: IO String
       tag = do
-        UTCTime day _ <- getCurrentTime
-        return $ genVersionStr ghcFlavor day
+        suffix <- maybe genDateSuffix pure versionSuffix
+        return $ genVersionStr ghcFlavor suffix
 
       patchVersion :: String -> FilePath -> IO ()
       patchVersion version file =
