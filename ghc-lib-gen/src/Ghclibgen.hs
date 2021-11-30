@@ -932,8 +932,8 @@ baseBounds :: GhcFlavor -> String
 baseBounds ghcFlavor =
   case ghcFlavor of
     -- ghc >= 8.4.4
-    DaGhc881  -> "base >= 4.11 && < 4.14" -- [ghc-8.4.4, ghc-8.10.1)
-    Ghc881    -> "base >= 4.11 && < 4.14"
+    DaGhc881  -> "base >= 4.11 && < 4.15" -- unlike upstream GHC 8.8, the DA fork does work with ghc-8.10.1
+    Ghc881    -> "base >= 4.11 && < 4.14" -- [ghc-8.4.4, ghc-8.10.1)
     Ghc882    -> "base >= 4.11 && < 4.14"
     Ghc883    -> "base >= 4.11 && < 4.14"
     Ghc884    -> "base >= 4.11 && < 4.14"
