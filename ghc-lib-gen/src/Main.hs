@@ -25,6 +25,7 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
   withCurrentDirectory root $
     case target of
       GhclibParser -> do
+        applyPatchParser ghcFlavor
         init ghcFlavor
         mangleCSymbols ghcFlavor
         applyPatchStage ghcFlavor

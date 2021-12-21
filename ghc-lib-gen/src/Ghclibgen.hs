@@ -11,7 +11,8 @@
 #endif
 
 module Ghclibgen (
-    applyPatchHeapClosures
+    applyPatchParser
+  , applyPatchHeapClosures
   , applyPatchAclocal
   , applyPatchHsVersions
   , applyPatchGhcPrim
@@ -630,6 +631,24 @@ applyPatchRtsBytecodes ghcFlavor = do
     =<< readFile' asmHs )
     where
       asmHs = "compiler/GHC/ByteCode/Asm.hs"
+
+applyPatchParser :: GhcFlavor -> IO ()
+applyPatchParser ghcFlavor = do
+  when (ghcFlavor >= Ghc921) (
+    writeFile parserY .
+      replace
+        "rs _ = panic \"Parser should only have RealSrcSpan\""
+        (unlines [
+            "rs _ = badRealSrcSpan"
+          , ""
+          , "badRealSrcSpan :: RealSrcSpan"
+          , "badRealSrcSpan = mkRealSrcSpan bad bad"
+          , "  where"
+          , "    bad = mkRealSrcLoc (fsLit \"ghc-lib-parser-nospan\") 0 0"
+          ])
+    =<< readFile' parserY)
+    where
+      parserY = "compiler/GHC/Parser.y"
 
 -- Workaround lack of newer ghc-prim 12/3/2019
 -- (https://gitlab.haskell.org/ghc/ghc/commit/705a16df02411ec2445c9a254396a93cabe559ef)
