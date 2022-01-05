@@ -178,6 +178,7 @@ hadrianGeneratedRoot = \case
   GhcMaster -> stage0Lib
   Ghc921 -> stage0Lib
   Ghc901 -> stage0Lib
+  Ghc902 -> stage0Lib
   Ghc8105 -> stage0Lib
   Ghc8106 -> stage0Lib
   Ghc8107 -> stage0Lib
@@ -223,7 +224,7 @@ rtsDependencies ghcFlavor =
     derivedConstantsDependencies ghcFlavor =
          map (hadrianGeneratedRoot ghcFlavor </>)
            ("DerivedConstants.h"
-            : [ x | ghcFlavor <= Ghc901
+            : [ x | ghcFlavor <= Ghc902
                 , x <- [ "GHCConstantsHaskellExports.hs"
                        , "GHCConstantsHaskellWrappers.hs"
                        , "GHCConstantsHaskellType.hs"
@@ -385,7 +386,7 @@ calcParserModules ghcFlavor = do
                    , "GHC.Driver.Config.Parser"
                    ]
         ] ++
-        [ x | ghcFlavor > Ghc901
+        [ x | ghcFlavor > Ghc902
             ,  x <- [ "GHC.Driver.Config"
                     , "GHC.Parser.Errors.Ppr"
                     ]
@@ -457,6 +458,7 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
             GhcMaster -> [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
             Ghc921 ->    [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
             Ghc901 ->    [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
+            Ghc902 ->    [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
             Ghc8101 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
             Ghc8102 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
             Ghc8103 ->   [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
@@ -602,7 +604,7 @@ applyPatchGHCiMessage ghcFlavor =
 -- here for flavor 9.0.
 applyPatchHaddockHs :: GhcFlavor -> IO ()
 applyPatchHaddockHs ghcFlavor = do
-  when (ghcFlavor == Ghc901) (
+  when (ghcFlavor == Ghc901 || ghcFlavor == Ghc902) (
     writeFile haddockHs .
       replace
         "-- *"
@@ -789,7 +791,7 @@ applyPatchStage ghcFlavor =
 -- how it currently is on HEAD.
 applyPatchAclocal :: GhcFlavor -> IO ()
 applyPatchAclocal ghcFlavor =
-  when (ghcFlavor <= Ghc901) $
+  when (ghcFlavor == Ghc901) $
     writeFile aclocalm4 .
       replace "_AC_PROG_CC_C99" "AC_PROG_CC_C99"
     =<< readFile' aclocalm4
@@ -947,6 +949,7 @@ baseBounds ghcFlavor =
     Ghc8107   -> "base >= 4.12 && < 4.15"
 
     Ghc901    -> "base >= 4.13 && < 4.16" -- [ghc-8.8.1, ghc-9.2.1)
+    Ghc902    -> "base >= 4.13 && < 4.16" -- [ghc-8.8.1, ghc-9.2.1)
 
     Ghc921    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ...)
 
@@ -1106,7 +1109,7 @@ ghcStageDef :: GhcFlavor -> String
 ghcStageDef ghcFlavor = if ghcFlavor >= Ghc8101 then "" else "-DSTAGE=2"
 
 ghcInGhciDef :: GhcFlavor -> String
-ghcInGhciDef ghcFlavor = if ghcFlavor > Ghc901 then "" else " -DGHC_IN_GHCI "
+ghcInGhciDef ghcFlavor = if ghcFlavor >= Ghc921 then "" else " -DGHC_IN_GHCI "
 
 -- Perform a set of specific substitutions on the given list of files.
 performExtraFilesSubstitutions :: GhcFlavor -> (GhcFlavor -> [FilePath]) -> [FilePath]
