@@ -66,7 +66,7 @@ data GhcFlavor = Ghc921
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "80daefce4ec1169ac3ef0552b8600c71527d84c2" -- 2021-12-24
+current = "f583eb8e5e7077f77fba035a454fafd945d4a4ea" -- 2022-01-09
 
 -- Command line argument generators.
 
@@ -364,8 +364,12 @@ buildDists
     -- Separate the two library build commands so they are
     -- independently timed. Note that optimizations in these builds
     -- are disabled in stack.yaml via `ghc-options: -O0`.
-    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib-parser"
-    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions  ++ " ghc-lib"
+    -- `-haddock` makes the parser stricter about Haddock comments (see
+    -- https://gitlab.haskell.org/ghc/ghc/-/commit/c35c545d3f32f092c52052349f741739a844ec0f).
+    -- TODO: https://github.com/digital-asset/ghc/issues/97
+    let ghcOpts = case ghcFlavor of Da {} -> ghcOptionsOpt ghcOptions;  _ -> ghcOptionsWithHaddock ghcOptions
+    stack $ "--no-terminal --interleaved-output build " ++ ghcOpts ++ " ghc-lib-parser"
+    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions ++ " ghc-lib"
     stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions ++ " mini-hlint mini-compile"
 
     -- Run tests.
@@ -389,6 +393,21 @@ buildDists
     tag -- The return value of type 'IO string'.
 
     where
+      ghcOptionsWithHaddock :: Maybe String -> String
+      ghcOptionsWithHaddock opts =
+        ghcOptionsOpt $ Just (trimStart (fromMaybe "" opts ++ " -haddock") ++
+#if __GLASGOW_HASKELL__ < 900
+          ""
+#else
+          -- Ideally we'd write " -Werror=invalid-haddock" but as of
+          -- now I'm finding instances with (at least) ghc-lib-parser,
+          -- ghc-9.2.1 and flavor ghc-master so let's just warn for
+          -- the moment so we can consider getting them fixed
+          -- upstream.
+          " -Winvalid-haddock"
+#endif
+        )
+
       stack :: String -> IO ()
       stack action = cmd $ "stack " ++
         concatMap (<> " ")

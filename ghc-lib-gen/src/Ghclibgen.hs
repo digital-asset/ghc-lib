@@ -597,21 +597,27 @@ applyPatchGHCiMessage ghcFlavor =
   where
       messageHs = "libraries/ghci/GHCi/Message.hs"
 
--- Users of ghc-lib-parser-9.0.* have reported GHC tripping up on a
--- comment in this particular source file (see
--- https://github.com/ndmitchell/hlint/issues/1224 for example). The
--- comment has been changed in the way we do here on HEAD. We patch it
--- here for flavor 9.0.
 applyPatchHaddockHs :: GhcFlavor -> IO ()
 applyPatchHaddockHs ghcFlavor = do
+  -- See https://github.com/ndmitchell/hlint/issues/1224
   when (ghcFlavor == Ghc901 || ghcFlavor == Ghc902) (
     writeFile haddockHs .
       replace
         "-- *"
         "-- -"
-    =<< readFile' haddockHs )
-    where
-      haddockHs = "compiler/GHC/Parser/PostProcess/Haddock.hs"
+    =<< readFile' haddockHs
+    )
+  -- See https://github.com/digital-asset/ghc-lib/issues/344
+  when (ghcFlavor == Ghc921) (
+    writeFile ffiClosuresHs .
+      replace
+        "-- *"
+        "-- -"
+    =<< readFile' ffiClosuresHs
+    )
+  where
+    haddockHs = "compiler/GHC/Parser/PostProcess/Haddock.hs"
+    ffiClosuresHs = "libraries/ghc-heap/GHC/Exts/Heap/FFIClosures.hs"
 
 -- Support for unboxed tuples got landed 03/20/2021
 -- (https://gitlab.haskell.org/ghc/ghc/-/commit/1f94e0f7601f8e22fdd81a47f130650265a44196#4ec156a7b95e9c7a690c99bc79e6e0edf60a51dc)
