@@ -66,7 +66,7 @@ data GhcFlavor = Ghc921
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "f583eb8e5e7077f77fba035a454fafd945d4a4ea" -- 2022-01-09
+current = "aa50e118b201ae4ac2714afb998d430c9a4a9caa" -- 2022-01-25
 
 -- Command line argument generators.
 
@@ -394,19 +394,14 @@ buildDists
 
     where
       ghcOptionsWithHaddock :: Maybe String -> String
-      ghcOptionsWithHaddock opts =
-        ghcOptionsOpt $ Just (trimStart (fromMaybe "" opts ++ " -haddock") ++
 #if __GLASGOW_HASKELL__ < 900
-          ""
+        -- 8.10.* broken on HEAD when `-haddock` enabled so stop doing
+        -- that for now
+        -- (see https://gitlab.haskell.org/ghc/ghc/-/issues/20973)
+      ghcOptionsWithHaddock = ghcOptionsOpt
 #else
-          -- Ideally we'd write " -Werror=invalid-haddock" but as of
-          -- now I'm finding instances with (at least) ghc-lib-parser,
-          -- ghc-9.2.1 and flavor ghc-master so let's just warn for
-          -- the moment so we can consider getting them fixed
-          -- upstream.
-          " -Winvalid-haddock"
+      ghcOptionsWithHaddock opts = ghcOptionsOpt $ Just (trimStart (fromMaybe "" opts ++ " -haddock -Winvalid-haddock"))
 #endif
-        )
 
       stack :: String -> IO ()
       stack action = cmd $ "stack " ++
