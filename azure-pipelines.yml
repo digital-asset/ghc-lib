@@ -176,7 +176,7 @@ steps:
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
   - bash: |
       stack exec -- pacman -Sy msys2-keyring
-    condition: eq(variables['Agent.OS'], 'Windows')
+    condition: eq(variables['Agent.OS'], Windows_NT')
   - bash: |
       stack setup --stack-yaml $(stack-yaml) --resolver $(resolver) > /dev/null
       stack install --stack-yaml $(stack-yaml) --resolver $(resolver) alex happy > /dev/null
