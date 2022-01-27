@@ -1,4 +1,4 @@
-resolver: lts-17.5 # ghc-8.10.4
+resolver: lts-18.23 # ghc-8.10.7
 
 ghc-options:
   # try and speed up recompilation on the CI server
