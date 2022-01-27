@@ -96,7 +96,7 @@ strategy:
     windows-ghc-master-8.10.7:
       image: "windows-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "lts-18.16"
+      resolver: "lts-18.23"
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
@@ -174,6 +174,10 @@ steps:
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/src
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/test/Main.hs
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
+  - bash: |
+      stack exec -- pacman -Syu --noconfirm
+    condition: eq(variables['Agent.OS'], 'Windows_NT')
+  - bash: |
       stack setup --stack-yaml $(stack-yaml) --resolver $(resolver) > /dev/null
       stack install --stack-yaml $(stack-yaml) --resolver $(resolver) alex happy > /dev/null
       stack exec --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative ghc -- -package extra -package optparse-applicative -Wall -Wno-name-shadowing -Werror -c CI.hs
