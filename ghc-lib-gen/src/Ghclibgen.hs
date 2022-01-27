@@ -475,7 +475,27 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
           =<< readFile' file
 
 applyPatchGHCiInfoTable :: GhcFlavor -> IO ()
-applyPatchGHCiInfoTable ghcFlavor =
+applyPatchGHCiInfoTable ghcFlavor = do
+  when(ghcFlavor == DaGhc881) $
+    -- Drop references to RTS symbols in GHCi so we can build with GHC 9.
+    -- These functions are never used since GHCi doesn’t work in ghc-lib anyway.
+    writeFile infoTableHsc .
+      replace
+        (unlines
+           [ "foreign import ccall unsafe \"allocateExec\""
+           , "  _allocateExec :: CUInt -> Ptr (Ptr a) -> IO (Ptr a)"
+           , ""
+           , "foreign import ccall unsafe \"flushExec\""
+           , "  _flushExec :: CUInt -> Ptr a -> IO ()"
+           ])
+        (unlines
+           [ "_allocateExec :: CUInt -> Ptr (Ptr a) -> IO (Ptr a)"
+           , "_allocateExec = error \"_allocateExec stub for ghc-lib\""
+           , ""
+           , "_flushExec :: CUInt -> Ptr a -> IO ()"
+           , "_flushExec = error \"_flushExec stub for ghc-lib\""
+           ])
+      =<< readFile' infoTableHsc
   when(ghcFlavor >= Ghc921) $ do
     writeFile infoTableHsc .
       replace
