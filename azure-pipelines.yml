@@ -102,17 +102,17 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-9.2.1       | ghc-9.0.1  |
-    # | macOS   | ghc-9.2.1       | ghc-8.10.7 |
+    # | linux   | ghc-9.2.2       | ghc-9.0.1  |
+    # | macOS   | ghc-9.2.2       | ghc-8.10.7 |
     # +---------+-----------------+------------+
-    linux-ghc-9.2.1-9.0.1:
+    linux-ghc-9.2.2-9.0.1:
       image: "ubuntu-latest"
-      mode: "--ghc-flavor ghc-9.2.1"
+      mode: "--ghc-flavor ghc-9.2.2"
       resolver: "nightly-2021-11-14"
       stack-yaml: "stack-901.yaml"
-    mac-ghc-9.2.1-8.10.7:
+    mac-ghc-9.2.2-8.10.7:
       image: "macOS-latest"
-      mode: "--ghc-flavor ghc-9.2.1"
+      mode: "--ghc-flavor ghc-9.2.2"
       resolver: "lts-18.16"
       stack-yaml: "stack.yaml"
 
