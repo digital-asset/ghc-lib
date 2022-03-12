@@ -49,7 +49,7 @@ goldenTests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFla
   -- to 't'. E.g. at this time on master, there's this example: 'Found
   -- `qualified' in postpositive position. '
   case (yaml, resolver) of
-    -- Running ghc-9.2.1 with stack 2.7.3 produces
+    -- Running ghc-9.2.1(ghc-9.2.2) with stack 2.7.3(2.7.5) produces
     --   "Stack has not been tested with GHC versions above 9.0, and using 9.2.1, this may fail"
     --   "Stack has not been tested with Cabal versions above 3.4, but version 3.6.0.0 was found, this may fail"
     -- on stderr which being unexpected, causes the golden tests to fail.
@@ -59,7 +59,7 @@ goldenTests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFla
     -- it. So, for now just don't run this test.
     (Just "../../stack-exact.yaml", Nothing) -> -- implicit resolver 'ghc-9.2.1'
       testGroup "mini-hlint tests" []
-    (_, Just "ghc-9.2.1") ->  -- explicit resolver 'ghc-9.2.1'
+    (_, Just ghc) | ghc `elem` ["ghc-9.2.1", "ghc-9.2.2"] ->  -- explicit resolvers
       testGroup "mini-hlint tests" []
     (_, _) ->
       testGroup "mini-hlint tests"
