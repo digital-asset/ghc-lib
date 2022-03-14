@@ -41,18 +41,18 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-master      | ghc-9.2.1  |
-    # | macOS   | ghc-master      | ghc-9.2.1  |
+    # | linux   | ghc-master      | ghc-9.2.2  |
+    # | macOS   | ghc-master      | ghc-9.2.2  |
     # +---------+-----------------+------------+
-    linux-ghc-master-9.2.1:
+    linux-ghc-master-9.2.2:
       image: "ubuntu-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.2.1"
+      resolver: "ghc-9.2.2"
       stack-yaml: "stack-exact.yaml"
-    mac-ghc-master-9.2.1:
+    mac-ghc-master-9.2.2:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.2.1"
+      resolver: "ghc-9.2.2"
       stack-yaml: "stack-exact.yaml"
 
     # just can't get a build-plan at this time. issues with extra,

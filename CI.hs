@@ -13,6 +13,7 @@ import System.IO.Extra
 import System.Info.Extra
 import System.Process.Extra
 import System.Time.Extra
+import System.Info (os, arch)
 import Data.Maybe
 import Data.List.Extra
 import Data.Time.Clock
@@ -413,8 +414,16 @@ buildDists
 #endif
         )
 
+      -- Mitigate macOS w/[ghc-9.0 <= 9.2.2] build failures for lack of
+      -- this c-include path (including e.g. ghc-lib-parser on
+      -- ghc-9.2.2). See
+      -- https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266.
+      prelude :: (String, String) -> String
+      prelude ("darwin", _) = "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi"
+      prelude _ = ""
+
       stack :: String -> IO ()
-      stack action = cmd $ "stack " ++
+      stack action = cmd $ prelude (os, arch) ++ " stack " ++
         concatMap (<> " ")
                  [ stackYamlOpt stackYaml
                  , stackResolverOpt resolver
