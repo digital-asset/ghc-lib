@@ -68,7 +68,7 @@ data GhcFlavor = Ghc922
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "706deee0524ca6af26c8b8d5cff17a6e401a2c18" -- 2022-03-06
+current = "d45bb70178e044bc8b6e8215da7bc8ed0c95f2cb" -- 2022-03-20
 
 -- Command line argument generators.
 
@@ -400,19 +400,11 @@ buildDists
 
     where
       ghcOptionsWithHaddock :: Maybe String -> String
-      ghcOptionsWithHaddock opts =
-        ghcOptionsOpt $ Just (trimStart (fromMaybe "" opts ++ " -haddock") ++
-#if __GLASGOW_HASKELL__ < 900
-          ""
-#else
-          -- Ideally we'd write " -Werror=invalid-haddock" but as of
-          -- now I'm finding instances with (at least) ghc-lib-parser,
-          -- ghc-9.2.1 and flavor ghc-master so let's just warn for
-          -- the moment so we can consider getting them fixed
-          -- upstream.
-          " -Winvalid-haddock"
-#endif
-        )
+      -- Enabling strict haddock mode with -haddock (and for some
+      -- build compilers -Winvalid-haddock) has become too tedious.
+      -- See 20935, 20924 and now 21269. The good news is that MR#
+      -- 7762 means this shouldn't be an issue anymore going forward.
+      ghcOptionsWithHaddock = ghcOptionsOpt
 
       -- Mitigate macOS w/[ghc-9.0 <= 9.2.2] build failures for lack of
       -- this c-include path (including e.g. ghc-lib-parser on
