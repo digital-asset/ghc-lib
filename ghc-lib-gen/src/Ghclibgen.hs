@@ -36,6 +36,7 @@ import Control.Monad
 import System.Process.Extra
 import System.FilePath hiding ((</>), normalise, dropTrailingPathSeparator)
 import System.FilePath.Posix((</>), normalise, dropTrailingPathSeparator) -- Make sure we generate / on all platforms.
+import System.Directory
 import System.Directory.Extra
 import System.IO.Extra
 import Data.List.Extra hiding (find)
@@ -303,6 +304,10 @@ generatedParser ghcFlavor =
         else [ "Parser.hs", "Lexer.hs" ]
     )
 
+generatedHaddockLexer :: GhcFlavor -> [FilePath]
+generatedHaddockLexer ghcFlavor =
+  [stage0Compiler </> "GHC/Parser/HaddockLex.hs" | ghcFlavor > Ghc922]
+
 -- | Cabal "extra-source-files" files for ghc-lib-parser.
 ghcLibParserExtraFiles :: GhcFlavor -> [FilePath]
 ghcLibParserExtraFiles ghcFlavor =
@@ -312,6 +317,7 @@ ghcLibParserExtraFiles ghcFlavor =
       fingerprint ghcFlavor ++
       packageCode ghcFlavor ++
       generatedParser ghcFlavor ++
+      generatedHaddockLexer ghcFlavor ++
       cHeaders ghcFlavor
 
 -- | Cabal "extra-source-files" for ghc-lib.
@@ -1184,7 +1190,13 @@ generateGhcLibParserCabal ghcFlavor = do
         , "data-dir: " ++ dataDir
         , "data-files:"
         ] ++ indent (dataFiles ghcFlavor) ++
-        [ "extra-source-files:"] ++ indent (performExtraFilesSubstitutions ghcFlavor ghcLibParserExtraFiles) ++
+        [ "extra-source-files:"] ++
+        indent (performExtraFilesSubstitutions ghcFlavor ghcLibParserExtraFiles) ++
+        -- This boot file is copied into position in
+        -- `generatePrequisites`. We don't list it in
+        -- `ghcLibParserExtraFiles` because those are files we
+        -- generate via hadrian and this is not.
+        indent([ stage0Compiler </> "GHC/Parser.hs-boot" | ghcFlavor > Ghc922]) ++
         [ "source-repository head"
         , "    type: git"
         , "    location: git@github.com:digital-asset/ghc-lib.git"
@@ -1272,3 +1284,10 @@ generatePrerequisites ghcFlavor = do
   removeFile parser
   when (ghcFlavor < Ghc8101) $
     removeFile "compiler/utils/Fingerprint.hsc" -- Favor the generated .hs file here too.
+  when (ghcFlavor > Ghc922) $ do
+    -- MR https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6224
+    -- (Mar 2022) introduces this new lexer and boot file. The boot
+    -- file needs to live alongside `GHC/Parser.hs` which hadrian
+    -- generates into the `stage0Compiler` directory.
+    removeFile "compiler/GHC/Parser/HaddockLex.x"
+    copyFile "compiler/GHC/Parser.hs-boot" (stage0Compiler </> "GHC/Parser.hs-boot")
