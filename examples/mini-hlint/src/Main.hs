@@ -208,13 +208,13 @@ parse filename flags str =
 parsePragmasIntoDynFlags :: DynFlags -> FilePath -> String -> IO (Maybe DynFlags)
 parsePragmasIntoDynFlags flags filepath str =
   catchErrors $ do
-    let opts = getOptions
 #if defined (GHC_MASTER)
-                 (initParserOpts flags)
+    let (_, opts) = getOptions (initParserOpts flags)
+                      (stringToStringBuffer str) filepath
 #else
-                 flags
+    let opts = getOptions flags
+                      (stringToStringBuffer str) filepath
 #endif
-                 (stringToStringBuffer str) filepath
     (flags, _, _) <- parseDynamicFilePragma flags opts
     return $ Just flags
   where

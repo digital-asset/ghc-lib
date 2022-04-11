@@ -141,14 +141,13 @@ mkDynFlags filename s = do
   parsePragmasIntoDynFlags filename s baseFlags
   where
     parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
-    parsePragmasIntoDynFlags fp contents dflags0 = do
-      let opts = getOptions
+    parsePragmasIntoDynFlags filepath contents dflags0 = do
 #if defined (GHC_MASTER)
-                 (initParserOpts dflags0)
+      let (_, opts) = getOptions (initParserOpts dflags0)
+                        (stringToStringBuffer contents) filepath
 #else
-                 dflags0
+      let opts = getOptions dflags0 (stringToStringBuffer contents) filepath
 #endif
-                 (stringToStringBuffer contents) fp
       (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
       return dflags
 
