@@ -1085,7 +1085,7 @@ generateGhcLibCabal ghcFlavor = do
           (Set.fromList parserModules))
 
     writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
-        [ "cabal-version: >=1.22"
+        [ "cabal-version: 2.0"
         , "build-type: Simple"
         , "name: ghc-lib"
         , "version: 0.1.0"
@@ -1120,7 +1120,7 @@ generateGhcLibCabal ghcFlavor = do
         , "        build-depends: Win32"
         , "    build-depends:" ] ++
         indent2 (withCommas (ghcLibBuildDepends ghcFlavor))++
-        [ "    build-tools: alex >= 3.1, happy >= 1.19.4"
+        [ "    build-tool-depends: alex:alex >= 3.1, happy:happy >= 1.19.4"
         , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
         [ "    hs-source-dirs:" ] ++
@@ -1174,7 +1174,7 @@ generateGhcLibParserCabal :: GhcFlavor -> IO ()
 generateGhcLibParserCabal ghcFlavor = do
     (lib, _bin, parserModules) <- libBinParserModules ghcFlavor
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
-        [ "cabal-version: >=1.22"
+        [ "cabal-version: 2.0"
         , "build-type: Simple"
         , "name: ghc-lib-parser"
         , "version: 0.1.0"
@@ -1214,7 +1214,7 @@ generateGhcLibParserCabal ghcFlavor = do
         , "        build-depends: Win32"
         , "    build-depends:" ] ++
         indent2 (withCommas (ghcLibParserBuildDepends ghcFlavor)) ++
-        [ "    build-tools: alex >= 3.1, happy >= 1.19.4"
+        [ "    build-tool-depends: alex:alex >= 3.1, happy:happy >= 1.19.4"
         , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
         [ "    c-sources:" ] ++
