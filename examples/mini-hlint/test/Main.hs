@@ -1,5 +1,5 @@
--- Copyright (c) 2021, Digital Asset (Switzerland) GmbH and/or
--- its affiliates. All rights reserved.  SPDX-License-Identifier:
+-- Copyright (c) 2021-2022, Digital Asset (Switzerland) GmbH and/or
+-- its affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
 {-# OPTIONS_GHC -Werror=unused-imports -Werror=unused-local-binds -Werror=unused-top-binds -Werror=orphans #-}
@@ -57,7 +57,7 @@ goldenTests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFla
     -- I judge it more work than it's worth to put in expect files
     -- configured for this case since the next stack release will fix
     -- it. So, for now just don't run this test.
-    (Just "../../stack-exact.yaml", Nothing) -> -- implicit resolver 'ghc-9.2.1'
+    (Just "../../stack-exact.yaml", Nothing) -> -- implicit resolver 'ghc-9.2.2'
       testGroup "mini-hlint tests" []
     (_, Just ghc) | ghc `elem` ["ghc-9.2.1", "ghc-9.2.2"] ->  -- explicit resolvers
       testGroup "mini-hlint tests" []
@@ -70,15 +70,16 @@ goldenTests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFla
          | hsFile <- filter (runTest ghcFlavor) hsFiles
          , let testName = hsFile
          , let expectFile =
-                 let f = case ghcFlavor of
-                       GhcMaster ->
+                 let f =
+                       if ghcFlavor `elem` [GhcMaster, Ghc941] then
                          case takeFileName hsFile of
                            "MiniHlintTest_fatal_error.hs" ->
                              takeDirectory hsFile </> "MiniHlintTest_fatal_error-ghc-master.hs"
                            "MiniHlintTest_non_fatal_error.hs" ->
                              takeDirectory hsFile </> "MiniHlintTest_non_fatal_error-ghc-master.hs"
                            _ -> hsFile
-                       _ -> hsFile
+                       else
+                         hsFile
                  in replaceExtension f $ (if isWindows then ".windows" else "") ++ ".expect"
          , let genStringAction = stack stackYaml stackResolver $ "--no-terminal exec -- mini-hlint " ++ hsFile
          ]

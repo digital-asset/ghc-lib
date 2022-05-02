@@ -463,6 +463,7 @@ applyPatchDisableCompileTimeOptimizations ghcFlavor =
     let files =
           case ghcFlavor of
             GhcMaster -> [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
+            Ghc941 ->    [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
             Ghc922 ->    [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
             Ghc921 ->    [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
             Ghc901 ->    [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
@@ -988,7 +989,8 @@ baseBounds ghcFlavor =
     Ghc921    -> "base >= 4.14 && < 4.16.1" -- [ghc-8.10.1, ghc-9.2.2)
     Ghc922    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ...)
 
-    GhcMaster -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ...)
+    Ghc941   -> "base >= 4.14 && < 4.18" -- [ghc-8.10.1, )
+    GhcMaster -> "base >= 4.14 && < 4.18" -- [ghc-8.10.1, ...)
 
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]

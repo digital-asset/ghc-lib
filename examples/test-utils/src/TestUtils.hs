@@ -1,5 +1,5 @@
--- Copyright (c) 2021, Digital Asset (Switzerland) GmbH and/or
--- its affiliates. All rights reserved.  SPDX-License-Identifier:
+-- Copyright (c) 2021-2022 Digital Asset (Switzerland) GmbH and/or its
+-- affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 {-# OPTIONS_GHC -Werror=unused-imports -Werror=unused-local-binds -Werror=unused-top-binds -Werror=orphans #-}
 {-# LANGUAGE LambdaCase #-}
@@ -36,6 +36,7 @@ data GhcVersion = DaGhc881
                 | Ghc902
                 | Ghc921
                 | Ghc922
+                | Ghc941
                 | GhcMaster
   deriving (Eq, Ord, Typeable)
 
@@ -44,6 +45,7 @@ instance Show GhcVersion where
 
 showGhcVersion :: GhcVersion -> String
 showGhcVersion = \case
+    Ghc941 -> "ghc-9.4.1"
     Ghc922 -> "ghc-9.2.2"
     Ghc921 -> "ghc-9.2.1"
     Ghc901 -> "ghc-9.0.1"
@@ -67,6 +69,7 @@ newtype GhcFlavor = GhcFlavor GhcVersion
 
 readFlavor :: String -> Maybe GhcFlavor
 readFlavor = (GhcFlavor <$>) . \case
+    "ghc-9.4.1" -> Just Ghc941
     "ghc-9.2.2" -> Just Ghc922
     "ghc-9.2.1" -> Just Ghc921
     "ghc-9.0.1" -> Just Ghc901
