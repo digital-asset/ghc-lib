@@ -10,6 +10,8 @@ module Main (main) where
 -- We use 0.x for HEAD
 #if !MIN_VERSION_ghc_lib(1,0,0)
 #  define GHC_MASTER
+#elif MIN_VERSION_ghc_lib(9,4,1)
+#  define GHC_941
 #elif MIN_VERSION_ghc_lib(9,2,1)
 #  define GHC_921
 #elif MIN_VERSION_ghc_lib(9,0,0)
@@ -32,8 +34,8 @@ module Main (main) where
 
 import "ghc-lib" GHC
 import "ghc-lib" Paths_ghc_lib
-#if defined (GHC_MASTER) ||  defined (GHC_921) || defined (GHC_901)
-#  if defined (GHC_MASTER)
+#if defined (GHC_MASTER) ||  defined (GHC_941) || defined (GHC_921) || defined (GHC_901)
+#  if defined (GHC_MASTER) || defined (GHC_941)
 import GHC_LIB_PARSER_PKG GHC.Driver.Config.Parser
 #  endif
 import GHC_LIB_PARSER_PKG GHC.Parser.Header
@@ -53,14 +55,14 @@ import GHC_LIB_PARSER_PKG StringBuffer
 import GHC_LIB_PARSER_PKG Fingerprint
 import GHC_LIB_PARSER_PKG Outputable
 #endif
-#if defined (GHC_MASTER)  || defined (GHC_921) || defined (GHC_901)
+#if defined (GHC_MASTER)  || defined (GHC_941) || defined (GHC_921) || defined (GHC_901)
 import GHC_LIB_PARSER_PKG GHC.Settings
 import GHC_LIB_PARSER_PKG GHC.Settings.Config
 #elif defined (GHC_8101)
 import GHC_LIB_PARSER_PKG Config
 import GHC_LIB_PARSER_PKG ToolSettings
 #endif
-#if defined (GHC_MASTER) ||  defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
+#if defined (GHC_MASTER) ||  defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
 import GHC_LIB_PARSER_PKG GHC.Platform
 #else
 import GHC_LIB_PARSER_PKG Config
@@ -97,7 +99,7 @@ main = do
 mkDynFlags :: String -> String -> IO DynFlags
 mkDynFlags filename s = do
   dirs_to_clean <- newIORef Map.empty
-#if defined (GHC_MASTER) || defined (GHC_921)
+#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
        -- Intentionally empty (temp file flags have moved to HscEnv).
 #else
   files_to_clean <- newIORef emptyFilesToClean
@@ -106,12 +108,12 @@ mkDynFlags filename s = do
   let baseFlags =
         (defaultDynFlags fakeSettings fakeLlvmConfig) {
           ghcLink = NoLink
-#if defined (GHC_MASTER) || defined (GHC_921)
+#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
         , backend = NoBackend
 #else
         , hscTarget = HscNothing
 #endif
-#if defined (GHC_MASTER) || defined (GHC_921)
+#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
         -- Intentionally empty (unit related flags have moved to
         -- HscEnv).
 #elif defined (GHC_901)
@@ -119,7 +121,7 @@ mkDynFlags filename s = do
 #else
         , pkgDatabase = Just []
 #endif
-#if defined (GHC_MASTER) || defined (GHC_921)
+#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
        -- Intentionally empty (temp file flags have moved to HscEnv).
 #else
         , dirsToClean = dirs_to_clean
@@ -129,7 +131,7 @@ mkDynFlags filename s = do
 #if defined(DAML_UNIT_IDS)
         , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "daml-prim")
 #else
-#if defined (GHC_MASTER) || defined (GHC_921)
+#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
         , homeUnitId_ = toUnitId (stringToUnit "ghc-prim")
 #elif defined (GHC_901)
         , homeUnitId = toUnitId (stringToUnit "ghc-prim")
@@ -142,7 +144,7 @@ mkDynFlags filename s = do
   where
     parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
     parsePragmasIntoDynFlags filepath contents dflags0 = do
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_941)
       let (_, opts) = getOptions (initParserOpts dflags0)
                         (stringToStringBuffer contents) filepath
 #else
@@ -151,7 +153,7 @@ mkDynFlags filename s = do
       (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
       return dflags
 
-#if defined (GHC_MASTER)  || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
+#if defined (GHC_MASTER)  || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
 fakeLlvmConfig = LlvmConfig [] []
 #else
@@ -161,12 +163,12 @@ fakeLlvmConfig = ([], [])
 
 fakeSettings :: Settings
 fakeSettings = Settings
-#if defined (GHC_MASTER) ||  defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
+#if defined (GHC_MASTER) ||  defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
   { sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
   , sPlatformMisc=platformMisc
-#  if !defined (GHC_MASTER) && !defined (GHC_921)
+#  if !defined (GHC_MASTER) && !defined(GHC_941) && !defined (GHC_921)
   , sPlatformConstants=platformConstants
 #  endif
   , sToolSettings=toolSettings
@@ -181,12 +183,12 @@ fakeSettings = Settings
   }
 #endif
   where
-#if defined (GHC_MASTER)  || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
+#if defined (GHC_MASTER)  || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
     fileSettings = FileSettings {
 #if defined (GHC_8101)
         fileSettings_tmpDir="."
 #else
-#if !defined(GHC_MASTER)
+#if !defined(GHC_MASTER) && !defined(GHC_941)
         fileSettings_tmpDir=".",
 #endif
        fileSettings_topDir=".",
@@ -201,7 +203,7 @@ fakeSettings = Settings
         toolSettings_opt_P_fingerprint=fingerprint0
       }
     platformMisc = PlatformMisc {
-#if !defined (GHC_MASTER)  && !defined (GHC_921) && !defined (GHC_901)
+#if !defined (GHC_MASTER) && !defined(GHC_941) && !defined (GHC_921) && !defined (GHC_901)
         platformMisc_integerLibraryType=IntegerSimple
 #endif
       }
@@ -212,7 +214,7 @@ fakeSettings = Settings
       }
 #endif
     platform =
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_941)
       genericPlatform
 #else
       Platform{
@@ -248,7 +250,7 @@ fakeSettings = Settings
       , platformUnregisterised=True
       }
 #endif
-#if !defined (GHC_MASTER) && !defined (GHC_921)
+#if !defined (GHC_MASTER) && !defined(GHC_941) && !defined (GHC_921)
     platformConstants =
        PlatformConstants {
          pc_DYNAMIC_BY_DEFAULT=False

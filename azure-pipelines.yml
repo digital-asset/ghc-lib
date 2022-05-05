@@ -55,13 +55,30 @@ strategy:
       resolver: "ghc-9.2.2"
       stack-yaml: "stack-exact.yaml"
 
+    # +---------+-----------------+------------+
+    # | OS      | ghc-lib flavour | GHC        |
+    # +=========+=================+============+
+    # | linux   | ghc-9.4.1       | ghc-9.2.2  |
+    # | macOS   | ghc-9.4.1       | ghc-9.2.2  |
+    # +---------+-----------------+------------+
+    linux-ghc-9.4.1-9.2.2:
+      image: "ubuntu-latest"
+      mode: "--ghc-flavor ghc-9.4.1"
+      resolver: "ghc-9.2.2"
+      stack-yaml: "stack-exact.yaml"
+    mac-ghc-9.4.1-9.2.2:
+      image: "macOS-latest"
+      mode: "--ghc-flavor ghc-9.4.1"
+      resolver: "ghc-9.2.2"
+      stack-yaml: "stack-exact.yaml"
+
     # just can't get a build-plan at this time. issues with extra,
     # directory, process & time
 
-    # windows-ghc-master-9.2.1:
+    # windows-ghc-master-9.2.2:
     #   image: "windows-latest"
     #   mode: "--ghc-flavor ghc-master"
-    #   resolver: "ghc-9.2.1"
+    #   resolver: "ghc-9.2.2"
     #   stack-yaml: "stack-exact.yaml"
 
     # +---------+-----------------+------------+
