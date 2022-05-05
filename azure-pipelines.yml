@@ -93,11 +93,12 @@ strategy:
       mode: "--ghc-flavor ghc-master"
       resolver: "lts-18.16"
       stack-yaml: "stack.yaml"
-    windows-ghc-master-8.10.7:
-      image: "windows-latest"
-      mode: "--ghc-flavor ghc-master"
-      resolver: "lts-18.23"
-      stack-yaml: "stack.yaml"
+    # Uncomment once https://github.com/commercialhaskell/stack/issues/5732 is fixed
+    # windows-ghc-master-8.10.7:
+    #   image: "windows-latest"
+    #   mode: "--ghc-flavor ghc-master"
+    #   resolver: "lts-18.23"
+    #   stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
@@ -145,11 +146,12 @@ strategy:
       mode: "--da"
       resolver: "nightly-2020-01-08"
       stack-yaml: "stack.yaml"
-    windows-da-ghc-8.8.1-8.8.1:
-      image: "windows-latest"
-      mode: "--da"
-      resolver: "nightly-2020-01-08"
-      stack-yaml: "stack.yaml"
+    # Uncomment once https://github.com/commercialhaskell/stack/issues/5732 is fixed
+    # windows-da-ghc-8.8.1-8.8.1:
+    #   image: "windows-latest"
+    #   mode: "--da"
+    #   resolver: "nightly-2020-01-08"
+    #   stack-yaml: "stack.yaml"
     mac-da-ghc-8.8.1-8.8.1:
       image: "macOS-latest"
       mode: "--da"
