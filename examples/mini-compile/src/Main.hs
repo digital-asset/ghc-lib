@@ -214,11 +214,11 @@ fakeSettings = Settings
       }
 #endif
     platform =
-#if defined (GHC_MASTER) || defined (GHC_941)
+#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
       genericPlatform
 #else
       Platform{
-#if defined (GHC_921) || defined (GHC_901)
+#if defined (GHC_901)
       -- It doesn't matter what values we write here as these fields are
       -- not referenced for our purposes. However the fields are strict
       -- so we must say something.
@@ -229,18 +229,9 @@ fakeSettings = Settings
       , platformIsCrossCompiling=False
       , platformLeadingUnderscore=False
       , platformTablesNextToCode=False
-#if defined(GHC_921)
-      , platform_constants = Nothing
-#endif
-#if !defined(GHC_921) && !defined(GHC_901)
-      , platformConstants=platformConstants
-#endif
       ,
 #endif
-#if defined (GHC_921)
-        platformWordSize=PW8
-      , platformArchOS=ArchOS {archOS_arch=ArchUnknown, archOS_OS=OSUnknown}
-#elif defined (GHC_8101) || defined (GHC_901)
+#if defined (GHC_8101) || defined (GHC_901)
         platformWordSize=PW8
       , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
 #else
@@ -254,8 +245,7 @@ fakeSettings = Settings
     platformConstants =
        PlatformConstants {
          pc_DYNAMIC_BY_DEFAULT=False
-       ,
-         pc_WORD_SIZE=8
+       , pc_WORD_SIZE=8
        , pc_STD_HDR_SIZE=1
        , pc_TAG_BITS=3
        , pc_BLOCKS_PER_MBLOCK=252
