@@ -232,9 +232,6 @@ fakeSettings = Settings
 #if defined(GHC_921)
       , platform_constants = Nothing
 #endif
-#if !defined(GHC_921) && !defined(GHC_901)
-      , platformConstants=platformConstants
-#endif
       ,
 #endif
 #if defined (GHC_921)

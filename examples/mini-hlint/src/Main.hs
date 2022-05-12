@@ -151,10 +151,7 @@ fakeSettings = Settings
 #if defined(GHC_921)
       , platform_constants = Nothing
 #endif
-#if !defined(GHC_921) && !defined (GHC_901)
-      , platformConstants=platformConstants
-#endif
-      ,
+,
 #endif
 #if defined (GHC_921)
         platformWordSize=PW8
@@ -172,8 +169,7 @@ fakeSettings = Settings
     platformConstants =
       PlatformConstants{
           pc_DYNAMIC_BY_DEFAULT=False
-        ,
-          pc_WORD_SIZE=8
+        , pc_WORD_SIZE=8
     }
 #endif
 #endif
