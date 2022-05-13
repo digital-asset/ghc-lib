@@ -153,6 +153,23 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
     # +=========+=================+============+
+    # | linux   | ghc-8.10.7       | ghc-8.8.1 |
+    # | macOS   | ghc-8.10.7       | ghc-8.8.1 |
+    # +---------+-----------------+------------+
+    linux-ghc-8.10.7-8.8.1:
+      image: "ubuntu-latest"
+      mode: "--ghc-flavor ghc-8.10.7"
+      resolver: "nightly-2020-01-08"
+      stack-yaml: "stack.yaml"
+    mac-ghc-8.10.7-8.8.1:
+      image: "macOS-latest"
+      mode: "--ghc-flavor ghc-8.10.7"
+      resolver: "nightly-2020-01-08"
+      stack-yaml: "stack.yaml"
+
+    # +---------+-----------------+------------+
+    # | OS      | ghc-lib flavour | GHC        |
+    # +=========+=================+============+
     # | linux   | da-ghc-8.8.1    | ghc-8.8.1  |
     # | windows | da-ghc-8.8.1    | ghc-8.8.1  |
     # | macOS   | da-ghc-8.8.1    | ghc-8.8.1  |
