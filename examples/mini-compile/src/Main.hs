@@ -106,7 +106,11 @@ mkDynFlags filename s = do
 #endif
   next_temp_suffix <- newIORef 0
   let baseFlags =
+#if defined (GHC_MASTER)
+        (defaultDynFlags fakeSettings) {
+#else
         (defaultDynFlags fakeSettings fakeLlvmConfig) {
+#endif
           ghcLink = NoLink
 #if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
         , backend = NoBackend
@@ -153,7 +157,9 @@ mkDynFlags filename s = do
       (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
       return dflags
 
-#if defined (GHC_MASTER)  || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
+#if defined (GHC_MASTER)
+-- Intentionally empty
+#elif defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
 fakeLlvmConfig = LlvmConfig [] []
 #else
