@@ -164,7 +164,9 @@ fakeSettings = Settings
     platformConstants = PlatformConstants{ pc_DYNAMIC_BY_DEFAULT=False, pc_WORD_SIZE=8 }
 #endif
 
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
+#if defined (GHC_MASTER)
+-- Intentionally empty
+#elif defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
 fakeLlvmConfig = LlvmConfig [] []
 #else
@@ -279,7 +281,11 @@ main = do
       s <- readFile' file
       flags <-
         parsePragmasIntoDynFlags
+#if defined(GHC_MASTER)
+          (defaultDynFlags fakeSettings) file s
+#else
           (defaultDynFlags fakeSettings fakeLlvmConfig) file s
+#endif
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
 #if defined (GHC_MASTER) || defined (GHC_941)
