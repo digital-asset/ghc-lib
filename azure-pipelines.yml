@@ -25,18 +25,18 @@ strategy:
     #        <os> '-' <ghc-lib> '-' <compiler>
     #  Not every combination is tested
     #  - We do sampling to keep the number of builds reasonable;
-    #  - No ghc-8.4.4 builds are tested;
-    #  - No Windows 8.8.3 builds are tested (ghc-8.8.3 on Windows
-    #    has issues);
     #  - Minimum GHC needed to bootstrap:
     #      +--------------+-------------+
     #      | GHC flavor   |  version    |
     #      +==============+=============+
     #      | ghc-8.8.*    |  >= 8.4.4   |
-    #      | ghc-8.10.*   |  >= 8.6.5   | (since 2019/09/29, https://gitlab.haskell.org/ghc/ghc/commit/24620182abdfcc65a0cfc0e2f3bc391d464d0ad5)
-    #      | ghc-9.0.*    |  >= 8.8.1   | (since 2020/03/31, https://gitlab.haskell.org/ghc/ghc/-/commit/57b888c0e90be7189285a6b078c30b26d092380)
-    #      | >= ghc-9.2.1 |  >= 8.10.1  | (since 2021/03/10, https://gitlab.haskell.org/ghc/ghc/-/commit/0a709dd9876e40c19c934692415c437ac434318c)
+    #      | ghc-8.10.*   |  >= 8.6.5   |
+    #      | ghc-9.0.*    |  >= 8.8.1   |
+    #      | ghc-9.2.1    |  >= 8.10.1  |
+    #      | >= ghc-9.4.1 |  >= 9.0.1   |
     #      +--------------+-------------+
+    # (the general rule is only the last two compiler versions are
+    # supported).
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
@@ -55,13 +55,15 @@ strategy:
       resolver: "ghc-9.2.2"
       stack-yaml: "stack-exact.yaml"
 
+    # still broken as of 2022-06-24: see
+    # https://gitlab.haskell.org/ghc/ghc/-/issues/21633 and
+    # https://gitlab.haskell.org/ghc/ghc/-/issues/21634
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
     # +=========+=================+============+
     # | linux   | ghc-9.4.1       | ghc-9.2.2  |
     # | macOS   | ghc-9.4.1       | ghc-9.2.2  |
     # +---------+-----------------+------------+
-    # broken at least of 2022-05-19 (errors in ghc-lib-gen: ghc-lib/stage0/libraries/bytestring/build/Data/ByteString/Internal.o)
     # linux-ghc-9.4.1-9.2.2:
     #   image: "ubuntu-latest"
     #   mode: "--ghc-flavor ghc-9.4.1"
@@ -73,65 +75,21 @@ strategy:
     #   resolver: "ghc-9.2.2"
     #   stack-yaml: "stack-exact.yaml"
 
-    # just can't get a build-plan at this time. issues with extra,
-    # directory, process & time
-
-    # windows-ghc-master-9.2.2:
-    #   image: "windows-latest"
-    #   mode: "--ghc-flavor ghc-master"
-    #   resolver: "ghc-9.2.2"
-    #   stack-yaml: "stack-exact.yaml"
-
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-master      | ghc-9.0.1  |
-    # | macOS   | ghc-master      | ghc-9.0.1  |
-    # | linux   | ghc-master      | ghc-8.10.7 |
-    # | macOS   | ghc-master      | ghc-8.10.7 |
-    # | windows | ghc-master      | ghc-8.10.7 |
+    # | linux   | ghc-master      | ghc-9.0.2  |
+    # | macOS   | ghc-master      | ghc-9.0.2  |
     # +---------+-----------------+------------+
-    linux-ghc-master-9.0.1:
+    linux-ghc-master-9.0.2:
       image: "ubuntu-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "nightly-2021-11-14"
-      stack-yaml: "stack-901.yaml"
-    linux-ghc-master-8.10.7:
-      image: "ubuntu-latest"
-      mode: "--ghc-flavor ghc-master"
-      resolver: "lts-18.16"
+      resolver: "lts-19.8"
       stack-yaml: "stack.yaml"
-    mac-ghc-master-9.0.1:
+    mac-ghc-master-9.0.2:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "nightly-2021-11-14"
-      stack-yaml: "stack-901.yaml"
-    mac-ghc-master-8.10.7:
-      image: "macOS-latest"
-      mode: "--ghc-flavor ghc-master"
-      resolver: "lts-18.16"
-      stack-yaml: "stack.yaml"
-    windows-ghc-master-8.10.7:
-      image: "windows-latest"
-      mode: "--ghc-flavor ghc-master"
-      resolver: "lts-18.23"
-      stack-yaml: "stack.yaml"
-
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
-    # +=========+=================+============+
-    # | linux   | ghc-9.2.2       | ghc-9.0.1  |
-    # | macOS   | ghc-9.2.2       | ghc-8.10.7 |
-    # +---------+-----------------+------------+
-    linux-ghc-9.2.2-9.0.1:
-      image: "ubuntu-latest"
-      mode: "--ghc-flavor ghc-9.2.2"
-      resolver: "nightly-2021-11-14"
-      stack-yaml: "stack-901.yaml"
-    mac-ghc-9.2.2-8.10.7:
-      image: "macOS-latest"
-      mode: "--ghc-flavor ghc-9.2.2"
-      resolver: "lts-18.16"
+      resolver: "lts-19.8"
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
@@ -167,33 +125,6 @@ strategy:
       mode: "--ghc-flavor ghc-8.10.7"
       resolver: "nightly-2020-01-08"
       stack-yaml: "stack.yaml"
-
-    # These builds are broken as of at least 2022-05-19. This commit
-    # to da-ghc seems related
-    # https://github.com/digital-asset/ghc/commit/e782ba91ad9007c5ac341676e3526f34e4e3e404
-    # ?
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
-    # +=========+=================+============+
-    # | linux   | da-ghc-8.8.1    | ghc-8.8.1  |
-    # | windows | da-ghc-8.8.1    | ghc-8.8.1  |
-    # | macOS   | da-ghc-8.8.1    | ghc-8.8.1  |
-    # +---------+-----------------+------------+
-    # linux-da-ghc-8.8.1-8.8.1:
-    #   image: "ubuntu-latest"
-    #   mode: "--da"
-    #   resolver: "nightly-2020-01-08"
-    #   stack-yaml: "stack.yaml"
-    # windows-da-ghc-8.8.1-8.8.1:
-    #   image: "windows-latest"
-    #   mode: "--da"
-    #   resolver: "nightly-2020-01-08"
-    #   stack-yaml: "stack.yaml"
-    # mac-da-ghc-8.8.1-8.8.1:
-    #   image: "macOS-latest"
-    #   mode: "--da"
-    #   resolver: "nightly-2020-01-08"
-    #   stack-yaml: "stack.yaml"
 
 pool: {vmImage: '$(image)'}
 
