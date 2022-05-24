@@ -112,7 +112,9 @@ mkDynFlags filename s = do
         (defaultDynFlags fakeSettings fakeLlvmConfig) {
 #endif
           ghcLink = NoLink
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
+#if defined (GHC_MASTER)
+        , backend = noBackend
+#elif defined (GHC_941) || defined (GHC_921)
         , backend = NoBackend
 #else
         , hscTarget = HscNothing
