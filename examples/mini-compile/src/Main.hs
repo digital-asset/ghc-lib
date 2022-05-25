@@ -22,11 +22,9 @@ module Main (main) where
 
 -- ghc-lib re-exports the modules of ghc-lib-parser. Before 9.2.1 we
 -- couldn't refer to them as being in the ghc-lib package (and instead
--- had to refer to them as being in the ghc-lib-parser package). Now
--- it seems we can (and in fact, if we were refer to them in the
--- ghc-lib-parser package now, we would then be required to link that
--- library).
-#if __GLASGOW_HASKELL__ >= 902
+-- had to refer to them as being in the ghc-lib-parser package).
+
+#if __GLASGOW_HASKELL__ > 902
 # define GHC_LIB_PARSER_PKG "ghc-lib"
 #else
 # define GHC_LIB_PARSER_PKG "ghc-lib-parser"
