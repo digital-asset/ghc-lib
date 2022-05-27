@@ -48,6 +48,7 @@ data StackOptions = StackOptions
     } deriving (Show)
 
 data GhcFlavor = Ghc941
+               | Ghc923
                | Ghc922
                | Ghc921
                | Ghc901
@@ -86,6 +87,7 @@ stackResolverOpt = \case
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
     Ghc941 -> "--ghc-flavor ghc-9.4.1"
+    Ghc923 -> "--ghc-flavor ghc-9.2.3"
     Ghc922 -> "--ghc-flavor ghc-9.2.2"
     Ghc921 -> "--ghc-flavor ghc-9.2.1"
     Ghc901 -> "--ghc-flavor ghc-9.0.1"
@@ -134,6 +136,7 @@ genVersionStr flavor suffix =
       Da {}       -> "8.8.1"
       GhcMaster _ -> "0"
       Ghc941      -> "9.4.1"
+      Ghc923      -> "9.2.3"
       Ghc922      -> "9.2.2"
       Ghc921      -> "9.2.1"
       Ghc901      -> "9.0.1"
@@ -174,6 +177,7 @@ parseOptions = Options
    readFlavor :: Opts.ReadM GhcFlavor
    readFlavor = Opts.eitherReader $ \case
        "ghc-9.4.1" -> Right Ghc941
+       "ghc-9.2.3" -> Right Ghc923
        "ghc-9.2.2" -> Right Ghc922
        "ghc-9.2.1" -> Right Ghc921
        "ghc-9.0.1" -> Right Ghc901
@@ -280,6 +284,7 @@ buildDists
       cmd "cd ghc && git fetch --tags"
     case ghcFlavor of
         Ghc941 -> cmd "cd ghc && git checkout ghc-9.4"
+        Ghc923 -> cmd "cd ghc && git checkout ghc-9.2.3-release"
         Ghc922 -> cmd "cd ghc && git checkout ghc-9.2.2-release"
         Ghc921 -> cmd "cd ghc && git checkout ghc-9.2.1-release"
         Ghc901 -> cmd "cd ghc && git checkout ghc-9.0.1-release"
