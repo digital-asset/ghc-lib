@@ -47,13 +47,30 @@ strategy:
     linux-ghc-master-9.2.2:
       image: "ubuntu-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.2.2"
-      stack-yaml: "stack-exact.yaml"
+      resolver: "nightly-2022-05-27"
+      stack-yaml: "stack.yaml"
     mac-ghc-master-9.2.2:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.2.2"
-      stack-yaml: "stack-exact.yaml"
+      resolver: "nightly-2022-05-27"
+      stack-yaml: "stack.yaml"
+
+    # +---------+-----------------+------------+
+    # | OS      | ghc-lib flavour | GHC        |
+    # +=========+=================+============+
+    # | linux   | ghc-9.2.3       | ghc-9.2.2  |
+    # | macOS   | ghc-9.2.3       | ghc-9.2.2  |
+    # +---------+-----------------+------------+
+    linux-ghc-9.2.3-9.2.2:
+      image: "ubuntu-latest"
+      mode: "--ghc-flavor ghc-9.2.3"
+      resolver: "nightly-2022-05-27"
+      stack-yaml: "stack.yaml"
+    mac-ghc-9.2.3-9.2.2:
+      image: "macOS-latest"
+      mode: "--ghc-flavor ghc-9.2.3"
+      resolver: "nightly-2022-05-27"
+      stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavour | GHC        |

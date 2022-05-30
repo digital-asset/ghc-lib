@@ -57,9 +57,17 @@ goldenTests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFla
     -- I judge it more work than it's worth to put in expect files
     -- configured for this case since the next stack release will fix
     -- it. So, for now just don't run this test.
+    -- 
+    -- Update 2022-05-27 This is getting tedious. See
+    -- https://github.com/commercialhaskell/stack/issues/5758.
     (Just "../../stack-exact.yaml", Nothing) -> -- implicit resolver 'ghc-9.2.2'
       testGroup "mini-hlint tests" []
-    (_, Just ghc) | ghc `elem` ["ghc-9.2.1", "ghc-9.2.2"] ->  -- explicit resolvers
+    (_, Just ghc) | ghc `elem` [
+                        "ghc-9.2.1"
+                      , "ghc-9.2.2"
+                      , "nightly-2022-05-27" -- ghc-9.2.2
+                      , "ghc-9.2.3" -- bindist not set up yet
+                      ] ->  -- explicit resolvers
       testGroup "mini-hlint tests" []
     (_, _) ->
       testGroup "mini-hlint tests"
