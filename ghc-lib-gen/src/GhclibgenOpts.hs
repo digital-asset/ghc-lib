@@ -25,6 +25,7 @@ data GhclibgenOpts = GhclibgenOpts {
     ghclibgenOpts_root :: !FilePath -- ^ Path to a GHC git repository.
   , ghclibgenOpts_target :: !GhclibgenTarget -- ^ What target?
   , ghclibgenOpts_ghcFlavor :: !GhcFlavor
+  , ghclibgenOpts_customCppFlags :: ![String]
  }
 
 -- | A parser of the "--ghc-lib" target.
@@ -60,6 +61,7 @@ ghclibgenOpts = GhclibgenOpts
   <$> argument str (metavar "GHC_ROOT")
   <*> ghclibgenTarget
   <*> ghcFlavorOpt
+  <*> cppCustomFlagsOpt
 
 -- | We might want to factor this out so we can share it with CI.hs
 -- but for now it doesn’t seem worth it and having CI.hs be
@@ -113,3 +115,11 @@ readFlavor = eitherReader $ \case
     "da-ghc-8.8.1" -> Right DaGhc881
     "ghc-master" -> Right GhcMaster
     flavor -> Left $ "Failed to parse ghc flavor " <> show flavor <> " expected ghc-master, ghc-9.0.1, ghc-8.8.1, ghc-8.8.2, ghc-8.8.3, ghc-8.8.4, da-ghc-8.8.1, ghc-8.10.1, ghc-8.10.2, ghc-8.10.3, ghc-8.10.4, ghc-8.10.5, ghc-8.10.6, ghc-8.10.7, ghc-9.0.1, ghc-9.0.2, ghc-9.2.1, ghc-9.2.2, ghc-9.2.3 or ghc-9.4.1"
+
+cppCustomFlagsOpt :: Parser [String]
+cppCustomFlagsOpt =
+  many $
+    strOption
+      ( long "cpp"
+     <> help "CPP options to include in the generated cabal file"
+      )
