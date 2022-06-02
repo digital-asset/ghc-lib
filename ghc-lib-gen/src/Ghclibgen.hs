@@ -31,12 +31,14 @@ module Ghclibgen (
   , generateGhcLibParserCabal
 ) where
 
+import Control.Exception (handle)
 import Control.Monad
 import System.Process.Extra
 import System.FilePath hiding ((</>), normalise, dropTrailingPathSeparator)
 import System.FilePath.Posix((</>), normalise, dropTrailingPathSeparator) -- Make sure we generate / on all platforms.
 import System.Directory
 import System.Directory.Extra
+import System.IO.Error (isEOFError)
 import System.IO.Extra
 import Data.List.Extra hiding (find)
 import Data.Char
@@ -45,6 +47,7 @@ import Data.Ord
 import qualified Data.Set as Set
 
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Data.Aeson.Types(parse, Result(..))
 #if MIN_VERSION_aeson(2, 0, 2)
 import Data.Aeson.KeyMap(toHashMap)
@@ -252,10 +255,12 @@ packageCode :: GhcFlavor -> [FilePath]
 packageCode ghcFlavor =
   [ stage0Compiler </> "Config.hs" | ghcFlavor < Ghc901 ] ++
   [ stage0GhcBoot  </> "GHC/Version.hs" | ghcFlavor >= Ghc8101 ] ++
+  [ stage0GhcBoot  </> "GHC/Platform/Host.hs" | ghcFlavor >= Ghc8101 ] ++
   [ stage0Compiler </> "GHC/Settings/Config.hs" | ghcFlavor >= Ghc901 ]
 
 fingerprint :: GhcFlavor -> [FilePath]
-fingerprint ghcFlavor = [ stage0Compiler </> "Fingerprint.hs" | ghcFlavor < Ghc8101 ]
+fingerprint ghcFlavor =
+  [ "compiler/utils/Fingerprint.hsc" | ghcFlavor < Ghc8101 ]
 
 -- | The C headers shipped with ghc-lib. These globs get glommed onto
 -- the 'extraFiles' above as 'extra-source-files'.
@@ -282,19 +287,12 @@ cHeaders ghcFlavor =
   [ "compiler/HsVersions.h" | ghcFlavor <= Ghc923] ++
   [ f | ghcFlavor < Ghc8101, f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"] ]
 
--- | We generate the parser and lexer and ship those rather than their
--- sources.
-generatedParser :: GhcFlavor -> [FilePath]
-generatedParser ghcFlavor =
-  map (stage0Compiler </>)
-    ( if ghcFlavor >= Ghc901
-        then [ "GHC/Parser.hs", "GHC/Parser/Lexer.hs" ]
-        else [ "Parser.hs", "Lexer.hs" ]
-    )
-
-generatedHaddockLexer :: GhcFlavor -> [FilePath]
-generatedHaddockLexer ghcFlavor =
-  [stage0Compiler </> "GHC/Parser/HaddockLex.hs" | ghcFlavor > Ghc923]
+parsersAndLexers :: GhcFlavor -> [FilePath]
+parsersAndLexers ghcFlavor =
+  map ("compiler" </>) $
+      [ x |  ghcFlavor < Ghc901, x <- [ "parser/Parser.y", "parser/Lexer.x"] ] ++
+      [ x |  ghcFlavor >= Ghc901, x <- [ "GHC/Parser.y", "GHC/Parser/Lexer.x" ] ] ++
+      [ x |  ghcFlavor > Ghc923, x <- [ "GHC/Parser/HaddockLex.x", "GHC/Parser.hs-boot" ] ]
 
 -- | Cabal "extra-source-files" files for ghc-lib-parser.
 ghcLibParserExtraFiles :: GhcFlavor -> [FilePath]
@@ -304,8 +302,7 @@ ghcLibParserExtraFiles ghcFlavor =
       platformH ghcFlavor ++
       fingerprint ghcFlavor ++
       packageCode ghcFlavor ++
-      generatedParser ghcFlavor ++
-      generatedHaddockLexer ghcFlavor ++
+      parsersAndLexers ghcFlavor ++
       cHeaders ghcFlavor
 
 -- | Cabal "extra-source-files" for ghc-lib.
@@ -317,14 +314,26 @@ ghcLibExtraFiles ghcFlavor =
       fingerprint ghcFlavor ++
       cHeaders ghcFlavor
 
+-- | We generate some "placeholder" modules in `calcParserModues` They
+-- get written here.
+placeholderModulesDir :: FilePath
+placeholderModulesDir = "placeholder_modules"
+
 -- | Calculate via `ghc -M` the list of modules that are required for
 -- 'ghc-lib-parser'.
 calcParserModules :: GhcFlavor -> IO [String]
 calcParserModules ghcFlavor = do
   lib <- mapM readCabalFile cabalFileLibraries
+
+  genPlaceholderModules "compiler"
+  genPlaceholderModules "libraries/ghc-heap"
+  genPlaceholderModules "libraries/ghci"
+  when (ghcFlavor > Ghc923) $ do
+    copyFile "compiler/GHC/Parser.hs-boot" (placeholderModulesDir </> "GHC/Parser.hs-boot")
+
   let includeDirs = map ("-I" ++ ) (ghcLibParserIncludeDirs ghcFlavor)
       hsSrcDirs = ghcLibParserHsSrcDirs True ghcFlavor lib
-      hsSrcIncludes = map ("-i" ++ ) hsSrcDirs
+      hsSrcIncludes = map ("-i" ++ ) (placeholderModulesDir : hsSrcDirs)
       -- See [Note: GHC now depends on exceptions package].
       cmd = unwords $
         [ "stack exec" ] ++
@@ -342,11 +351,11 @@ calcParserModules ghcFlavor = do
         ] ++
         [ "-package exceptions" | ghcFlavor >= Ghc901 ] ++
         hsSrcIncludes ++
-        map (stage0Compiler </>)
-             (if ghcFlavor >= Ghc901
-                then ["GHC/Parser.hs"]
-                else ["Parser.hs"]
-             )
+        map (placeholderModulesDir </>) (
+          [ "GHC" </> "Parser.hs" | ghcFlavor >= Ghc901] ++
+          [ "Parser.hs" | ghcFlavor < Ghc901]
+        )
+        
   putStrLn "# Generating 'ghc/.parser-depends'..."
   putStrLn $ "\n\n# Running: " ++ cmd
   system_ cmd
@@ -365,7 +374,7 @@ calcParserModules ghcFlavor = do
       strippedModulePaths = foldl
         (\acc p -> map (replace (p ++ "/") "") acc)
         modulePaths
-        hsSrcDirs
+        (placeholderModulesDir : hsSrcDirs)
       -- Lastly, manipulate text like 'GHC/Exts/Heap/Constants.hs'
       -- into 'GHC.Exts.Heap.Constants'.
       modules = map (replace "/" "." . dropSuffix ".hs") strippedModulePaths
@@ -1058,22 +1067,6 @@ libBinParserModules ghcFlavor = do
     parserModules <- calcParserModules ghcFlavor
     return (lib, [bin], parserModules)
 
--- | Call this after cabal file generation. These files are generated
--- from '.hsc' files in the source tree and we prefer to ship those in
--- the sdists rather than these. If we don't remove them, some
--- ambiguity results. Cabal and stack are OK with that but bazel gets
--- messed up.
-removeGeneratedIntermediateFiles :: GhcFlavor -> IO ()
-removeGeneratedIntermediateFiles ghcFlavor = do
-    removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/Utils.hs"
-    removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/InfoTableProf.hs"
-    removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/InfoTable.hs"
-    removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/InfoTable/Types.hs"
-    removeFile $ stage0GhcHeap </> "GHC/Exts/Heap/Constants.hs"
-    removeFile $ stage0Ghci </> "GHCi/FFI.hs"
-    when (ghcFlavor < Ghc921) $
-      removeFile $ stage0Ghci </> "GHCi/InfoTable.hs"
-
 -- | Produces a ghc-lib Cabal file.
 generateGhcLibCabal :: GhcFlavor -> [String] -> IO ()
 generateGhcLibCabal ghcFlavor customCppOpts = do
@@ -1135,7 +1128,6 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         , "        Paths_ghc_lib"
         ] ++
         indent2 (nubSort nonParserModules)
-    removeGeneratedIntermediateFiles ghcFlavor
     putStrLn "# Generating 'ghc-lib.cabal'... Done!"
 
 generateCppOpts :: GhcFlavor -> [String] -> String
@@ -1203,11 +1195,6 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         ] ++ indent (dataFiles ghcFlavor) ++
         [ "extra-source-files:"] ++
         indent (performExtraFilesSubstitutions ghcFlavor ghcLibParserExtraFiles) ++
-        -- This boot file is copied into position in
-        -- `generatePrequisites`. We don't list it in
-        -- `ghcLibParserExtraFiles` because those are files we
-        -- generate via hadrian and this is not.
-        indent([ stage0Compiler </> "GHC/Parser.hs-boot" | ghcFlavor > Ghc923]) ++
         [ "source-repository head"
         , "    type: git"
         , "    location: git@github.com:digital-asset/ghc-lib.git"
@@ -1253,7 +1240,6 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
            ]
         ) ++
         ["    exposed-modules:" ] ++ indent2 parserModules
-    removeGeneratedIntermediateFiles ghcFlavor
     putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 
 -- | Run Hadrian to build the things that the Cabal files need.
@@ -1287,18 +1273,64 @@ generatePrerequisites ghcFlavor = do
         (if ghcFlavor >= Ghc901 then ["--bignum=native"] else ["--integer-simple"]) ++
         ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) (dataFiles ghcFlavor)
 
-  -- We use the hadrian generated Lexer and Parser so get these out
-  -- of the way.
-  let lexer = if ghcFlavor >= Ghc901 then "compiler/GHC/Parser/Lexer.x" else "compiler/parser/Lexer.x"
-  let parser = if ghcFlavor >= Ghc901 then "compiler/GHC/Parser.y" else "compiler/parser/Parser.y"
-  removeFile lexer
-  removeFile parser
-  when (ghcFlavor < Ghc8101) $
-    removeFile "compiler/utils/Fingerprint.hsc" -- Favor the generated .hs file here too.
-  when (ghcFlavor > Ghc923) $ do
-    -- MR https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6224
-    -- (Mar 2022) introduces this new lexer and boot file. The boot
-    -- file needs to live alongside `GHC/Parser.hs` which hadrian
-    -- generates into the `stage0Compiler` directory.
-    removeFile "compiler/GHC/Parser/HaddockLex.x"
-    copyFile "compiler/GHC/Parser.hs-boot" (stage0Compiler </> "GHC/Parser.hs-boot")
+-- | Given an Hsc, Alex, or Happy file, generate a placeholder module
+-- with the same module imports.
+genPlaceholderModule :: FilePath -> IO ()
+genPlaceholderModule m = do
+    (name, imports) <- withFile m ReadMode $ \h -> do
+      name <- parseModuleName h
+      imports <- parseModuleImports h []
+      pure (name, imports)
+    let fname = placeholderModulesDir </> T.unpack (T.replace "." "/" name <> ".hs")
+    createDirectoryIfMissing True (takeDirectory fname)
+    withFile fname WriteMode $ \h -> do
+      T.hPutStrLn h $ "module " <> name <> " where"
+      let extra = extraImports $ takeExtension fname
+      forM_ (imports ++ extra) $ \i -> T.hPutStrLn h $ "import " <> i
+    pure ()
+  where
+    parseModuleName :: Handle -> IO T.Text
+    parseModuleName h = do
+      l <- T.hGetLine h
+      if "module " `T.isPrefixOf` l then
+        case T.words l of
+          _module : name : _ -> pure $ T.takeWhile (/= '(') name
+          _ -> fail $ "Cannot parse module name of " ++ m
+      else
+        parseModuleName h
+
+    parseModuleImports :: Handle -> [T.Text] -> IO [T.Text]
+    parseModuleImports h acc = handleEof acc $ do
+        l <- T.hGetLine h
+        acc <- if "import " `T.isPrefixOf` l then
+                 case T.words l of
+                  _import : "qualified" : name : _ -> do
+                      pure $ T.takeWhile (/= '(') name : acc
+                  _import : name : _ -> do
+                      pure $ T.takeWhile (/= '(') name : acc
+                  _ -> fail $ "Cannot parse import in " ++ m ++ " in line " ++ T.unpack l
+               else
+                 pure acc
+        parseModuleImports h acc
+
+    handleEof :: a -> IO a -> IO a
+    handleEof acc = handle $ \e ->
+      if isEOFError e then pure acc else ioError e
+
+    extraImports :: String -> [T.Text]
+    extraImports ".x" = [ "Data.Array", "Data.Array.Base", "GHC.Exts" ]  -- Alex adds these imports
+    extraImports ".y" = [ "Data.Array", "GHC.Exts" ]  -- Happy adds these imports
+    extraImports _ = []
+
+genPlaceholderModules :: FilePath -> IO ()
+genPlaceholderModules = loop
+  where
+    loop fp = do
+      isDir <- doesDirectoryExist fp
+      if isDir then do
+        contents <- listDirectory fp
+        mapM_ (loop . (fp </>)) contents
+      else if takeExtension fp `elem` [".x", ".y", ".hsc"] then
+        genPlaceholderModule fp
+      else
+        pure ()
