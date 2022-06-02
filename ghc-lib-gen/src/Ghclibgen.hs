@@ -1075,8 +1075,8 @@ removeGeneratedIntermediateFiles ghcFlavor = do
       removeFile $ stage0Ghci </> "GHCi/InfoTable.hs"
 
 -- | Produces a ghc-lib Cabal file.
-generateGhcLibCabal :: GhcFlavor -> IO ()
-generateGhcLibCabal ghcFlavor = do
+generateGhcLibCabal :: GhcFlavor -> [String] -> IO ()
+generateGhcLibCabal ghcFlavor customCppOpts = do
     -- Compute the list of modules to be compiled. The rest are parser
     -- modules re-exported from ghc-lib-parser.
     (lib, _bin, parserModules) <- libBinParserModules ghcFlavor
@@ -1114,7 +1114,7 @@ generateGhcLibCabal ghcFlavor = do
         indent2 (ghcLibIncludeDirs ghcFlavor) ++
         [ "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "    cc-options: -DTHREADED_RTS"
-        , "    cpp-options: " <> ghcStageDef ghcFlavor <> " -DTHREADED_RTS " <> ghciDef ghcFlavor <> ghcInGhciDef ghcFlavor
+        , "    cpp-options: " <> generateCppOpts ghcFlavor customCppOpts
         , "    if !os(windows)"
         , "        build-depends: unix"
         , "    else"
@@ -1138,6 +1138,16 @@ generateGhcLibCabal ghcFlavor = do
     removeGeneratedIntermediateFiles ghcFlavor
     putStrLn "# Generating 'ghc-lib.cabal'... Done!"
 
+generateCppOpts :: GhcFlavor -> [String] -> String
+generateCppOpts ghcFlavor customCppOpts =
+  unwords $
+    [ ghcStageDef ghcFlavor
+    , "-DTHREADED_RTS"
+    , ghciDef ghcFlavor
+    , ghcInGhciDef ghcFlavor
+    ]
+    ++ customCppOpts
+
 ghciDef :: GhcFlavor -> String
 ghciDef ghcFlavor = if ghcFlavor > Ghc8101 then "" else "-DGHCI"
 
@@ -1145,7 +1155,7 @@ ghcStageDef :: GhcFlavor -> String
 ghcStageDef ghcFlavor = if ghcFlavor >= Ghc8101 then "" else "-DSTAGE=2"
 
 ghcInGhciDef :: GhcFlavor -> String
-ghcInGhciDef ghcFlavor = if ghcFlavor >= Ghc921 then "" else " -DGHC_IN_GHCI "
+ghcInGhciDef ghcFlavor = if ghcFlavor >= Ghc921 then "" else "-DGHC_IN_GHCI"
 
 -- Perform a set of specific substitutions on the given list of files.
 performExtraFilesSubstitutions :: GhcFlavor -> (GhcFlavor -> [FilePath]) -> [FilePath]
@@ -1171,8 +1181,8 @@ performExtraFilesSubstitutions ghcFlavor files =
     sub xs (s, r) = replace [s] (maybeToList r) xs
 
 -- | Produces a ghc-lib-parser Cabal file.
-generateGhcLibParserCabal :: GhcFlavor -> IO ()
-generateGhcLibParserCabal ghcFlavor = do
+generateGhcLibParserCabal :: GhcFlavor -> [String] -> IO ()
+generateGhcLibParserCabal ghcFlavor customCppOpts = do
     (lib, _bin, parserModules) <- libBinParserModules ghcFlavor
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
         [ "cabal-version: 2.0"
@@ -1208,7 +1218,7 @@ generateGhcLibParserCabal ghcFlavor = do
         , "    include-dirs:"] ++ indent2 (ghcLibParserIncludeDirs ghcFlavor) ++
         [ "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "    cc-options: -DTHREADED_RTS"
-        , "    cpp-options: " <> ghcStageDef ghcFlavor <> " -DTHREADED_RTS " <> ghciDef ghcFlavor <> ghcInGhciDef ghcFlavor
+        , "    cpp-options: " <> generateCppOpts ghcFlavor customCppOpts
         , "    if !os(windows)"
         , "        build-depends: unix"
         , "    else"

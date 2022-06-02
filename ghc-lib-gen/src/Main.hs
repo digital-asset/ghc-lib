@@ -21,7 +21,7 @@ main = ghclibgen =<< execParser opts
       )
 
 ghclibgen :: GhclibgenOpts -> IO ()
-ghclibgen (GhclibgenOpts root target ghcFlavor) =
+ghclibgen (GhclibgenOpts root target ghcFlavor cppOpts) =
   withCurrentDirectory root $
     case target of
       GhclibParser -> do
@@ -30,13 +30,13 @@ ghclibgen (GhclibgenOpts root target ghcFlavor) =
         applyPatchStage ghcFlavor
         applyPatchHaddockHs ghcFlavor
         applyPatchNoMonoLocalBinds ghcFlavor
-        generateGhcLibParserCabal ghcFlavor
+        generateGhcLibParserCabal ghcFlavor cppOpts
       Ghclib -> do
         init ghcFlavor
         applyPatchCmmParseNoImplicitPrelude ghcFlavor
         applyPatchRtsBytecodes ghcFlavor
         applyPatchGHCiInfoTable ghcFlavor
-        generateGhcLibCabal ghcFlavor
+        generateGhcLibCabal ghcFlavor cppOpts
   where
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do
