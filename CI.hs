@@ -64,8 +64,16 @@ data GhcFlavor = Ghc941
                | Ghc882
                | Ghc883
                | Ghc884
-               | Da { mergeBaseSha :: String, patches :: [String], flavor :: String, upstream :: String }
+               | Da DaFlavor
                | GhcMaster String
+  deriving (Eq, Show)
+
+data DaFlavor = DaFlavor
+  { mergeBaseSha :: String
+  , patches :: [String]
+  , flavor :: String
+  , upstream :: String
+  }
   deriving (Eq, Show)
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
@@ -103,7 +111,7 @@ ghcFlavorOpt = \case
     Ghc882 -> "--ghc-flavor ghc-8.8.2"
     Ghc883 -> "--ghc-flavor ghc-8.8.3"
     Ghc884 -> "--ghc-flavor ghc-8.8.4"
-    Da { flavor } -> "--ghc-flavor " <> flavor
+    Da DaFlavor {flavor} -> "--ghc-flavor " <> flavor
     GhcMaster _hash -> "--ghc-flavor ghc-master"
       -- The git SHA1 hash is not passed to ghc-lib-gen at this time.
 
@@ -155,7 +163,7 @@ genVersionStr flavor suffix =
 
 parseOptions :: Opts.Parser Options
 parseOptions = Options
-    <$> (parseDaOptions
+    <$> ((Da <$> parseDaOptions)
          Opts.<|>
          Opts.option readFlavor
           ( Opts.long "ghc-flavor"
@@ -195,9 +203,9 @@ parseOptions = Options
        "ghc-8.8.4" -> Right Ghc884
        "ghc-master" -> Right (GhcMaster current)
        hash -> Right (GhcMaster hash)
-   parseDaOptions :: Opts.Parser GhcFlavor
+   parseDaOptions :: Opts.Parser DaFlavor
    parseDaOptions =
-       Opts.flag' Da ( Opts.long "da" <> Opts.help "Enables DA custom build." )
+       Opts.flag' DaFlavor ( Opts.long "da" <> Opts.help "Enables DA custom build." )
        <*> Opts.strOption
            ( Opts.long "merge-base-sha"
           <> Opts.help "DA flavour only. Base commit to use from the GHC repo."
@@ -300,7 +308,7 @@ buildDists
         Ghc882 -> cmd "cd ghc && git checkout ghc-8.8.2-release"
         Ghc883 -> cmd "cd ghc && git checkout ghc-8.8.3-release"
         Ghc884 -> cmd "cd ghc && git checkout ghc-8.8.4-release"
-        Da { mergeBaseSha, patches, upstream } -> do
+        Da DaFlavor { mergeBaseSha, patches, upstream } -> do
             cmd $ "cd ghc && git checkout " <> mergeBaseSha
             -- Apply Digital Asset extensions.
             cmd $ "cd ghc && git remote add upstream " <> upstream
