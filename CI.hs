@@ -213,14 +213,14 @@ parseOptions = Options
        Opts.flag' DaFlavor ( Opts.long "da" <> Opts.help "Enables DA custom build." )
        <*> Opts.strOption
            ( Opts.long "merge-base-sha"
-          <> Opts.help "DA flavour only. Base commit to use from the GHC repo."
+          <> Opts.help "DA flavor only. Base commit to use from the GHC repo."
           <> Opts.showDefault
           <> Opts.value "ghc-8.8.1-release"
            )
        <*> (Opts.some
              (Opts.strOption
               ( Opts.long "patch"
-             <> Opts.help "DA flavour only. Commits to merge in from the DA GHC fork, referenced as 'upstream'. Can be specified multiple times. If no patch is specified, default will be equivalent to `--patch upstream/da-master-8.8.1`. Specifying any patch will overwrite the default (i.e. replace, not add)."
+             <> Opts.help "DA flavor only. Commits to merge in from the DA GHC fork, referenced as 'upstream'. Can be specified multiple times. If no patch is specified, default will be equivalent to `--patch upstream/da-master-8.8.1`. Specifying any patch will overwrite the default (i.e. replace, not add)."
               ))
             Opts.<|>
             pure ["upstream/da-master-8.8.1"])
