@@ -64,8 +64,17 @@ data GhcFlavor = Ghc941
                | Ghc882
                | Ghc883
                | Ghc884
-               | Da { mergeBaseSha :: String, patches :: [String], flavor :: String, upstream :: String }
+               | Da DaFlavor
                | GhcMaster String
+  deriving (Eq, Show)
+
+data DaFlavor = DaFlavor
+  { mergeBaseSha :: String
+  , patches :: [String]
+  , cpp :: [String]
+  , flavor :: String
+  , upstream :: String
+  }
   deriving (Eq, Show)
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
@@ -103,9 +112,13 @@ ghcFlavorOpt = \case
     Ghc882 -> "--ghc-flavor ghc-8.8.2"
     Ghc883 -> "--ghc-flavor ghc-8.8.3"
     Ghc884 -> "--ghc-flavor ghc-8.8.4"
-    Da { flavor } -> "--ghc-flavor " <> flavor
+    Da DaFlavor {flavor} -> "--ghc-flavor " <> flavor
     GhcMaster _hash -> "--ghc-flavor ghc-master"
       -- The git SHA1 hash is not passed to ghc-lib-gen at this time.
+
+cppOpts :: GhcFlavor -> String
+cppOpts (Da DaFlavor {cpp}) = unwords $ concat [["--cpp", v] | v <- cpp]
+cppOpts _ = ""
 
 stackVerbosityOpt :: Maybe String -> String
 stackVerbosityOpt = \case
@@ -155,7 +168,7 @@ genVersionStr flavor suffix =
 
 parseOptions :: Opts.Parser Options
 parseOptions = Options
-    <$> (parseDaOptions
+    <$> ((Da <$> parseDaOptions)
          Opts.<|>
          Opts.option readFlavor
           ( Opts.long "ghc-flavor"
@@ -195,22 +208,29 @@ parseOptions = Options
        "ghc-8.8.4" -> Right Ghc884
        "ghc-master" -> Right (GhcMaster current)
        hash -> Right (GhcMaster hash)
-   parseDaOptions :: Opts.Parser GhcFlavor
+   parseDaOptions :: Opts.Parser DaFlavor
    parseDaOptions =
-       Opts.flag' Da ( Opts.long "da" <> Opts.help "Enables DA custom build." )
+       Opts.flag' DaFlavor ( Opts.long "da" <> Opts.help "Enables DA custom build." )
        <*> Opts.strOption
            ( Opts.long "merge-base-sha"
-          <> Opts.help "DA flavour only. Base commit to use from the GHC repo."
+          <> Opts.help "DA flavor only. Base commit to use from the GHC repo."
           <> Opts.showDefault
           <> Opts.value "ghc-8.8.1-release"
            )
        <*> (Opts.some
              (Opts.strOption
               ( Opts.long "patch"
-             <> Opts.help "DA flavour only. Commits to merge in from the DA GHC fork, referenced as 'upstream'. Can be specified multiple times. If no patch is specified, default will be equivalent to `--patch upstream/da-master-8.8.1 --patch upstream/da-unit-ids-8.8.1`. Specifying any patch will overwrite the default (i.e. replace, not add)."
+             <> Opts.help "DA flavor only. Commits to merge in from the DA GHC fork, referenced as 'upstream'. Can be specified multiple times. If no patch is specified, default will be equivalent to `--patch upstream/da-master-8.8.1`. Specifying any patch will overwrite the default (i.e. replace, not add)."
               ))
             Opts.<|>
-            pure ["upstream/da-master-8.8.1", "upstream/da-unit-ids-8.8.1"])
+            pure ["upstream/da-master-8.8.1"])
+       <*> (Opts.some
+             (Opts.strOption
+              ( Opts.long "cpp"
+             <> Opts.help "DA flavor only. CPP flags to pass on to ghc-lib-gen. Can be specified multiple times. If no flags are specified, default will be equivalent to `--cpp -DDAML_PRIM`. Specifying any flag will overwrite the default (i.e. replace, not add)."
+              ))
+            Opts.<|>
+            pure ["-DDAML_PRIM"])
        <*> Opts.strOption
            ( Opts.long "gen-flavor"
           <> Opts.help "DA flavor only. Flavor to pass on to ghc-lib-gen."
@@ -300,7 +320,7 @@ buildDists
         Ghc882 -> cmd "cd ghc && git checkout ghc-8.8.2-release"
         Ghc883 -> cmd "cd ghc && git checkout ghc-8.8.3-release"
         Ghc884 -> cmd "cd ghc && git checkout ghc-8.8.4-release"
-        Da { mergeBaseSha, patches, upstream } -> do
+        Da DaFlavor { mergeBaseSha, patches, upstream } -> do
             cmd $ "cd ghc && git checkout " <> mergeBaseSha
             -- Apply Digital Asset extensions.
             cmd $ "cd ghc && git remote add upstream " <> upstream
@@ -327,7 +347,7 @@ buildDists
     -- Make and extract an sdist of ghc-lib-parser.
     cmd "cd ghc && git checkout ."
 
-    stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
+    stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor ++ " " ++ cppOpts ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser
     renameDirectory pkg_ghclib_parser "ghc-lib-parser"
@@ -336,7 +356,7 @@ buildDists
 
     -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
-    stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor
+    stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor ++ " " ++ cppOpts ghcFlavor
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraint version "ghc/ghc-lib.cabal"
     mkTarball pkg_ghclib

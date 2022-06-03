@@ -39,7 +39,7 @@ strategy:
     # supported).
 
     # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
+    # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
     # | linux   | ghc-master      | ghc-9.2.2  |
     # | macOS   | ghc-master      | ghc-9.2.2  |
@@ -56,7 +56,7 @@ strategy:
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
+    # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
     # | linux   | ghc-9.2.3       | ghc-9.2.2  |
     # | macOS   | ghc-9.2.3       | ghc-9.2.2  |
@@ -73,7 +73,7 @@ strategy:
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
+    # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
     # | linux   | ghc-9.4.1       | ghc-9.2.2  |
     # | macOS   | ghc-9.4.1       | ghc-9.2.2  |
@@ -90,7 +90,7 @@ strategy:
       stack-yaml: "stack-exact.yaml"
 
     # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
+    # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
     # | linux   | ghc-master      | ghc-9.0.2  |
     # | macOS   | ghc-master      | ghc-9.0.2  |
@@ -107,7 +107,7 @@ strategy:
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
+    # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
     # | linux   | ghc-9.0.2       | ghc-8.10.7 |
     # | macOS   | ghc-9.0.2       | ghc-8.8.1  |
@@ -124,10 +124,10 @@ strategy:
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
+    # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-8.10.7       | ghc-8.8.1 |
-    # | macOS   | ghc-8.10.7       | ghc-8.8.1 |
+    # | linux   | ghc-8.10.7      | ghc-8.8.1  |
+    # | macOS   | ghc-8.10.7      | ghc-8.8.1  |
     # +---------+-----------------+------------+
     linux-ghc-8.10.7-8.8.1:
       image: "ubuntu-latest"
@@ -141,7 +141,7 @@ strategy:
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavour | GHC        |
+    # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
     # | linux   | da-ghc-8.8.1    | ghc-8.8.1  |
     # | windows | da-ghc-8.8.1    | ghc-8.8.1  |
