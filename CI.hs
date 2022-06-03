@@ -71,6 +71,7 @@ data GhcFlavor = Ghc941
 data DaFlavor = DaFlavor
   { mergeBaseSha :: String
   , patches :: [String]
+  , cpp :: [String]
   , flavor :: String
   , upstream :: String
   }
@@ -114,6 +115,10 @@ ghcFlavorOpt = \case
     Da DaFlavor {flavor} -> "--ghc-flavor " <> flavor
     GhcMaster _hash -> "--ghc-flavor ghc-master"
       -- The git SHA1 hash is not passed to ghc-lib-gen at this time.
+
+cppOpts :: GhcFlavor -> String
+cppOpts (Da DaFlavor {cpp}) = unwords $ concat [["--cpp", v] | v <- cpp]
+cppOpts _ = ""
 
 stackVerbosityOpt :: Maybe String -> String
 stackVerbosityOpt = \case
@@ -219,6 +224,13 @@ parseOptions = Options
               ))
             Opts.<|>
             pure ["upstream/da-master-8.8.1"])
+       <*> (Opts.some
+             (Opts.strOption
+              ( Opts.long "cpp"
+             <> Opts.help "DA flavor only. CPP flags to pass on to ghc-lib-gen. Can be specified multiple times. If no flags are specified, default will be equivalent to `--cpp -DDAML_PRIM`. Specifying any flag will overwrite the default (i.e. replace, not add)."
+              ))
+            Opts.<|>
+            pure ["-DDAML_PRIM"])
        <*> Opts.strOption
            ( Opts.long "gen-flavor"
           <> Opts.help "DA flavor only. Flavor to pass on to ghc-lib-gen."
@@ -335,7 +347,7 @@ buildDists
     -- Make and extract an sdist of ghc-lib-parser.
     cmd "cd ghc && git checkout ."
 
-    stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor
+    stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor ++ " " ++ cppOpts ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser
     renameDirectory pkg_ghclib_parser "ghc-lib-parser"
@@ -344,7 +356,7 @@ buildDists
 
     -- Make and extract an sdist of ghc-lib.
     cmd "cd ghc && git checkout ."
-    stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor
+    stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor ++ " " ++ cppOpts ghcFlavor
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraint version "ghc/ghc-lib.cabal"
     mkTarball pkg_ghclib
