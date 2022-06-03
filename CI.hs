@@ -215,10 +215,10 @@ parseOptions = Options
        <*> (Opts.some
              (Opts.strOption
               ( Opts.long "patch"
-             <> Opts.help "DA flavour only. Commits to merge in from the DA GHC fork, referenced as 'upstream'. Can be specified multiple times. If no patch is specified, default will be equivalent to `--patch upstream/da-master-8.8.1 --patch upstream/da-unit-ids-8.8.1`. Specifying any patch will overwrite the default (i.e. replace, not add)."
+             <> Opts.help "DA flavour only. Commits to merge in from the DA GHC fork, referenced as 'upstream'. Can be specified multiple times. If no patch is specified, default will be equivalent to `--patch upstream/da-master-8.8.1`. Specifying any patch will overwrite the default (i.e. replace, not add)."
               ))
             Opts.<|>
-            pure ["upstream/da-master-8.8.1", "upstream/da-unit-ids-8.8.1"])
+            pure ["upstream/da-master-8.8.1"])
        <*> Opts.strOption
            ( Opts.long "gen-flavor"
           <> Opts.help "DA flavor only. Flavor to pass on to ghc-lib-gen."
