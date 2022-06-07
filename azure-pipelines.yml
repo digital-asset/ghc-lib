@@ -38,6 +38,10 @@ strategy:
     # (the general rule is only the last two compiler versions are
     # supported).
 
+    # note(sf, 2022-0604): We should be able to bump this to ghc-9.2.3
+    # soon (see
+    # https://github.com/commercialhaskell/stackage-content/issues/103).
+
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
@@ -47,11 +51,28 @@ strategy:
     linux-ghc-master-9.2.2:
       image: "ubuntu-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "nightly-2022-05-27"
-      stack-yaml: "stack.yaml"
+      resolver: "ghc-9.2.2"
+      stack-yaml: "stack-exact.yaml"
     mac-ghc-master-9.2.2:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-master"
+      resolver: "ghc-9.2.2"
+      stack-yaml: "stack-exact.yaml"
+
+    # +---------+-----------------+------------+
+    # | OS      | ghc-lib flavor  | GHC        |
+    # +=========+=================+============+
+    # | linux   | ghc-9.4.1       | ghc-9.2.2  |
+    # | macOS   | ghc-9.4.1       | ghc-9.2.2  |
+    # +---------+-----------------+------------+
+    linux-ghc-9.4.1-9.2.2:
+      image: "ubuntu-latest"
+      mode: "--ghc-flavor ghc-9.4.1"
+      resolver: "nightly-2022-05-27"
+      stack-yaml: "stack.yaml"
+    mac-ghc-9.4.1-9.2.2:
+      image: "macOS-latest"
+      mode: "--ghc-flavor ghc-9.4.1"
       resolver: "nightly-2022-05-27"
       stack-yaml: "stack.yaml"
 
@@ -71,23 +92,6 @@ strategy:
       mode: "--ghc-flavor ghc-9.2.3"
       resolver: "nightly-2022-05-27"
       stack-yaml: "stack.yaml"
-
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavor  | GHC        |
-    # +=========+=================+============+
-    # | linux   | ghc-9.4.1       | ghc-9.2.2  |
-    # | macOS   | ghc-9.4.1       | ghc-9.2.2  |
-    # +---------+-----------------+------------+
-    linux-ghc-9.4.1-9.2.2:
-      image: "ubuntu-latest"
-      mode: "--ghc-flavor ghc-9.4.1"
-      resolver: "ghc-9.2.2"
-      stack-yaml: "stack-exact.yaml"
-    mac-ghc-9.4.1-9.2.2:
-      image: "macOS-latest"
-      mode: "--ghc-flavor ghc-9.4.1"
-      resolver: "ghc-9.2.2"
-      stack-yaml: "stack-exact.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
