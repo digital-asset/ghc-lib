@@ -38,25 +38,21 @@ strategy:
     # (the general rule is only the last two compiler versions are
     # supported).
 
-    # note(sf, 2022-0604): We should be able to bump this to ghc-9.2.3
-    # soon (see
-    # https://github.com/commercialhaskell/stackage-content/issues/103).
-
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-master      | ghc-9.2.2  |
-    # | macOS   | ghc-master      | ghc-9.2.2  |
+    # | linux   | ghc-master      | ghc-9.2.3  |
+    # | macOS   | ghc-master      | ghc-9.2.3  |
     # +---------+-----------------+------------+
-    linux-ghc-master-9.2.2:
+    linux-ghc-master-9.2.3:
       image: "ubuntu-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.2.2"
+      resolver: "ghc-9.2.3"
       stack-yaml: "stack-exact.yaml"
-    mac-ghc-master-9.2.2:
+    mac-ghc-master-9.2.3:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.2.2"
+      resolver: "ghc-9.2.3"
       stack-yaml: "stack-exact.yaml"
 
     # +---------+-----------------+------------+
