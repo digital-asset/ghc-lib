@@ -23,8 +23,9 @@ data GhclibgenTarget = GhclibParser | Ghclib
 -- | The type of ghc-lib-gen options.
 data GhclibgenOpts = GhclibgenOpts {
     ghclibgenOpts_root :: !FilePath -- ^ Path to a GHC git repository.
-  , ghclibgenOpts_target :: !GhclibgenTarget -- ^ What target?
+  , ghclibgenOpts_target :: !GhclibgenTarget
   , ghclibgenOpts_ghcFlavor :: !GhcFlavor
+  , ghclibgenOpts_skipInit :: !Bool
   , ghclibgenOpts_customCppFlags :: ![String]
  }
 
@@ -61,6 +62,10 @@ ghclibgenOpts = GhclibgenOpts
   <$> argument str (metavar "GHC_ROOT")
   <*> ghclibgenTarget
   <*> ghcFlavorOpt
+  <*> switch
+        ( long "skip-init"
+        <> help "If enabled, skip initialization steps"
+        )
   <*> cppCustomFlagsOpt
 
 -- | We might want to factor this out so we can share it with CI.hs

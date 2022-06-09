@@ -4,10 +4,12 @@
 
 module Main(main) where
 
-import System.Directory
 import Ghclibgen
 import GhclibgenOpts
+
+import System.Directory
 import Options.Applicative
+import Control.Monad
 
 main :: IO ()
 main = ghclibgen =<< execParser opts
@@ -21,23 +23,26 @@ main = ghclibgen =<< execParser opts
       )
 
 ghclibgen :: GhclibgenOpts -> IO ()
-ghclibgen (GhclibgenOpts root target ghcFlavor cppOpts) =
+ghclibgen (GhclibgenOpts root target ghcFlavor skipInit cppOpts) =
   withCurrentDirectory root $
     case target of
       GhclibParser -> do
-        init ghcFlavor
+        when withInit $ init ghcFlavor
         mangleCSymbols ghcFlavor
         applyPatchStage ghcFlavor
         applyPatchHaddockHs ghcFlavor
         applyPatchNoMonoLocalBinds ghcFlavor
         generateGhcLibParserCabal ghcFlavor cppOpts
       Ghclib -> do
-        init ghcFlavor
+        when withInit $ init ghcFlavor
         applyPatchCmmParseNoImplicitPrelude ghcFlavor
         applyPatchRtsBytecodes ghcFlavor
         applyPatchGHCiInfoTable ghcFlavor
         generateGhcLibCabal ghcFlavor cppOpts
   where
+    withInit :: Bool
+    withInit = not skipInit
+
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do
         applyPatchHadrianStackYaml ghcFlavor
@@ -51,6 +56,6 @@ ghclibgen (GhclibgenOpts root target ghcFlavor cppOpts) =
         -- 'hadrian/stack.yaml'.
         generatePrerequisites ghcFlavor
         -- Renamings come after 'generatePrerequisites':
+        applyPatchDerivedConstants ghcFlavor -- Needs DerivedConstants.h
         applyPatchHsVersions ghcFlavor
         applyPatchGHCiMessage ghcFlavor -- Needs ghcversion.h
-        applyPatchDerivedConstants ghcFlavor -- Needs DerivedConstants.h
