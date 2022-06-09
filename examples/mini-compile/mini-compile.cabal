@@ -1,23 +1,26 @@
+cabal-version:       2.0
 name:                mini-compile
 version:             0.1.0.0
+synopsis:            Example code
 license:             BSD3
 x-license:           BSD3-Clause OR Apache-2.0
-license-file:        ../../LICENSE
-author:              Shayne Fletcher (shayne.fletcher@digitalasset.com)
-maintainer:          Shayne Fletcher (shayne.fletcher@digitalasset.com)
-copyright:           Digital Asset 2018-2019
+license-file:        LICENSE
+author:              Shayne Fletcher (shayne@shaynefletcher.org)
+maintainer:          Shayne Fletcher (shayne@shaynefletcher.org) & Digital Asset
+copyright:           Digital Asset 2018-2022
 build-type:          Simple
-cabal-version:       >=1.10
+category:            Development
+description:         "ghc-lib" usage example
 
 executable mini-compile
   main-is:             Main.hs
-  build-depends:       base >=4.11
+  default-language:    Haskell2010
+  build-depends:       base >=4.11 && <5
                      , containers
                      , directory
                      , extra
                      , ghc-lib-parser
                      , ghc-lib
-  default-language:    Haskell2010
   hs-source-dirs:      src
   if flag(daml-unit-ids)
       cpp-options: -DDAML_UNIT_IDS
