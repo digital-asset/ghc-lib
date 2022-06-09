@@ -10,17 +10,15 @@ maintainer:          Shayne Fletcher (shayne@shaynefletcher.org) & Digital Asset
 copyright:           Digital Asset 2021-2022
 category:            Development
 build-type:          Simple
-category:            Development
 description:         Code common to usage examples
 
 library
   hs-source-dirs:    src
   default-language:  Haskell2010
-  build-depends:
-      base >=4.11 && <5
-    , extra
-    , tasty
-    , utf8-string
+  build-depends:     base >=4.11 && <5
+                   , extra
+                   , tasty
+                   , utf8-string
   exposed-modules:   TestUtils
   other-modules:     Paths_test_utils
   autogen-modules:   Paths_test_utils
