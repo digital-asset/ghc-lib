@@ -991,9 +991,9 @@ baseBounds ghcFlavor =
     Ghc922    -> "base >= 4.14 && < 4.16.2" -- [ghc-8.10.1, ghc-9.2.3)
     Ghc923    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
 
-    Ghc941   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.2, ghc-9.6.1)
+    Ghc941   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
 
-    GhcMaster -> "base >= 4.15 && < 4.18" -- [ghc-9.0.2, ghc-9.6.1)
+    GhcMaster -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
 
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]

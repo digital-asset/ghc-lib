@@ -434,12 +434,15 @@ buildDists
       -- 7762 means this shouldn't be an issue anymore going forward.
       ghcOptionsWithHaddock = ghcOptionsOpt
 
-      -- Mitigate macOS w/[ghc-9.0 <= 9.2.2] build failures for lack of
-      -- this c-include path (including e.g. ghc-lib-parser on
-      -- ghc-9.2.2). See
+      -- Mitigate against macOS/ghc-9.2.2 failures for lack of this
+      -- c-include path. See
       -- https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266.
+      -- There are reports that this exhibits with 9.0.2 and 9.2.1 as
+      -- well but I haven't observed that.
       prelude :: (String, String) -> String
+#if __GLASGOW_HASKELL__ == 902 && __GLASGOW_HASKELL_PATCHLEVEL1__ == 2
       prelude ("darwin", _) = "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi"
+#endif
       prelude _ = ""
 
       stack :: String -> IO ()
