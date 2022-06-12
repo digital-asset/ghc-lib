@@ -12,6 +12,9 @@ build-type:          Simple
 category:            Development
 description:         "ghc-lib-parser" usage example
 
+extra-source-files:  test/*.hs
+                     test/*.expect
+
 executable mini-hlint
   main-is:             Main.hs
   default-language:    Haskell2010
@@ -25,12 +28,9 @@ executable mini-hlint
 test-suite mini-hlint-test
   type:                exitcode-stdio-1.0
   default-language:    Haskell2010
-  main-is:
-                       Main.hs
-  hs-source-dirs:
-                       test
-  build-depends:
-                       base >=4.11 && <5
+  main-is:             Main.hs
+  hs-source-dirs:      test
+  build-depends:       base >=4.11 && <5
                      , directory
                      , extra
                      , filepath
