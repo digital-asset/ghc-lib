@@ -356,7 +356,7 @@ buildDists
     -- Make and extract an sdist of ghc-lib.
     stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor ++ " " ++ cppOpts ghcFlavor ++ " " ++ "--skip-init"
     patchVersion version "ghc/ghc-lib.cabal"
-    patchConstraint version "ghc/ghc-lib.cabal"
+    patchConstraints version "ghc/ghc-lib.cabal"
     mkTarball pkg_ghclib
     renameDirectory pkg_ghclib "ghc-lib"
     removeFile "ghc/ghc-lib.cabal"
@@ -388,6 +388,16 @@ buildDists
         Da {} ->
           unlines ["flags: {mini-compile: {daml-unit-ids: true}}"]
         _ -> ""
+
+    patchVersion version "examples/test-utils/test-utils.cabal"
+    patchConstraints version "examples/test-utils/test-utils.cabal"
+    patchVersion version "examples/mini-hlint/mini-hlint.cabal"
+    patchConstraints version "examples/mini-hlint/mini-hlint.cabal"
+    patchVersion version "examples/mini-compile/mini-compile.cabal"
+    patchConstraints version "examples/mini-compile/mini-compile.cabal"
+    stack "sdist examples/test-utils --tar-dir=."
+    stack "sdist examples/mini-hlint --tar-dir=."
+    stack "sdist examples/mini-compile --tar-dir=."
 
     -- All invocations of GHC from here on are using our resolver.
 
@@ -477,13 +487,18 @@ buildDists
       patchVersion :: String -> FilePath -> IO ()
       patchVersion version file =
         writeFile file .
-          replace "version: 0.1.0" ("version: " ++ version)
+          -- ghc-lib, ghc-lib-parser
+          replace "version: 0.1.0" ("version: " ++ version) .
+          -- mini-hlint, mini-compile
+          replace "version:             0.1.0.0" ("version: " ++ version)
           =<< readFile' file
 
-      patchConstraint :: String -> FilePath -> IO ()
-      patchConstraint version file =
+      patchConstraints :: String -> FilePath -> IO ()
+      patchConstraints version file =
         writeFile file .
-          replace "ghc-lib-parser" ("ghc-lib-parser == " ++ version)
+          replace ", test-utils\n" (", test-utils == " ++ version ++ "\n") .
+          replace ", ghc-lib\n" (", ghc-lib == " ++ version ++ "\n") .
+          replace ", ghc-lib-parser\n" (", ghc-lib-parser == " ++ version ++ "\n")
           =<< readFile' file
 
       removePath :: FilePath -> IO ()

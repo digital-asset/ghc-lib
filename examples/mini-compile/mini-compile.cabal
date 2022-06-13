@@ -12,6 +12,8 @@ build-type:          Simple
 category:            Development
 description:         "ghc-lib" usage example
 
+extra-source-files:  test/*.hs
+
 executable mini-compile
   main-is:             Main.hs
   default-language:    Haskell2010
