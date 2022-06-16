@@ -79,7 +79,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "8727be73296c16c11e01f42691ea27738436b28b" -- 2022-06-09
+current = "ac83899dcb5931913699d191f2c46780483ed07e" -- 2022-06-15
 
 -- Command line argument generators.
 
@@ -283,6 +283,7 @@ buildDists
         toDelete  = ghcDirs ++ tarBalls ++ lockFiles
     forM_ toDelete removePath
     cmd $ "git checkout " ++ stackConfig
+    cmd "git checkout examples"
 
     -- Get packages missing on Windows needed by hadrian.
     when isWindows $
