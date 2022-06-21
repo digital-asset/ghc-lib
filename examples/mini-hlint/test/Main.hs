@@ -44,31 +44,11 @@ goldenTests :: StackYaml -> Resolver -> GhcFlavor -> [FilePath] -> TestTree
 goldenTests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFlavor ghcFlavor) hsFiles =
   -- Note: You'll get very confused if you load expect files into your
   -- emacs where you automatically delete whitespace at end of line on
-  -- save In this case, disable the 'delete-trailing-whitespace' save
+  -- save. In this case, disable the 'delete-trailing-whitespace' save
   -- hook and set the local buffer variable 'show-trailing-whitespace'
   -- to 't'. E.g. at this time on master, there's this example: 'Found
   -- `qualified' in postpositive position. '
   case (yaml, resolver) of
-    -- Running ghc-9.2.1(ghc-9.2.2) with stack 2.7.3(2.7.5) produces
-    --   "Stack has not been tested with GHC versions above 9.0, and using 9.2.1, this may fail"
-    --   "Stack has not been tested with Cabal versions above 3.4, but version 3.6.0.0 was found, this may fail"
-    -- on stderr which being unexpected, causes the golden tests to fail.
-    --
-    -- I judge it more work than it's worth to put in expect files
-    -- configured for this case since the next stack release will fix
-    -- it. So, for now just don't run this test.
-    -- 
-    -- Update 2022-05-27 This is getting tedious. See
-    -- https://github.com/commercialhaskell/stack/issues/5758.
-    (Just "../../stack-exact.yaml", Nothing) -> -- implicit resolver 'ghc-9.2.2'
-      testGroup "mini-hlint tests" []
-    (_, Just ghc) | ghc `elem` [
-                        "ghc-9.2.1"
-                      , "ghc-9.2.2"
-                      , "nightly-2022-05-27" -- ghc-9.2.2
-                      , "ghc-9.2.3" -- bindist not set up yet
-                      ] ->  -- explicit resolvers
-      testGroup "mini-hlint tests" []
     (_, _) ->
       testGroup "mini-hlint tests"
          [ goldenVsString
@@ -89,5 +69,5 @@ goldenTests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFla
                        else
                          hsFile
                  in replaceExtension f $ (if isWindows then ".windows" else "") ++ ".expect"
-         , let genStringAction = stack stackYaml stackResolver $ "--no-terminal exec -- mini-hlint " ++ hsFile
+         , let genStringAction = stack stackYaml stackResolver $ "--silent --no-terminal exec -- mini-hlint " ++ hsFile
          ]
