@@ -43,6 +43,7 @@ strategy:
     # +=========+=================+============+
     # | linux   | ghc-master      | ghc-9.2.3  |
     # | macOS   | ghc-master      | ghc-9.2.3  |
+    # | windows | ghc-master      | ghc-9.2.3  |
     # +---------+-----------------+------------+
     linux-ghc-master-9.2.3:
       image: "ubuntu-latest"
@@ -54,12 +55,18 @@ strategy:
       mode: "--ghc-flavor ghc-master"
       resolver: "ghc-9.2.3"
       stack-yaml: "stack-exact.yaml"
+    windows-ghc-master-9.2.3:
+      image: "windows-latest"
+      mode: "--ghc-flavor ghc-master"
+      resolver: "nightly-2022-06-20"
+      stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
     # | linux   | ghc-9.4.1       | ghc-9.2.2  |
     # | macOS   | ghc-9.4.1       | ghc-9.2.2  |
+    # | windows | ghc-9.4.1       | ghc-9.2.2  |
     # +---------+-----------------+------------+
     linux-ghc-9.4.1-9.2.2:
       image: "ubuntu-latest"
@@ -71,12 +78,18 @@ strategy:
       mode: "--ghc-flavor ghc-9.4.1"
       resolver: "nightly-2022-05-27"
       stack-yaml: "stack.yaml"
+    windows-ghc-9.4.1-9.2.2:
+      image: "windows-latest"
+      mode: "--ghc-flavor ghc-9.4.1"
+      resolver: "nightly-2022-05-27"
+      stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
     # | linux   | ghc-9.2.3       | ghc-9.2.2  |
     # | macOS   | ghc-9.2.3       | ghc-9.2.2  |
+    # | windows | ghc-9.2.3       | ghc-9.2.2  |
     # +---------+-----------------+------------+
     linux-ghc-9.2.3-9.2.2:
       image: "ubuntu-latest"
@@ -85,6 +98,11 @@ strategy:
       stack-yaml: "stack.yaml"
     mac-ghc-9.2.3-9.2.2:
       image: "macOS-latest"
+      mode: "--ghc-flavor ghc-9.2.3"
+      resolver: "nightly-2022-05-27"
+      stack-yaml: "stack.yaml"
+    windows-ghc-9.2.3-9.2.2:
+      image: "windows-latest"
       mode: "--ghc-flavor ghc-9.2.3"
       resolver: "nightly-2022-05-27"
       stack-yaml: "stack.yaml"
@@ -102,6 +120,11 @@ strategy:
       stack-yaml: "stack.yaml"
     mac-ghc-master-9.0.2:
       image: "macOS-latest"
+      mode: "--ghc-flavor ghc-master"
+      resolver: "lts-19.8"
+      stack-yaml: "stack.yaml"
+    windows-ghc-master-9.0.2:
+      image: "windows-latest"
       mode: "--ghc-flavor ghc-master"
       resolver: "lts-19.8"
       stack-yaml: "stack.yaml"
@@ -182,10 +205,8 @@ steps:
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-hlint/test/Main.hs
       curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/mini-compile/src
   - bash: |
-      stack exec -- pacman -Syu --noconfirm
+      stack exec --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative ghc -- -package extra -package optparse-applicative -Wall -Wno-name-shadowing -Werror -c CI.hs
+      stack exec --stack-yaml $(stack-yaml) --resolver $(resolver) -- pacman -Syu --noconfirm
     condition: eq(variables['Agent.OS'], 'Windows_NT')
   - bash: |
-      stack setup --stack-yaml $(stack-yaml) --resolver $(resolver) > /dev/null
-      stack install --stack-yaml $(stack-yaml) --resolver $(resolver) alex happy > /dev/null
-      stack exec --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative ghc -- -package extra -package optparse-applicative -Wall -Wno-name-shadowing -Werror -c CI.hs
       stack runhaskell --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative -- CI.hs $(mode)  --stack-yaml $(stack-yaml) --resolver $(resolver)
