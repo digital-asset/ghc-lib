@@ -32,7 +32,7 @@ strategy:
     #      | ghc-8.8.*    |  >= 8.4.4   |
     #      | ghc-8.10.*   |  >= 8.6.5   |
     #      | ghc-9.0.*    |  >= 8.8.1   |
-    #      | ghc-9.2.1    |  >= 8.10.1  |
+    #      | ghc-9.2.*    |  >= 8.10.1  |
     #      | >= ghc-9.4.1 |  >= 9.0.1   |
     #      +--------------+-------------+
     # (the general rule is only the last two compiler versions are
