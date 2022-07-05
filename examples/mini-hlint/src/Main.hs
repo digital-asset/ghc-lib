@@ -174,7 +174,7 @@ fakeLlvmConfig :: (LlvmTargets, LlvmPasses)
 fakeLlvmConfig = ([], [])
 #endif
 
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901)
+#if defined (GHC_941) || defined (GHC_921) || defined (GHC_901)
 parse :: String -> DynFlags -> String -> ParseResult (Located HsModule)
 #else
 parse :: String -> DynFlags -> String -> ParseResult (Located (HsModule GhcPs))
@@ -260,7 +260,9 @@ analyzeExpr flags (L loc expr) = do
                       ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
     _ -> return ()
 
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
+#if defined (GHC_MASTER)
+analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> IO ()
+#elif defined (GHC_941) || defined (GHC_921)
 analyzeModule :: DynFlags -> Located HsModule -> IO ()
 #elif defined (GHC_901)
 analyzeModule :: DynFlags -> Located HsModule -> ApiAnns -> IO ()
