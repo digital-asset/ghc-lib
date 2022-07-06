@@ -629,9 +629,16 @@ applyPatchHaddockHs ghcFlavor = do
         "-- -"
     =<< readFile' ffiClosuresHs
     )
+  -- See https://github.com/digital-asset/ghc-lib/issues/391
+  when (ghcFlavor == Ghc923) (
+    writeFile codeGenHs . replace "{- | debugIsOn -}"  ""
+    =<< readFile' codeGenHs
+    )
+
   where
     haddockHs = "compiler/GHC/Parser/PostProcess/Haddock.hs"
     ffiClosuresHs = "libraries/ghc-heap/GHC/Exts/Heap/FFIClosures.hs"
+    codeGenHs = "compiler/GHC/CmmToAsm/AArch64/CodeGen.hs"
 
 -- Support for unboxed tuples got landed 03/20/2021
 -- (https://gitlab.haskell.org/ghc/ghc/-/commit/1f94e0f7601f8e22fdd81a47f130650265a44196#4ec156a7b95e9c7a690c99bc79e6e0edf60a51dc)
