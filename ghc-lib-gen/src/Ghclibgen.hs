@@ -25,6 +25,7 @@ module Ghclibgen (
   , applyPatchNoMonoLocalBinds
   , applyPatchCmmParseNoImplicitPrelude
   , applyPatchHadrianStackYaml
+  , applyPatchTemplateHaskellCabal
   , generatePrerequisites
   , mangleCSymbols
   , generateGhcLibCabal
@@ -355,7 +356,7 @@ calcParserModules ghcFlavor = do
           [ "GHC" </> "Parser.hs" | ghcFlavor >= Ghc901] ++
           [ "Parser.hs" | ghcFlavor < Ghc901]
         )
-        
+
   putStrLn "# Generating 'ghc/.parser-depends'..."
   putStrLn $ "\n\n# Running: " ++ cmd
   system_ cmd
@@ -399,6 +400,32 @@ calcParserModules ghcFlavor = do
         , if ghcFlavor >= Ghc8101 then "GHC.Hs.Dump" else "HsDumpAst"
         ]
   return $ nubSort (modules ++ extraModules)
+
+applyPatchTemplateHaskellCabal :: GhcFlavor -> IO ()
+applyPatchTemplateHaskellCabal ghcFlavor = do
+  when (ghcFlavor == GhcMaster) $ do
+    -- In
+    -- https://gitlab.haskell.org/ghc/ghc/-/commit/b151b65ec469405dcf25f9358e7e99bcc8c2b3ac
+    -- (2022/7/05) a temporary change is made to provide for vendoring
+    -- filepath inside template-haskell. This breaks our simple cabal
+    -- parsing so workaround while this situation exists.
+    writeFile "libraries/template-haskell/template-haskell.cabal.in" .
+      replace
+        (unlines [
+        "    if flag(vendor-filepath)"
+      , "      other-modules:"
+      , "        System.FilePath"
+      , "        System.FilePath.Posix"
+      , "        System.FilePath.Windows"
+      , "      hs-source-dirs: ../filepath ."
+      , "      default-extensions:"
+      , "        ImplicitPrelude"
+      , "    else"
+      , "      build-depends: filepath"
+      , "      hs-source-dirs: ."
+      ])
+      "        filepath"
+      =<< readFile' "libraries/template-haskell/template-haskell.cabal.in"
 
 -- Avoid duplicate symbols with HSghc-heap (see issue
 -- https://github.com/digital-asset/ghc-lib/issues/210).
@@ -1013,7 +1040,7 @@ commonBuildDepends ghcFlavor =
         baseBounds ghcFlavor
       ]
     specific
-       | ghcFlavor >= Ghc941  = 
+       | ghcFlavor >= Ghc941  =
          [
            "ghc-prim > 0.2 && < 0.10"
          , "bytestring >= 0.10 && < 0.12"
@@ -1025,7 +1052,7 @@ commonBuildDepends ghcFlavor =
           , "bytestring >= 0.9 && < 0.12"
           , "time >= 1.4 && < 1.12"
           ]
-        | otherwise           = 
+        | otherwise           =
           [
             "ghc-prim > 0.2 && < 0.8"
           , "bytestring >= 0.9 && < 0.11"
