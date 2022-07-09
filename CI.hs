@@ -497,6 +497,9 @@ buildDists
       patchConstraints :: String -> FilePath -> IO ()
       patchConstraints version file =
         writeFile file .
+          -- affects ghc-lib.cabal
+          replace "ghc-lib-parser\n" ("ghc-lib-parser == " ++ version ++ "\n") .
+          -- affects test-utils, mini-hlint, mini-compile
           replace ", test-utils\n" (", test-utils == " ++ version ++ "\n") .
           replace ", ghc-lib\n" (", ghc-lib == " ++ version ++ "\n") .
           replace ", ghc-lib-parser\n" (", ghc-lib-parser == " ++ version ++ "\n")
