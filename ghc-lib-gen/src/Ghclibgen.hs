@@ -1364,7 +1364,4 @@ genPlaceholderModules = loop
       if isDir then do
         contents <- listDirectory fp
         mapM_ (loop . (fp </>)) contents
-      else if takeExtension fp `elem` [".x", ".y", ".hsc"] then
-        genPlaceholderModule fp
-      else
-        pure ()
+      else when (takeExtension fp `elem` [".x", ".y", ".hsc"]) $ genPlaceholderModule fp

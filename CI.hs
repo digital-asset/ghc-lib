@@ -14,6 +14,7 @@ import System.Info.Extra
 import System.Process.Extra
 import System.Time.Extra
 import System.Info (os, arch)
+import System.Exit
 import Data.Maybe
 import Data.List.Extra
 import Data.Time.Clock
@@ -28,13 +29,14 @@ main = do
             <> Opts.progDesc "Build ghc-lib and ghc-lib-parser tarballs."
             <> Opts.header "CI - CI script for ghc-lib"
           )
-    Options { ghcFlavor, noGhcCheckout, stackOptions, versionSuffix } <- Opts.execParser opts
-    version <- buildDists ghcFlavor noGhcCheckout stackOptions versionSuffix
+    Options { ghcFlavor, noGhcCheckout, noBuilds, stackOptions, versionSuffix } <- Opts.execParser opts
+    version <- buildDists ghcFlavor noGhcCheckout noBuilds stackOptions versionSuffix
     putStrLn version
 
 data Options = Options
     { ghcFlavor :: GhcFlavor
     , noGhcCheckout :: Bool
+    , noBuilds :: Bool
     , stackOptions :: StackOptions
     , versionSuffix :: Maybe String
     } deriving (Show)
@@ -179,6 +181,10 @@ parseOptions = Options
           ( Opts.long "no-checkout"
           <> Opts.help "If enabled, don't perform a GHC checkout"
           )
+    <*> Opts.switch
+          ( Opts.long "no-builds"
+          <> Opts.help "If enabled, don't build & test packages & examples"
+          )
     <*> parseStackOptions
     <*> Opts.optional
           ( Opts.strOption
@@ -265,10 +271,11 @@ parseStackOptions = StackOptions
        <> Opts.help "If specified, pass '--ghc-options=\"xxx\"' to stack"
         ))
 
-buildDists :: GhcFlavor -> Bool -> StackOptions -> Maybe String -> IO String
+buildDists :: GhcFlavor -> Bool -> Bool -> StackOptions -> Maybe String -> IO String
 buildDists
   ghcFlavor
   noGhcCheckout
+  noBuilds
   StackOptions {stackYaml, resolver, verbosity, cabalVerbose, ghcOptions}
   versionSuffix
   =
@@ -399,6 +406,8 @@ buildDists
     stack "sdist examples/test-utils --tar-dir=."
     stack "sdist examples/mini-hlint --tar-dir=."
     stack "sdist examples/mini-compile --tar-dir=."
+
+    when noBuilds exitSuccess
 
     -- All invocations of GHC from here on are using our resolver.
 
