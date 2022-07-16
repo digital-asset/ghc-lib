@@ -403,7 +403,7 @@ calcParserModules ghcFlavor = do
 
 applyPatchTemplateHaskellCabal :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellCabal ghcFlavor = do
-  when (ghcFlavor == GhcMaster) $ do
+  when (ghcFlavor `elem` [GhcMaster, Ghc941]) $ do
     -- In
     -- https://gitlab.haskell.org/ghc/ghc/-/commit/b151b65ec469405dcf25f9358e7e99bcc8c2b3ac
     -- (2022/7/05) a temporary change is made to provide for vendoring

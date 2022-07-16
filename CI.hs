@@ -81,7 +81,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "460505345e500eb902da9737c75c077d5fc5ef66" -- 2022-07-10
+current = "dcf8b30a1a5f802b1d8a22ea74499e2896a6ff16" -- 2022-07-14
 
 -- Command line argument generators.
 
