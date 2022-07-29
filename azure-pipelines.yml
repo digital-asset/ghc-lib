@@ -64,47 +64,47 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-9.4.1       | ghc-9.2.2  |
-    # | macOS   | ghc-9.4.1       | ghc-9.2.2  |
-    # | windows | ghc-9.4.1       | ghc-9.2.2  |
+    # | linux   | ghc-9.4.1       | ghc-9.2.3  |
+    # | macOS   | ghc-9.4.1       | ghc-9.2.3  |
+    # | windows | ghc-9.4.1       | ghc-9.2.3  |
     # +---------+-----------------+------------+
-    linux-ghc-9.4.1-9.2.2:
+    linux-ghc-9.4.1-9.2.3:
       image: "ubuntu-latest"
       mode: "--ghc-flavor ghc-9.4.1"
-      resolver: "nightly-2022-05-27"
+      resolver: "nightly-2022-07-28"
       stack-yaml: "stack.yaml"
-    mac-ghc-9.4.1-9.2.2:
+    mac-ghc-9.4.1-9.2.3:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-9.4.1"
-      resolver: "nightly-2022-05-27"
+      resolver: "nightly-2022-07-28"
       stack-yaml: "stack.yaml"
-    windows-ghc-9.4.1-9.2.2:
+    windows-ghc-9.4.1-9.2.3:
       image: "windows-latest"
       mode: "--ghc-flavor ghc-9.4.1"
-      resolver: "nightly-2022-05-27"
+      resolver: "nightly-2022-07-28"
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-9.2.3       | ghc-9.2.2  |
-    # | macOS   | ghc-9.2.3       | ghc-9.2.2  |
-    # | windows | ghc-9.2.3       | ghc-9.2.2  |
+    # | linux   | ghc-9.2.4       | ghc-9.2.3  |
+    # | macOS   | ghc-9.2.4       | ghc-9.2.3  |
+    # | windows | ghc-9.2.4       | ghc-9.2.3  |
     # +---------+-----------------+------------+
-    linux-ghc-9.2.3-9.2.2:
+    linux-ghc-9.2.4-9.2.3:
       image: "ubuntu-latest"
-      mode: "--ghc-flavor ghc-9.2.3"
-      resolver: "nightly-2022-05-27"
+      mode: "--ghc-flavor ghc-9.2.4"
+      resolver: "nightly-2022-07-28"
       stack-yaml: "stack.yaml"
-    mac-ghc-9.2.3-9.2.2:
+    mac-ghc-9.2.4-9.2.3:
       image: "macOS-latest"
-      mode: "--ghc-flavor ghc-9.2.3"
-      resolver: "nightly-2022-05-27"
+      mode: "--ghc-flavor ghc-9.2.4"
+      resolver: "nightly-2022-07-28"
       stack-yaml: "stack.yaml"
-    windows-ghc-9.2.3-9.2.2:
+    windows-ghc-9.2.4-9.2.3:
       image: "windows-latest"
-      mode: "--ghc-flavor ghc-9.2.3"
-      resolver: "nightly-2022-05-27"
+      mode: "--ghc-flavor ghc-9.2.4"
+      resolver: "nightly-2022-07-28"
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
