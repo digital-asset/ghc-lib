@@ -412,19 +412,34 @@ applyPatchTemplateHaskellCabal ghcFlavor = do
     writeFile "libraries/template-haskell/template-haskell.cabal.in" .
       replace
         (unlines [
-        "    if flag(vendor-filepath)"
-      , "      other-modules:"
-      , "        System.FilePath"
-      , "        System.FilePath.Posix"
-      , "        System.FilePath.Windows"
-      , "      hs-source-dirs: ../filepath ."
-      , "      default-extensions:"
-      , "        ImplicitPrelude"
-      , "    else"
-      , "      build-depends: filepath"
-      , "      hs-source-dirs: ."
-      ])
-      "        filepath"
+            "    if flag(vendor-filepath)"
+          , "      other-modules:"
+          , "        System.FilePath"
+          , "        System.FilePath.Posix"
+          , "        System.FilePath.Windows"
+          , "      hs-source-dirs: ../filepath ."
+          , "      default-extensions:"
+          , "        ImplicitPrelude"
+          , "    else"
+          , "      build-depends: filepath"
+          , "      hs-source-dirs: ."
+          ])
+        "        filepath" .
+      replace
+        (unlines [
+            "    if flag(vendor-filepath)"
+          , "      other-modules:"
+          , "        System.FilePath"
+          , "        System.FilePath.Posix"
+          , "        System.FilePath.Windows"
+          , "      hs-source-dirs: ./vendored-filepath ."
+          , "      default-extensions:"
+          , "        ImplicitPrelude"
+          , "    else"
+          , "      build-depends: filepath"
+          , "      hs-source-dirs: ."
+          ])
+          "        filepath"
       =<< readFile' "libraries/template-haskell/template-haskell.cabal.in"
 
 -- Avoid duplicate symbols with HSghc-heap (see issue

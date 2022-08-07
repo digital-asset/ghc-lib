@@ -7,7 +7,7 @@
 # You can add --resolver xxx to the above command to have the effect
 # of overriding the choice of compiler if desired.
 
-resolver: ghc-9.2.3
+resolver: ghc-9.2.4
 
 ghc-options:
   # Try to be quick.
