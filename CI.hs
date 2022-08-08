@@ -418,7 +418,7 @@ buildDists
 
     -- Feedback on what compiler has been selected for building
     -- ghc-lib packages and tests.
-    stack "exec -- ghc --version"
+    stack "ghc -- --version"
 
     -- Separate the two library build commands so they are
     -- independently timed. Note that optimizations in these builds
@@ -434,7 +434,7 @@ buildDists
     -- Run tests.
     let testArguments = "--test-arguments \"" ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ ghcFlavorOpt ghcFlavor ++ "\""
     stack $ "test mini-hlint --no-terminal " ++ testArguments
-    stack "--no-terminal exec -- mini-compile examples/mini-compile/test/MiniCompileTest.hs | tail -10"
+    stack "--no-terminal exec mini-compile -- examples/mini-compile/test/MiniCompileTest.hs | tail -10"
 
 #if __GLASGOW_HASKELL__ == 808 && \
     (__GLASGOW_HASKELL_PATCHLEVEL1__ == 1 || __GLASGOW_HASKELL_PATCHLEVEL1__ == 2) && \
@@ -444,8 +444,8 @@ buildDists
 #else
     -- Test everything loads in GHCi, see
     -- https://github.com/digital-asset/ghc-lib/issues/27
-    stack "--no-terminal exec -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
-    stack "--no-terminal exec -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
+    stack "--no-terminal ghc -- -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
+    stack "--no-terminal ghc -- -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
 #endif
 
     -- Something like, "8.8.1.20190828".
