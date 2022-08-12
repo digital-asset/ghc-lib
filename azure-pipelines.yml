@@ -59,8 +59,8 @@ strategy:
     windows-ghc-master-9.2.4:
       image: "windows-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "nightly-2022-08-04"
-      stack-yaml: "stack.yaml"
+      resolver: "ghc-9.2.4"
+      stack-yaml: "stack-exact.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
