@@ -82,7 +82,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "78d04cfadfd728bb088b08b1e88905b43cc0360c" -- 2022-08-07
+current = "dca43a04fb36e0ae0ed61455f215660eed2856a9" -- 2022-08-14
 
 -- Command line argument generators.
 
@@ -375,6 +375,25 @@ buildDists
     removeFile "ghc/ghc-lib.cabal"
     cmd "git checkout stack.yaml"
 
+    patchVersion version "examples/test-utils/test-utils.cabal"
+    patchConstraints version "examples/test-utils/test-utils.cabal"
+    patchVersion version "examples/mini-hlint/mini-hlint.cabal"
+    patchConstraints version "examples/mini-hlint/mini-hlint.cabal"
+    patchVersion version "examples/mini-compile/mini-compile.cabal"
+    patchConstraints version "examples/mini-compile/mini-compile.cabal"
+
+    verifyConstraint "ghc-lib-parser == " version "ghc-lib/ghc-lib.cabal"
+    verifyConstraint "ghc-lib-parser == " version "examples/mini-hlint/mini-hlint.cabal"
+    verifyConstraint "test-utils == " version "examples/mini-hlint/mini-hlint.cabal"
+    verifyConstraint "ghc-lib-parser == " version "examples/mini-compile/mini-compile.cabal"
+    verifyConstraint "ghc-lib == " version "examples/mini-compile/mini-compile.cabal"
+
+    stack "sdist examples/test-utils --tar-dir=."
+    stack "sdist examples/mini-hlint --tar-dir=."
+    stack "sdist examples/mini-compile --tar-dir=."
+
+    when noBuilds exitSuccess
+
     -- Append the libraries and examples to the prevailing stack
     -- configuration file.
     stackYaml <- readFile' stackConfig
@@ -401,18 +420,6 @@ buildDists
         Da {} ->
           unlines ["flags: {mini-compile: {daml-unit-ids: true}}"]
         _ -> ""
-
-    patchVersion version "examples/test-utils/test-utils.cabal"
-    patchConstraints version "examples/test-utils/test-utils.cabal"
-    patchVersion version "examples/mini-hlint/mini-hlint.cabal"
-    patchConstraints version "examples/mini-hlint/mini-hlint.cabal"
-    patchVersion version "examples/mini-compile/mini-compile.cabal"
-    patchConstraints version "examples/mini-compile/mini-compile.cabal"
-    stack "sdist examples/test-utils --tar-dir=."
-    stack "sdist examples/mini-hlint --tar-dir=."
-    stack "sdist examples/mini-compile --tar-dir=."
-
-    when noBuilds exitSuccess
 
     -- All invocations of GHC from here on are using our resolver.
 
@@ -514,10 +521,22 @@ buildDists
           -- affects ghc-lib.cabal
           replace "ghc-lib-parser\n" ("ghc-lib-parser == " ++ version ++ "\n") .
           -- affects test-utils, mini-hlint, mini-compile
-          replace ", test-utils\n" (", test-utils == " ++ version ++ "\n") .
+          replace ", test-utils" (", test-utils == " ++ version ++ "\n") .
           replace ", ghc-lib\n" (", ghc-lib == " ++ version ++ "\n") .
           replace ", ghc-lib-parser\n" (", ghc-lib-parser == " ++ version ++ "\n")
           =<< readFile' file
+
+      verifyConstraint :: String -> String -> String -> IO ()
+      verifyConstraint constraint version file = do
+        res <- stripInfix constraint <$> readFile' file
+        case res of
+          Just (_, r) -> do
+            case words r of
+              v : _ -> unless (v == version) exitError
+              _ -> exitError
+          Nothing -> exitError
+       where
+         exitError = die $ file ++ ": " ++ constraint ++ version ++ " not satisfied"
 
       removePath :: FilePath -> IO ()
       removePath p =
