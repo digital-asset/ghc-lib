@@ -1104,11 +1104,12 @@ ghcLibParserBuildDepends  = commonBuildDepends
 ghcLibBuildDepends :: GhcFlavor -> [String]
 ghcLibBuildDepends ghcFlavor =
   commonBuildDepends ghcFlavor ++
+  [ "stm" | ghcFlavor > Ghc924] ++
   [ "rts"
   , "hpc == 0.6.*"
-  , "ghc-lib-parser"
-  ] ++
-  [ "stm" | ghcFlavor > Ghc924]
+  , "ghc-lib-parser"  -- we rely on this being last (in CI.hs:
+                      -- 'patchConstraints')!
+  ]
 
 -- | This utility factored out to avoid repetion.
 libBinParserModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String])

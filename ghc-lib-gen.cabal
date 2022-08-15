@@ -1,4 +1,4 @@
-cabal-version:       >=1.10
+cabal-version:       2.0
 name:                ghc-lib-gen
 version:             0.1.0.0
 synopsis:            Cabal file generator for GHC as a library
