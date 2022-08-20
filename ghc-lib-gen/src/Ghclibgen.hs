@@ -403,7 +403,7 @@ calcParserModules ghcFlavor = do
 
 applyPatchTemplateHaskellCabal :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellCabal ghcFlavor = do
-  when (ghcFlavor `elem` [GhcMaster, Ghc941]) $ do
+  when (ghcFlavor >= Ghc941) $ do
     -- In
     -- https://gitlab.haskell.org/ghc/ghc/-/commit/b151b65ec469405dcf25f9358e7e99bcc8c2b3ac
     -- (2022/7/05) a temporary change is made to provide for vendoring
@@ -953,7 +953,7 @@ applyPatchHadrianStackYaml ghcFlavor = do
     --
     -- The reason for this is to maintain signal on hlint w/9.4.1
     -- parse tree while waiting for fixes.
-      config'' = if ghcFlavor /= Ghc941
+      config'' = if ghcFlavor `notElem` [ Ghc941, Ghc942 ]
                      then config'
                      else
                          HMS.insert "allow-newer" (toJSON True)
@@ -1042,9 +1042,11 @@ baseBounds ghcFlavor =
     Ghc923    -> "base >= 4.14 && < 4.16.3" -- [ghc-8.10.1, ghc-9.2.4)
     Ghc924    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
 
+    -- ghc-9.4.1, ghc-9.4.2: 17.0.0
     Ghc941   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
+    Ghc942   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
 
-    GhcMaster -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
+    GhcMaster -> "base > 4.16 && < 4.18" -- [ghc-9.2.1, ghc-9.6.1)
 
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]

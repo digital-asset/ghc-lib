@@ -90,6 +90,7 @@ data GhcFlavor = DaGhc881
                | Ghc923
                | Ghc924
                | Ghc941
+               | Ghc942
                | GhcMaster
     deriving (Show, Eq, Ord)
 
@@ -101,6 +102,7 @@ ghcFlavorOpt = option readFlavor
 
 readFlavor :: ReadM GhcFlavor
 readFlavor = eitherReader $ \case
+    "ghc-9.4.2" -> Right Ghc942
     "ghc-9.4.1" -> Right Ghc941
     "ghc-9.2.4" -> Right Ghc924
     "ghc-9.2.3" -> Right Ghc923

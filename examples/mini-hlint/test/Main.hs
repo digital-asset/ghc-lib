@@ -59,7 +59,7 @@ goldenTests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFla
          , let testName = hsFile
          , let expectFile =
                  let f =
-                       if ghcFlavor `elem` [GhcMaster, Ghc941] then
+                       if ghcFlavor >= Ghc941 then
                          case takeFileName hsFile of
                            "MiniHlintTest_fatal_error.hs" ->
                              takeDirectory hsFile </> "MiniHlintTest_fatal_error-ghc-master.hs"
