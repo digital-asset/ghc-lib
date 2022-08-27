@@ -9,8 +9,8 @@ The [GHC API](https://hackage.haskell.org/package/ghc) allows you to use the [GH
 
 The `ghc-lib` project provides two packages : `ghc-lib-parser` and `ghc-lib`. The `ghc-lib-parser` package is  that subset of the GHC API that is just enough to parse Haskell code. The `ghc-lib` package extends (and re-exports) `ghc-lib-parser` with the rest. While `ghc-lib` provides the full GHC API, it doesn't contain a runtime system, nor does it create a package database. That means you can't run code produced by `ghc-lib` (no runtime), and compiling off-the-shelf code is very hard (no package database containing the `base` library). What you can do:
 
-* Parse Haskell code, making `ghc-lib-parser` a potential replacement for [`haskell-src-exts`](https://hackage.haskell.org/package/haskell-src-exts). See the demo [`mini-hlint`](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-hlint/src/Main.hs) in this repo;
-* Compile Haskell code as far as GHC's [Core language](https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CoreSynType), which includes renaming and type checking. See the demo [`mini-compile`](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-compile/src/Main.hs) in this repo, and the carefully tailored [file it compiles](https://github.com/digital-asset/ghc-lib/blob/master/examples/mini-compile/test/MiniCompileTest.hs).
+* Parse Haskell code, making `ghc-lib-parser` a potential replacement for [`haskell-src-exts`](https://hackage.haskell.org/package/haskell-src-exts). See the demo [`ghc-lib-test-mini-hlint`](https://github.com/digital-asset/ghc-lib/blob/master/examples/ghc-lib-test-mini-hlint/src/Main.hs) in this repo;
+* Compile Haskell code as far as GHC's [Core language](https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CoreSynType), which includes renaming and type checking. See the demo [`ghc-lib-test-mini-compile`](https://github.com/digital-asset/ghc-lib/blob/master/examples/ghc-lib-test-mini-compile/src/Main.hs) in this repo, and the carefully tailored [file it compiles](https://github.com/digital-asset/ghc-lib/blob/master/examples/ghcl-lib-test-mini-compile/test/MiniCompileTest.hs).
 
 There are some downsides to `ghc-lib`:
 
@@ -61,8 +61,9 @@ Building `ghc-lib` is subject to the same minimum version requirements that appl
 | ghc-8.8.*  | 8.4.4      | 8.10.1    |
 | ghc-8.10.* | 8.6.5      | 9.0.1     |
 | ghc-9.0.*  | 8.8.1      | 9.2.1     |
-| ghc-9.2.*  | 8.10.1     |           |
-| ghc-master | 9.0.2      |           |
+| ghc-9.2.*  | 8.10.1     | 9.4.1     |
+| ghc-9.4.*  | 9.0.2      |
+| ghc-master | 9.2.1      |           |
 
 ### How do I use the `ghc-lib`/`ghc-lib-parser` version macros?
 

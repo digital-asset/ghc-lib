@@ -1,5 +1,5 @@
 cabal-version:       2.0
-name:                test-utils
+name:                ghc-lib-test-utils
 version:             0.1.0.0
 synopsis:            Test utitilities
 license:             BSD3
@@ -20,5 +20,5 @@ library
                    , tasty
                    , utf8-string
   exposed-modules:   TestUtils
-  other-modules:     Paths_test_utils
-  autogen-modules:   Paths_test_utils
+  other-modules:     Paths_ghc_lib_test_utils
+  autogen-modules:   Paths_ghc_lib_test_utils

@@ -69,5 +69,5 @@ goldenTests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFla
                        else
                          hsFile
                  in replaceExtension f $ (if isWindows then ".windows" else "") ++ ".expect"
-         , let genStringAction = stack stackYaml stackResolver $ "--silent --no-terminal exec -- mini-hlint " ++ hsFile
+         , let genStringAction = stack stackYaml stackResolver $ "--silent --no-terminal exec -- ghc-lib-test-mini-hlint " ++ hsFile
          ]
