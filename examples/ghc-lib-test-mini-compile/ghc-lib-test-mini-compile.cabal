@@ -1,5 +1,5 @@
 cabal-version:       2.0
-name:                mini-compile
+name:                ghc-lib-test-mini-compile
 version:             0.1.0.0
 synopsis:            Example code
 license:             BSD3
@@ -14,7 +14,7 @@ description:         "ghc-lib" usage example
 
 extra-source-files:  test/*.hs
 
-executable mini-compile
+executable ghc-lib-test-mini-compile
   main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base >=4.11 && <5

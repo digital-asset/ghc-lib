@@ -15,7 +15,7 @@ import System.Process.Extra
 newtype StackYaml = StackYaml (Maybe String)
   deriving (Eq, Ord, Typeable)
 -- Give as a path relative to the directory containing
--- mini-hlint.cabal. e.g ../../stack.yaml
+-- ghc-lib-test-mini-hlint.cabal. e.g ../../stack.yaml
 
 newtype Resolver = Resolver (Maybe String)
   deriving (Eq, Ord, Typeable)

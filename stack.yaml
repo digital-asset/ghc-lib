@@ -1,4 +1,4 @@
-resolver: lts-19.8 # ghc-9.0.2
+resolver: nightly-2022-08-04 # ghc-9.2.4
 
 ghc-options:
   # try and speed up recompilation on the CI server

@@ -1,4 +1,4 @@
--- Copyright (c) 2019-2020, Digital Asset (Switzerland) GmbH and/or
+-- Copyright (c) 2019-2022, Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
@@ -69,7 +69,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "ab3e0f5a02f6a1b63407e08bb97a228a76c27abd" -- 2022-08-20
+current = "161a6f1fd62e797e978e7808a5f567fefa123f16" -- 2022-08-28
 
 -- Command line argument generators.
 
@@ -366,22 +366,24 @@ buildDists
     removeFile "ghc/ghc-lib.cabal"
     cmd "git checkout stack.yaml"
 
-    patchVersion version "examples/test-utils/test-utils.cabal"
-    patchConstraints version "examples/test-utils/test-utils.cabal"
-    patchVersion version "examples/mini-hlint/mini-hlint.cabal"
-    patchConstraints version "examples/mini-hlint/mini-hlint.cabal"
-    patchVersion version "examples/mini-compile/mini-compile.cabal"
-    patchConstraints version "examples/mini-compile/mini-compile.cabal"
+    patchVersion version "ghc-lib-gen.cabal"
+    patchVersion version "examples/ghc-lib-test-utils/ghc-lib-test-utils.cabal"
+    patchConstraints version "examples/ghc-lib-test-utils/ghc-lib-test-utils.cabal"
+    patchVersion version "examples/ghc-lib-test-mini-hlint/ghc-lib-test-mini-hlint.cabal"
+    patchConstraints version "examples/ghc-lib-test-mini-hlint/ghc-lib-test-mini-hlint.cabal"
+    patchVersion version "examples/ghc-lib-test-mini-compile/ghc-lib-test-mini-compile.cabal"
+    patchConstraints version "examples/ghc-lib-test-mini-compile/ghc-lib-test-mini-compile.cabal"
 
     verifyConstraint "ghc-lib-parser == " version "ghc-lib/ghc-lib.cabal"
-    verifyConstraint "ghc-lib-parser == " version "examples/mini-hlint/mini-hlint.cabal"
-    verifyConstraint "test-utils == " version "examples/mini-hlint/mini-hlint.cabal"
-    verifyConstraint "ghc-lib-parser == " version "examples/mini-compile/mini-compile.cabal"
-    verifyConstraint "ghc-lib == " version "examples/mini-compile/mini-compile.cabal"
+    verifyConstraint "ghc-lib-parser == " version "examples/ghc-lib-test-mini-hlint/ghc-lib-test-mini-hlint.cabal"
+    verifyConstraint "ghc-lib-test-utils == " version "examples/ghc-lib-test-mini-hlint/ghc-lib-test-mini-hlint.cabal"
+    verifyConstraint "ghc-lib-parser == " version "examples/ghc-lib-test-mini-compile/ghc-lib-test-mini-compile.cabal"
+    verifyConstraint "ghc-lib == " version "examples/ghc-lib-test-mini-compile/ghc-lib-test-mini-compile.cabal"
 
-    stack "sdist examples/test-utils --tar-dir=."
-    stack "sdist examples/mini-hlint --tar-dir=."
-    stack "sdist examples/mini-compile --tar-dir=."
+    stack "sdist . --ignore-check --tar-dir=."
+    stack "sdist examples/ghc-lib-test-utils --tar-dir=."
+    stack "sdist examples/ghc-lib-test-mini-hlint --tar-dir=."
+    stack "sdist examples/ghc-lib-test-mini-compile --tar-dir=."
 
     when noBuilds exitSuccess
 
@@ -392,9 +394,9 @@ buildDists
       stackYaml ++
       unlines [ "- ghc-lib-parser"
               , "- ghc-lib"
-              , "- examples/test-utils"
-              , "- examples/mini-hlint"
-              , "- examples/mini-compile"
+              , "- examples/ghc-lib-test-utils"
+              , "- examples/ghc-lib-test-mini-hlint"
+              , "- examples/ghc-lib-test-mini-compile"
               ] ++
       case ghcFlavor of
 #if __GLASGOW_HASKELL__ == 804 && __GLASGOW_HASKELL_PATCHLEVEL1__ == 4
@@ -409,7 +411,7 @@ buildDists
           unlines ["extra-deps: [transformers-0.5.6.2]"]
 #endif
         Da {} ->
-          unlines ["flags: {mini-compile: {daml-unit-ids: true}}"]
+          unlines ["flags: {ghc-lib-test-mini-compile: {daml-unit-ids: true}}"]
         _ -> ""
 
     -- All invocations of GHC from here on are using our resolver.
@@ -427,12 +429,12 @@ buildDists
     let ghcOpts = case ghcFlavor of Da {} -> ghcOptionsOpt ghcOptions;  _ -> ghcOptionsWithHaddock ghcOptions
     stack $ "--no-terminal --interleaved-output build " ++ ghcOpts ++ " ghc-lib-parser"
     stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions ++ " ghc-lib"
-    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions ++ " mini-hlint mini-compile"
+    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions ++ " ghc-lib-test-mini-hlint ghc-lib-test-mini-compile"
 
     -- Run tests.
     let testArguments = "--test-arguments \"" ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ ghcFlavorOpt ghcFlavor ++ "\""
-    stack $ "test mini-hlint --no-terminal " ++ testArguments
-    stack "--no-terminal exec mini-compile -- examples/mini-compile/test/MiniCompileTest.hs | tail -10"
+    stack $ "test ghc-lib-test-mini-hlint --no-terminal " ++ testArguments
+    stack "--no-terminal exec ghc-lib-test-mini-compile -- examples/ghc-lib-test-mini-compile/test/MiniCompileTest.hs | tail -10"
 
 #if __GLASGOW_HASKELL__ == 808 && \
     (__GLASGOW_HASKELL_PATCHLEVEL1__ == 1 || __GLASGOW_HASKELL_PATCHLEVEL1__ == 2) && \
@@ -502,7 +504,7 @@ buildDists
         writeFile file .
           -- ghc-lib, ghc-lib-parser
           replace "version: 0.1.0" ("version: " ++ version) .
-          -- mini-hlint, mini-compile
+          -- ghc-lib-test-mini-hlint, ghc-lib-test-mini-compile
           replace "version:             0.1.0.0" ("version: " ++ version)
           =<< readFile' file
 
@@ -511,8 +513,8 @@ buildDists
         writeFile file .
           -- affects ghc-lib.cabal
           replace "ghc-lib-parser\n" ("ghc-lib-parser == " ++ version ++ "\n") .
-          -- affects test-utils, mini-hlint, mini-compile
-          replace ", test-utils" (", test-utils == " ++ version ++ "\n") .
+          -- affects ghc-lib-test-utils, ghc-lib-test-mini-hlint, ghc-lib-test-mini-compile
+          replace ", ghc-lib-test-utils" (", ghc-lib-test-utils == " ++ version ++ "\n") .
           replace ", ghc-lib\n" (", ghc-lib == " ++ version ++ "\n") .
           replace ", ghc-lib-parser\n" (", ghc-lib-parser == " ++ version ++ "\n")
           =<< readFile' file
