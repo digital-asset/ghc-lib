@@ -403,7 +403,7 @@ calcParserModules ghcFlavor = do
 
 applyPatchTemplateHaskellCabal :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellCabal ghcFlavor = do
-  when (ghcFlavor >= Ghc941) $ do
+  when (ghcFlavor >= Ghc941 && ghcFlavor < GhcMaster) $ do
     -- In
     -- https://gitlab.haskell.org/ghc/ghc/-/commit/b151b65ec469405dcf25f9358e7e99bcc8c2b3ac
     -- (2022/7/05) a temporary change is made to provide for vendoring
@@ -441,6 +441,33 @@ applyPatchTemplateHaskellCabal ghcFlavor = do
           ])
           "        filepath"
       =<< readFile' "libraries/template-haskell/template-haskell.cabal.in"
+
+  when (ghcFlavor == GhcMaster) $ do
+    -- As of
+    -- https://gitlab.haskell.org/ghc/ghc/-/commit/9034fadaf641c3821db6e066faaf1a62ed236c13
+    -- GHC always relies on vendored filepath sources
+    -- `System.FilePath`, `System.FilePath.Posix`,
+    -- `System.FilePath.Posix`. If we add these modules into
+    -- ghc-lib-parser we run into ambiguity errors later in the hlint
+    -- stack (i.e. ghc-lib-parser + filepath = ambiguity).
+    -- Fortunately, it seems we can continue to get away with what we
+    -- we've been doing up to now and simply say in ghc-lib-parser
+    -- cabal that it `build-depends` on filepath.
+    writeFile "libraries/template-haskell/template-haskell.cabal.in" .
+      replace
+        (unlines [
+            "    other-modules:"
+          , "      System.FilePath"
+          , "      System.FilePath.Posix"
+          , "      System.FilePath.Windows"
+          , "    hs-source-dirs: ./vendored-filepath ."
+        ])
+        (unlines[
+            "    build-depends:"
+          , "        filepath"
+          , "    hs-source-dirs: ."
+        ])
+        =<< readFile' "libraries/template-haskell/template-haskell.cabal.in"
 
 -- Avoid duplicate symbols with HSghc-heap (see issue
 -- https://github.com/digital-asset/ghc-lib/issues/210).
