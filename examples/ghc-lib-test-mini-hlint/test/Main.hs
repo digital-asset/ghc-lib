@@ -37,12 +37,12 @@ main = do
 runTest :: GhcVersion -> String -> Bool
 runTest flavor f =
     -- We need new expect files for master. It's getting tedious to
-    -- maintain this test. Disable running it while we consider what's
-    -- a reasonable amount of effort here.
-  flavor /= GhcMaster &&
+    -- maintain this test. Disable those affected for now.
     (isNothing . stripInfix "Main.hs" $ f) &&
-    ((isNothing . stripInfix "MiniHlintTest_respect_dynamic_pragma.hs" $ f) || (flavor >= Ghc8101)) &&
-    ((isNothing . stripInfix "MiniHlintTest_non_fatal_error.hs" $ f) || (flavor >= Ghc8101))
+    ((isNothing . stripInfix "MiniHlintTest_respect_dynamic_pragma.hs" $ f) || (flavor >= Ghc8101) && (flavor < GhcMaster)) &&
+    ((isNothing . stripInfix "MiniHlintTest_non_fatal_error.hs" $ f) || (flavor >= Ghc8101) && (flavor < GhcMaster)) &&
+    ((isNothing . stripInfix "MiniHlintTest_fatal_error.hs" $ f) || (flavor < GhcMaster)) &&
+    ((isNothing . stripInfix "MiniHlintTest_fail_unknown_pragma.hs" $ f) || (flavor < GhcMaster))
 
 goldenTests :: StackYaml -> Resolver -> GhcFlavor -> [FilePath] -> TestTree
 goldenTests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFlavor ghcFlavor) hsFiles =
