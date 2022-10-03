@@ -170,18 +170,39 @@ steps:
       brew install automake
     condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: Install brew
-  - script: |
-      set -e
+  - bash: |
       curl -sSL https://get.haskellstack.org/ | sh -s - -f
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s CI.hs
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s ghc-lib-gen
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/ghc-lib-test-utils/src
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/ghc-lib-test-mini-hlint/src
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/ghc-lib-test-mini-hlint/test/Main.hs
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/ghc-lib-test-mini-compile/src
+    displayName: install Stack
+  - bash: |
+      set -euo pipefail
+
+      version=$(curl -Is https://github.com/ndmitchell/hlint/releases/latest | grep location: | sed 's|.*/||' | tr -d '\n\r')
+      echo "VERSION: $version"
+
+      temp=$(mktemp -d)
+      curl -sSL https://github.com/ndmitchell/hlint/releases/download/$version/hlint-${version#v}-x86_64-linux.tar.gz > $temp/tarball
+
+      tar -xzf $temp/tarball -C$temp
+
+      hlint() (
+        echo
+        echo DEBUG: hlint "$@"
+        $temp/hlint-${version#v}/hlint "$@"
+      )
+
+      hlint CI.hs
+      hlint ghc-lib-gen
+      hlint examples/ghc-lib-test-utils/src
+      hlint examples/ghc-lib-test-mini-hlint/src
+      hlint examples/ghc-lib-test-mini-hlint/test/Main.hs
+      hlint examples/ghc-lib-test-mini-compile/src
+    displayName: run hlint
+    condition: eq( variables['Agent.OS'], 'Linux' )
   - bash: |
       stack exec --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative ghc -- -package extra -package optparse-applicative -Wall -Wno-name-shadowing -Werror -c CI.hs
       stack exec --stack-yaml $(stack-yaml) --resolver $(resolver) -- pacman -Syu --noconfirm
     condition: eq(variables['Agent.OS'], 'Windows_NT')
+    displayName: Windows pre-build
   - bash: |
       stack runhaskell --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative -- CI.hs $(mode)  --stack-yaml $(stack-yaml) --resolver $(resolver)
+    displayName: build
