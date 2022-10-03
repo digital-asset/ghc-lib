@@ -170,18 +170,53 @@ steps:
       brew install automake
     condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: Install brew
-  - script: |
-      set -e
+  - bash: |
       curl -sSL https://get.haskellstack.org/ | sh -s - -f
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s CI.hs
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s ghc-lib-gen
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/ghc-lib-test-utils/src
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/ghc-lib-test-mini-hlint/src
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/ghc-lib-test-mini-hlint/test/Main.hs
-      curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh | sh -s examples/ghc-lib-test-mini-compile/src
+    displayName: install Stack
+  - bash: |
+      set -euo pipefail
+
+      case "$(uname)" in
+        Darwin)
+          os=osx;;
+        MINGW64_NT-*|MSYS_NT-*)
+          os=windows;;
+        *)
+          os=linux;;
+      esac
+
+      version=$(curl -Is https://github.com/ndmitchell/hlint/releases/latest | grep location: | sed 's|.*/||' | tr -d '\n\r')
+      echo "VERSION: $version"
+
+      ext=$(if [ "windows" = $os ]; then echo 'zip'; else echo 'tar.gz'; fi)
+      temp=$(mktemp -d)
+      echo "curl -sSL https://github.com/ndmitchell/hlint/releases/download/$version/hlint-${version#v}-x86_64-$os.$ext > $temp/$os.$ext"
+      curl -sSL https://github.com/ndmitchell/hlint/releases/download/$version/hlint-${version#v}-x86_64-$os.$ext > $temp/$os.$ext
+
+      if [ "windows" = $os ]; then
+        7z x -y $temp/$os.$ext -o$temp -r >/dev/null
+      else
+        tar -xzf $temp/$os.$ext -C$temp
+      fi
+
+      hlint() (
+        echo
+        echo DEBUG: hlint "$@"
+        $temp/hlint-${version#v}/hlint "$@"
+      )
+
+      hlint CI.hs
+      hlint ghc-lib-gen
+      hlint examples/ghc-lib-test-utils/src
+      hlint examples/ghc-lib-test-mini-hlint/src
+      hlint examples/ghc-lib-test-mini-hlint/test/Main.hs
+      hlint examples/ghc-lib-test-mini-compile/src
+    displayName: run hlint
   - bash: |
       stack exec --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative ghc -- -package extra -package optparse-applicative -Wall -Wno-name-shadowing -Werror -c CI.hs
       stack exec --stack-yaml $(stack-yaml) --resolver $(resolver) -- pacman -Syu --noconfirm
     condition: eq(variables['Agent.OS'], 'Windows_NT')
+    displayName: Windows pre-build
   - bash: |
       stack runhaskell --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative -- CI.hs $(mode)  --stack-yaml $(stack-yaml) --resolver $(resolver)
+    displayName: build
