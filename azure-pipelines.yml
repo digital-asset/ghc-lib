@@ -176,28 +176,13 @@ steps:
   - bash: |
       set -euo pipefail
 
-      case "$(uname)" in
-        Darwin)
-          os=osx;;
-        MINGW64_NT-*|MSYS_NT-*)
-          os=windows;;
-        *)
-          os=linux;;
-      esac
-
       version=$(curl -Is https://github.com/ndmitchell/hlint/releases/latest | grep location: | sed 's|.*/||' | tr -d '\n\r')
       echo "VERSION: $version"
 
-      ext=$(if [ "windows" = $os ]; then echo 'zip'; else echo 'tar.gz'; fi)
       temp=$(mktemp -d)
-      echo "curl -sSL https://github.com/ndmitchell/hlint/releases/download/$version/hlint-${version#v}-x86_64-$os.$ext > $temp/$os.$ext"
-      curl -sSL https://github.com/ndmitchell/hlint/releases/download/$version/hlint-${version#v}-x86_64-$os.$ext > $temp/$os.$ext
+      curl -sSL https://github.com/ndmitchell/hlint/releases/download/$version/hlint-${version#v}-x86_64-linux.tar.gz > $temp/tarball
 
-      if [ "windows" = $os ]; then
-        7z x -y $temp/$os.$ext -o$temp -r >/dev/null
-      else
-        tar -xzf $temp/$os.$ext -C$temp
-      fi
+      tar -xzf $temp/tarball -C$temp
 
       hlint() (
         echo
@@ -212,6 +197,7 @@ steps:
       hlint examples/ghc-lib-test-mini-hlint/test/Main.hs
       hlint examples/ghc-lib-test-mini-compile/src
     displayName: run hlint
+    condition: eq( variables['Agent.OS'], 'Linux' )
   - bash: |
       stack exec --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative ghc -- -package extra -package optparse-applicative -Wall -Wno-name-shadowing -Werror -c CI.hs
       stack exec --stack-yaml $(stack-yaml) --resolver $(resolver) -- pacman -Syu --noconfirm
