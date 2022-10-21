@@ -2,6 +2,7 @@
 -- its affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -Wno-missing-fields #-}
@@ -219,7 +220,9 @@ parsePragmasIntoDynFlags flags filepath str =
       putStrLn $ head
              [ showSDoc flags msg
              | msg <-
-#if defined (GHC_MASTER) || defined (GHC_941)
+#if defined (GHC_MASTER)
+                      pprMsgEnvelopeBagWithLocDefault . getMessages
+#elif defined (GHC_941)
                       pprMsgEnvelopeBagWithLoc . getMessages
 #elif defined (GHC_921)
                       pprMsgEnvelopeBagWithLoc
@@ -321,11 +324,13 @@ main = do
     _ -> fail "Exactly one file argument required"
   where
 
-#if defined (GHC_MASTER) || defined (GHC_941)
-    -- Nowdays, to print hints along with errors you need 'printMessages'.
-    -- See
-    -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6087#note_365215
-    -- for details.
+#if defined (GHC_MASTER)
+    report flags msgs = do
+      let opts = initDiagOpts flags
+          print_config = initPrintConfig flags
+      logger <- initLogger
+      printMessages logger print_config opts msgs
+#elif defined (GHC_941)
     report flags msgs = do
       logger <- initLogger
       let opts = initDiagOpts flags
