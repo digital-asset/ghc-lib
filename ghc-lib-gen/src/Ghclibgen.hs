@@ -980,7 +980,7 @@ applyPatchHadrianStackYaml ghcFlavor = do
     --
     -- The reason for this is to maintain signal on hlint w/9.4.1
     -- parse tree while waiting for fixes.
-      config'' = if ghcFlavor `notElem` [ Ghc941, Ghc942 ]
+      config'' = if ghcFlavor `notElem` [ Ghc941, Ghc942, Ghc943 ]
                      then config'
                      else
                          HMS.insert "allow-newer" (toJSON True)
@@ -1069,9 +1069,10 @@ baseBounds ghcFlavor =
     Ghc923    -> "base >= 4.14 && < 4.16.3" -- [ghc-8.10.1, ghc-9.2.4)
     Ghc924    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
 
-    -- ghc-9.4.1, ghc-9.4.2: 17.0.0
+    -- ghc-9.4.1, ghc-9.4.2, ghc-9.4.3 ship with base-4.17.0.0
     Ghc941   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
     Ghc942   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
+    Ghc943   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
 
     GhcMaster -> "base > 4.16 && < 4.18" -- [ghc-9.2.1, ghc-9.6.1)
 

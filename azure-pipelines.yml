@@ -39,6 +39,24 @@ strategy:
     # (the general rule is only the last two compiler versions are
     # supported).
 
+    # enable when resolver ghc-9.4.3 exists
+
+    # linux-ghc-master-9.4.3:
+    #   image: "ubuntu-latest"
+    #   mode: "--ghc-flavor ghc-master"
+    #   resolver: "ghc-9.4.3"
+    #   stack-yaml: "stack-exact.yaml"
+    # mac-ghc-master-9.4.3:
+    #   image: "macOS-latest"
+    #   mode: "--ghc-flavor ghc-master"
+    #   resolver: "ghc-9.4.3"
+    #   stack-yaml: "stack-exact.yaml"
+    # windows-ghc-master-9.4.3:
+    #   image: "windows-latest"
+    #   mode: "--ghc-flavor ghc-master"
+    #   resolver: "ghc-9.4.3"
+    #   stack-yaml: "stack-exact.yaml"
+
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
