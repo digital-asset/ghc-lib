@@ -89,6 +89,7 @@ data GhcFlavor = DaGhc881
                | Ghc922
                | Ghc923
                | Ghc924
+               | Ghc925
                | Ghc941
                | Ghc942
                | Ghc943
@@ -106,6 +107,7 @@ readFlavor = eitherReader $ \case
     "ghc-9.4.3" -> Right Ghc943
     "ghc-9.4.2" -> Right Ghc942
     "ghc-9.4.1" -> Right Ghc941
+    "ghc-9.2.5" -> Right Ghc925
     "ghc-9.2.4" -> Right Ghc924
     "ghc-9.2.3" -> Right Ghc923
     "ghc-9.2.2" -> Right Ghc922

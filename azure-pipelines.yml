@@ -132,27 +132,27 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-9.2.4       | ghc-9.0.2  |
-    # | macOS   | ghc-9.2.4       | ghc-9.0.2  |
-    # | windows | ghc-9.2.4       | ghc-9.0.2  |
+    # | linux   | ghc-9.2.5       | ghc-9.0.2  |
+    # | macOS   | ghc-9.2.5       | ghc-9.0.2  |
+    # | windows | ghc-9.2.5       | ghc-9.0.2  |
     # +---------+-----------------+------------+
-    linux-ghc-9.2.4-9.0.2:
+    linux-ghc-9.2.5-9.0.2:
       image: "ubuntu-latest"
-      mode: "--ghc-flavor ghc-9.2.4"
+      mode: "--ghc-flavor ghc-9.2.5"
       resolver: "lts-19.20"
       stack-yaml: "stack.yaml"
     # The 9.0.2 resolvers all seem to be missing for macOS. You get
     # errors like InvalidYaml (Just (YamlException "Yaml file not
     # found: /Users/runner/work/1/s/lts.19.20"))`. Not a big deal and
     # I'm not interested in pursuing it further. Just skip it.
-    # mac-ghc-9.2.4-9.0.2:
+    # mac-ghc-9.2.5-9.0.2:
     #   image: "macOS-latest"
-    #   mode: "--ghc-flavor ghc-9.2.4"
+    #   mode: "--ghc-flavor ghc-9.2.5"
     #   resolver: "lts.19.20"
     #   stack-yaml: "stack.yaml"
-    windows-ghc-9.2.4-9.0.2:
+    windows-ghc-9.2.5-9.0.2:
       image: "windows-latest"
-      mode: "--ghc-flavor ghc-9.2.4"
+      mode: "--ghc-flavor ghc-9.2.5"
       resolver: "lts-19.20"
       stack-yaml: "stack.yaml"
 
