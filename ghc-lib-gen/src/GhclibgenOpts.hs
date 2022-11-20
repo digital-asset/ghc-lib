@@ -27,6 +27,7 @@ data GhclibgenOpts = GhclibgenOpts {
   , ghclibgenOpts_ghcFlavor :: !GhcFlavor
   , ghclibgenOpts_skipInit :: !Bool
   , ghclibgenOpts_customCppFlags :: ![String]
+  , ghclibgenOpts_stackResolver :: !(Maybe String)
  }
 
 -- | A parser of the "--ghc-lib" target.
@@ -67,6 +68,7 @@ ghclibgenOpts = GhclibgenOpts
         <> help "If enabled, skip initialization steps"
         )
   <*> cppCustomFlagsOpt
+  <*> stackResolverOpt
 
 -- | We might want to factor this out so we can share it with CI.hs
 -- but for now it doesn’t seem worth it and having CI.hs be
@@ -135,4 +137,12 @@ cppCustomFlagsOpt =
     strOption
       ( long "cpp"
      <> help "CPP options to include in the generated cabal file"
+      )
+
+stackResolverOpt :: Parser (Maybe String)
+stackResolverOpt =
+  optional $
+    strOption
+      ( long "resolver"
+     <> help "the prevailing stack resolver"
       )
