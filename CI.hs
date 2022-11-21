@@ -358,7 +358,7 @@ buildDists
 
     -- Make and extract an sdist of ghc-lib-parser.
     cmd "cd ghc && git checkout ."
-    stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor ++ " " ++ cppOpts ghcFlavor
+    stack $ "exec -- ghc-lib-gen ghc --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor ++ " " ++ cppOpts ghcFlavor ++ " " ++ stackResolverOpt resolver
     patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser
     renameDirectory pkg_ghclib_parser "ghc-lib-parser"
@@ -366,7 +366,7 @@ buildDists
     cmd "git checkout stack.yaml"
 
     -- Make and extract an sdist of ghc-lib.
-    stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor ++ " " ++ cppOpts ghcFlavor ++ " " ++ "--skip-init"
+    stack $ "exec -- ghc-lib-gen ghc --ghc-lib " ++ ghcFlavorOpt ghcFlavor ++ " " ++ cppOpts ghcFlavor ++ " " ++ stackResolverOpt resolver ++ " " ++ "--skip-init"
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraints version "ghc/ghc-lib.cabal"
     mkTarball pkg_ghclib

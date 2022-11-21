@@ -1,5 +1,5 @@
--- Copyright (c) 2019, Digital Asset (Switzerland) GmbH and/or its
--- affiliates. All rights reserved.  SPDX-License-Identifier:
+-- Copyright (c) 2019-2022 Digital Asset (Switzerland) GmbH and/or its
+-- affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
 module Main(main) where
@@ -23,7 +23,7 @@ main = ghclibgen =<< execParser opts
       )
 
 ghclibgen :: GhclibgenOpts -> IO ()
-ghclibgen (GhclibgenOpts root target ghcFlavor skipInit cppOpts) =
+ghclibgen (GhclibgenOpts root target ghcFlavor skipInit cppOpts resolver) = do
   withCurrentDirectory root $
     case target of
       GhclibParser -> do
@@ -46,7 +46,7 @@ ghclibgen (GhclibgenOpts root target ghcFlavor skipInit cppOpts) =
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do
         applyPatchTemplateHaskellCabal ghcFlavor
-        applyPatchHadrianStackYaml ghcFlavor
+        applyPatchHadrianStackYaml ghcFlavor resolver
         applyPatchHeapClosures ghcFlavor
         applyPatchRtsIncludePaths ghcFlavor
         applyPatchGhcPrim ghcFlavor
@@ -54,7 +54,8 @@ ghclibgen (GhclibgenOpts root target ghcFlavor skipInit cppOpts) =
         -- This line must come before 'generatePrerequisites':
         applyPatchAclocal ghcFlavor -- Do before ./boot && ./configure
         -- This invokes 'stack' strictly configured by
-        -- 'hadrian/stack.yaml'.
+        -- 'hadrian/stack.yaml' (which may be influenced by
+        -- `applyPatchHadrianStackYaml`).
         generatePrerequisites ghcFlavor
         -- Renamings come after 'generatePrerequisites':
         applyPatchDerivedConstants ghcFlavor -- Needs DerivedConstants.h

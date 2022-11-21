@@ -946,8 +946,8 @@ applyPatchCmmParseNoImplicitPrelude _ = do
 -- if its needed.
 
 -- | Patch Hadrian's Cabal.
-applyPatchHadrianStackYaml :: GhcFlavor -> IO ()
-applyPatchHadrianStackYaml ghcFlavor = do
+applyPatchHadrianStackYaml :: GhcFlavor -> Maybe String -> IO ()
+applyPatchHadrianStackYaml ghcFlavor resolver = do
   let hadrianStackYaml = "hadrian/stack.yaml"
   config <- Y.decodeFileThrow hadrianStackYaml
   -- See [Note : GHC now depends on exceptions package]
@@ -970,21 +970,26 @@ applyPatchHadrianStackYaml ghcFlavor = do
                                      (toHashMap config)
 #endif
           )
-    -- [Note: Temp hack "ghc-9.4.1-alpha2 does not compile with ghc XXX"]
-    -- ------------------------------------------------------------------
+    -- [Note: Hack "ghc-X.X.X does not compile with ghc XXX"]
+    -- ------------------------------------------------------
     -- See for example
     -- https://gitlab.haskell.org/ghc/ghc/-/issues/21633 &
     -- https://gitlab.haskell.org/ghc/ghc/-/issues/21634.
     --
-    -- The idea is to replace the resolver with a ghc-9.2.2 resolver.
-    --
-    -- The reason for this is to maintain signal on hlint w/9.4.1
-    -- parse tree while waiting for fixes.
-      config'' = if ghcFlavor `notElem` [ Ghc941, Ghc942, Ghc943 ]
+    -- The idea is to replace the resolver with whatever is prevailing
+    -- (or ghc-9.2.2 if that's not possible).
+      resolverDefault = "nightly-2022-05-27"
+      -- The resolver has to curate packages so resolvers of the form
+      -- ghc-x.y.z won't do.
+      resolver' = case fromMaybe resolverDefault resolver of
+        r | "ghc-" `isPrefixOf` r -> resolverDefault
+        r -> r
+
+      config'' = if ghcFlavor < Ghc941
                      then config'
                      else
                          HMS.insert "allow-newer" (toJSON True)
-                           (HMS.update (\_ -> Just "nightly-2022-05-27") "resolver" config')
+                           (HMS.update (\_ -> Just (toJSON resolver')) "resolver" config')
 
   Y.encodeFile hadrianStackYaml config''
 
