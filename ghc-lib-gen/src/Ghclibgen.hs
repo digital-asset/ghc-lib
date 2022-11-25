@@ -202,6 +202,10 @@ dataFiles ghcFlavor =
 
 -- | See 'hadrian/src/Rules/Generate.hs'.
 
+cabalFileDependencies :: GhcFlavor -> [FilePath]
+cabalFileDependencies ghcFlavor =
+  [ f | ghcFlavor > Ghc943, f <- cabalFileBinary : cabalFileLibraries ]
+
 rtsDependencies :: GhcFlavor -> [FilePath]
 rtsDependencies ghcFlavor =
   if ghcFlavor > Ghc925 then
@@ -298,6 +302,7 @@ parsersAndLexers ghcFlavor =
 -- | Cabal "extra-source-files" files for ghc-lib-parser.
 ghcLibParserExtraFiles :: GhcFlavor -> [FilePath]
 ghcLibParserExtraFiles ghcFlavor =
+      cabalFileDependencies ghcFlavor ++
       rtsDependencies ghcFlavor ++
       compilerDependencies ghcFlavor ++
       platformH ghcFlavor ++
