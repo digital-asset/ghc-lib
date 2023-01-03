@@ -204,7 +204,7 @@ dataFiles ghcFlavor =
 
 cabalFileDependencies :: GhcFlavor -> [FilePath]
 cabalFileDependencies ghcFlavor =
-  [ f | ghcFlavor > Ghc943, f <- cabalFileBinary : cabalFileLibraries ]
+  [ f | ghcFlavor > Ghc944, f <- cabalFileBinary : cabalFileLibraries ]
 
 rtsDependencies :: GhcFlavor -> [FilePath]
 rtsDependencies ghcFlavor =
@@ -1080,12 +1080,14 @@ baseBounds ghcFlavor =
     Ghc924    -> "base >= 4.14 && < 4.16.4" -- [ghc-8.10.1, ghc-9.2.5)
     Ghc925    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
 
-    -- ghc-9.4.1, ghc-9.4.2, ghc-9.4.3 ship with base-4.17.0.0
+    -- ghc-9.4.1, ghc-9.4.2, ghc-9.4.3, ghc-9.4.4 all ship with
+    -- base-4.17.0.0
     Ghc941   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
     Ghc942   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
     Ghc943   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
+    Ghc944   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
 
-    GhcMaster -> "base > 4.16 && < 4.18" -- [ghc-9.2.1, ghc-9.6.1)
+    GhcMaster -> "base >= 4.16 && < 4.18" -- [ghc-9.2.1, ghc-9.6.1)
 
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]
