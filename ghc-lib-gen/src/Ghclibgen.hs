@@ -1193,17 +1193,26 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         [ "source-repository head"
         , "    type: git"
         , "    location: git@github.com:digital-asset/ghc-lib.git"
-        , ""
-        , "library"
+        ] ++
+        [ "flag threaded-rts"
+        , "  default: True"
+        , "  manual: True"
+        , "  description: Pass -DTHREADED_RTS to the C toolchain"
+        ] ++
+        [ "library"
         , "    default-language:   Haskell2010"
         , "    exposed: False"
         , "    include-dirs:"
+        ] ++ indent2 (ghcLibIncludeDirs ghcFlavor) ++
+        [ "    if flag(threaded-rts)"
+        , "        ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
+        , "        cc-options: -DTHREADED_RTS"
+        , "        cpp-options: -DTHREADED_RTS " <> generateCppOpts ghcFlavor customCppOpts
+        , "    else"
+        , "        ghc-options: -fobject-code -package=ghc-boot-th"
+        , "        cpp-options: " <> generateCppOpts ghcFlavor customCppOpts
         ] ++
-        indent2 (ghcLibIncludeDirs ghcFlavor) ++
-        [ "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
-        , "    cc-options: -DTHREADED_RTS"
-        , "    cpp-options: " <> generateCppOpts ghcFlavor customCppOpts
-        , "    if !os(windows)"
+        [ "    if !os(windows)"
         , "        build-depends: unix"
         , "    else"
         , "        build-depends: Win32"
@@ -1229,7 +1238,6 @@ generateCppOpts :: GhcFlavor -> [String] -> String
 generateCppOpts ghcFlavor customCppOpts =
   unwords $
     [ ghcStageDef ghcFlavor
-    , "-DTHREADED_RTS"
     , ghciDef ghcFlavor
     , ghcInGhciDef ghcFlavor
     ]
@@ -1288,20 +1296,29 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         , "data-dir: " ++ dataDir
         , "data-files:"
         ] ++ indent (dataFiles ghcFlavor) ++
-        [ "extra-source-files:"] ++
-        indent (performExtraFilesSubstitutions ghcFlavor ghcLibParserExtraFiles) ++
+        [ "extra-source-files:"] ++ indent (performExtraFilesSubstitutions ghcFlavor ghcLibParserExtraFiles) ++
         [ "source-repository head"
         , "    type: git"
         , "    location: git@github.com:digital-asset/ghc-lib.git"
-        , ""
-        , "library"
+        ] ++
+        [ "flag threaded-rts"
+        , "  default: True"
+        , "  manual: True"
+        , "  description: Pass -DTHREADED_RTS to the C toolchain"
+        ] ++
+        [ "library"
         , "    default-language:   Haskell2010"
         , "    exposed: False"
         , "    include-dirs:"] ++ indent2 (ghcLibParserIncludeDirs ghcFlavor) ++
-        [ "    ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
-        , "    cc-options: -DTHREADED_RTS"
-        , "    cpp-options: " <> generateCppOpts ghcFlavor customCppOpts
-        , "    if !os(windows)"
+        [ "    if flag(threaded-rts)"
+        , "        ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
+        , "        cc-options: -DTHREADED_RTS"
+        , "        cpp-options: -DTHREADED_RTS " <> generateCppOpts ghcFlavor customCppOpts
+        , "    else"
+        , "        ghc-options: -fobject-code -package=ghc-boot-th"
+        , "        cpp-options: " <> generateCppOpts ghcFlavor customCppOpts
+        ] ++
+        [ "    if !os(windows)"
         , "        build-depends: unix"
         , "    else"
         , "        build-depends: Win32"
