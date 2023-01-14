@@ -12,6 +12,8 @@ module Main (main) where
 -- We use 0.x for HEAD
 #if !MIN_VERSION_ghc_lib_parser(1,0,0)
 #  define GHC_MASTER
+#elif MIN_VERSION_ghc_lib_parser(9,6,0)
+#  define GHC_961
 #elif MIN_VERSION_ghc_lib_parser(9,4,0)
 #  define GHC_941
 #elif MIN_VERSION_ghc_lib_parser(9,2,0)
@@ -22,26 +24,26 @@ module Main (main) where
 #  define GHC_8101
 #endif
 
-#if defined (GHC_MASTER) || defined (GHC_941)
+#if defined (GHC_MASTER) || defined(GHC_961) || defined (GHC_941)
 import "ghc-lib-parser" GHC.Driver.Config.Diagnostic
 import "ghc-lib-parser" GHC.Utils.Logger
 import "ghc-lib-parser" GHC.Driver.Errors
 import "ghc-lib-parser" GHC.Driver.Errors.Types
 import "ghc-lib-parser" GHC.Types.Error
 #endif
-#if defined (GHC_MASTER) || defined (GHC_941)
+#if defined (GHC_MASTER) || defined(GHC_961) || defined (GHC_941)
 import "ghc-lib-parser" GHC.Driver.Config.Parser
 #endif
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
+#if defined (GHC_MASTER) || defined(GHC_961) || defined (GHC_941) || defined (GHC_921)
 import "ghc-lib-parser" GHC.Driver.Ppr
 import "ghc-lib-parser" GHC.Driver.Config
 #endif
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined(GHC_961) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Hs
 #else
 import "ghc-lib-parser" HsSyn
 #endif
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901)
+#if defined (GHC_MASTER) || defined(GHC_961) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901)
 import "ghc-lib-parser" GHC.Settings.Config
 import "ghc-lib-parser" GHC.Driver.Session
 import "ghc-lib-parser" GHC.Data.StringBuffer
@@ -57,7 +59,7 @@ import "ghc-lib-parser" GHC.Parser.Errors.Ppr
 #  endif
 import "ghc-lib-parser" GHC.Types.SrcLoc
 import "ghc-lib-parser" GHC.Utils.Panic
-#  if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
+#  if defined (GHC_MASTER) || defined(GHC_961) || defined (GHC_941) || defined (GHC_921)
 import "ghc-lib-parser" GHC.Types.SourceError
 #  else
 import "ghc-lib-parser" GHC.Driver.Types
@@ -81,12 +83,12 @@ import "ghc-lib-parser" HscTypes
 import "ghc-lib-parser" HeaderInfo
 import "ghc-lib-parser" ApiAnnotation
 #endif
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901)
+#if defined (GHC_MASTER) || defined(GHC_961) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901)
 import "ghc-lib-parser" GHC.Settings
 #elif defined (GHC_8101)
 import "ghc-lib-parser" ToolSettings
 #endif
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined(GHC_961) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
 import "ghc-lib-parser" GHC.Platform
 #else
 import "ghc-lib-parser" Bag
@@ -102,12 +104,12 @@ import Data.Generics.Uniplate.Data
 
 fakeSettings :: Settings
 fakeSettings = Settings
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
   { sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
   , sPlatformMisc=platformMisc
-#if !defined (GHC_MASTER) && !defined (GHC_941) && !defined (GHC_921)
+#if !(defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941) || defined (GHC_921))
   , sPlatformConstants=platformConstants
 #endif
   , sToolSettings=toolSettings
@@ -121,7 +123,7 @@ fakeSettings = Settings
   }
 #endif
   where
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
+#if defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
     toolSettings = ToolSettings {
       toolSettings_opt_P_fingerprint=fingerprint0
       }
@@ -134,7 +136,7 @@ fakeSettings = Settings
 #endif
 
     platform =
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
+#if defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941) || defined (GHC_921)
       genericPlatform
 #else
       Platform{
@@ -161,11 +163,11 @@ fakeSettings = Settings
       , platformUnregisterised=True
       }
 #endif
-#if !defined(GHC_MASTER) && !defined(GHC_941) && !defined(GHC_921)
+#if !defined(GHC_MASTER) && !defined (GHC_961) && !defined(GHC_941) && !defined(GHC_921)
     platformConstants = PlatformConstants{ pc_DYNAMIC_BY_DEFAULT=False, pc_WORD_SIZE=8 }
 #endif
 
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_961)
 -- Intentionally empty
 #elif defined (GHC_941) || defined (GHC_921) || defined (GHC_901) || defined (GHC_8101)
 fakeLlvmConfig :: LlvmConfig
@@ -181,7 +183,7 @@ parse :: String -> DynFlags -> String -> ParseResult (Located HsModule)
 parse :: String -> DynFlags -> String -> ParseResult (Located (HsModule GhcPs))
 #endif
 parse filename flags str =
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901)
+#if defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941) || defined (GHC_921) || defined (GHC_901)
   unP GHC.Parser.parseModule parseState
 #else
   unP Parser.parseModule parseState
@@ -190,7 +192,7 @@ parse filename flags str =
     location = mkRealSrcLoc (mkFastString filename) 1 1
     buffer = stringToStringBuffer str
     parseState =
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
+#if defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941) || defined (GHC_921)
       initParserState (initParserOpts flags) buffer location
 #else
       mkPState flags buffer location
@@ -199,7 +201,7 @@ parse filename flags str =
 parsePragmasIntoDynFlags :: DynFlags -> FilePath -> String -> IO (Maybe DynFlags)
 parsePragmasIntoDynFlags flags filepath str =
   catchErrors $ do
-#if defined (GHC_MASTER) || defined (GHC_941)
+#if defined (GHC_MASTER) || defined (GHC_961) ||  defined (GHC_941)
     let (_, opts) = getOptions (initParserOpts flags)
                       (stringToStringBuffer str) filepath
 #else
@@ -220,7 +222,7 @@ parsePragmasIntoDynFlags flags filepath str =
       putStrLn $ head
              [ showSDoc flags msg
              | msg <-
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_961)
                       pprMsgEnvelopeBagWithLocDefault . getMessages
 #elif defined (GHC_941)
                       pprMsgEnvelopeBagWithLoc . getMessages
@@ -238,14 +240,14 @@ idNot = mkVarUnqual (fsLit "not")
 
 isNegated :: HsExpr GhcPs -> Bool
 isNegated (HsApp _ (L _ (HsVar _ (L _ id))) _) = id == idNot
-#if defined (GHC_MASTER) || defined (GHC_941)
+#if defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941)
 isNegated (HsPar _ _ (L _ e) _) = isNegated e
 #else
 isNegated (HsPar _ (L _ e)) = isNegated e
 #endif
 isNegated _ = False
 
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
+#if defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941) || defined (GHC_921)
 analyzeExpr :: DynFlags -> LocatedA (HsExpr GhcPs) -> IO ()
 #else
 analyzeExpr :: DynFlags -> Located (HsExpr GhcPs) -> IO ()
@@ -254,7 +256,7 @@ analyzeExpr flags (L loc expr) = do
   case expr of
     HsApp _ (L _ (HsVar _ (L _ id))) (L _ e)
         | id == idNot, isNegated e ->
-#if defined (GHC_MASTER) || defined (GHC_941) || defined (GHC_921)
+#if defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941) || defined (GHC_921)
             putStrLn (showSDoc flags (ppr (locA loc))
 #else
             putStrLn (showSDoc flags (ppr loc)
@@ -263,7 +265,7 @@ analyzeExpr flags (L loc expr) = do
                       ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
     _ -> return ()
 
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_961)
 analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> IO ()
 #elif defined (GHC_941) || defined (GHC_921)
 analyzeModule :: DynFlags -> Located HsModule -> IO ()
@@ -273,7 +275,7 @@ analyzeModule :: DynFlags -> Located HsModule -> ApiAnns -> IO ()
 analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> ApiAnns -> IO ()
 #endif
 analyzeModule flags (L _ modu)
-#if !(defined (GHC_MASTER) || defined(GHC_941) || defined (GHC_921))
+#if !(defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941) || defined (GHC_921))
                                 _ -- ApiAnns
 #endif
  = sequence_ [analyzeExpr flags e | e <- universeBi modu]
@@ -286,14 +288,14 @@ main = do
       s <- readFile' file
       flags <-
         parsePragmasIntoDynFlags
-#if defined(GHC_MASTER)
+#if defined(GHC_MASTER) || defined (GHC_961)
           (defaultDynFlags fakeSettings) file s
 #else
           (defaultDynFlags fakeSettings fakeLlvmConfig) file s
 #endif
       whenJust flags $ \flags ->
          case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
-#if defined (GHC_MASTER) || defined (GHC_941)
+#if defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941)
             PFailed s -> report flags $ GhcPsMessage <$> snd (getPsMessages s)
 #elif defined (GHC_921)
             PFailed s -> report flags $ fmap pprError (snd (getMessages s))
@@ -303,7 +305,7 @@ main = do
             PFailed _ loc err -> report flags $ unitBag $ mkPlainErrMsg flags loc err
 #endif
             POk s m -> do
-#if defined (GHC_MASTER) || defined (GHC_941)
+#if defined (GHC_MASTER) || defined (GHC_961) || defined (GHC_941)
               let (wrns, errs) = getPsMessages s
               report flags $ GhcPsMessage <$> wrns
               report flags $ GhcPsMessage <$> errs
@@ -318,13 +320,13 @@ main = do
 #endif
               when (null errs) $
                 analyzeModule flags m
-#if !(defined (GHC_MASTER) || defined(GHC_941) || defined (GHC_921))
+#if !(defined (GHC_MASTER) || defined (GHC_961) || defined(GHC_941) || defined (GHC_921))
                                       (harvestAnns s)
 #endif
     _ -> fail "Exactly one file argument required"
   where
 
-#if defined (GHC_MASTER)
+#if defined (GHC_MASTER) || defined (GHC_961)
     report flags msgs = do
       let opts = initDiagOpts flags
           print_config = initPrintConfig flags
@@ -347,7 +349,7 @@ main = do
 #  endif
         ]
 #endif
-#if !(defined(GHC_MASTER) || defined(GHC_941) || defined (GHC_921))
+#if !(defined(GHC_MASTER) || defined (GHC_961) || defined(GHC_941) || defined (GHC_921))
     harvestAnns pst =
 #  if defined (GHC_901)
         ApiAnns {
