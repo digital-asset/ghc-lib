@@ -408,7 +408,7 @@ calcParserModules ghcFlavor = do
 
 applyPatchTemplateHaskellCabal :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellCabal ghcFlavor = do
-  when (ghcFlavor >= Ghc941 && ghcFlavor < GhcMaster) $ do
+  when (ghcFlavor >= Ghc941 && ghcFlavor < Ghc961) $ do
     -- In
     -- https://gitlab.haskell.org/ghc/ghc/-/commit/b151b65ec469405dcf25f9358e7e99bcc8c2b3ac
     -- (2022/7/05) a temporary change is made to provide for vendoring
@@ -447,7 +447,7 @@ applyPatchTemplateHaskellCabal ghcFlavor = do
           "        filepath"
       =<< readFile' "libraries/template-haskell/template-haskell.cabal.in"
 
-  when (ghcFlavor == GhcMaster) $ do
+  when (ghcFlavor >= Ghc961) $ do
     -- As of
     -- https://gitlab.haskell.org/ghc/ghc/-/commit/9034fadaf641c3821db6e066faaf1a62ed236c13
     -- GHC always relies on vendored filepath sources
@@ -1087,7 +1087,10 @@ baseBounds ghcFlavor =
     Ghc943   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
     Ghc944   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
 
-    GhcMaster -> "base >= 4.16 && < 4.18" -- [ghc-9.2.1, ghc-9.6.1)
+    -- require bytestring >= 0.11.3 which rules out ghc-9.2.1
+    Ghc961   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.7.1)
+
+    GhcMaster -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.7.1)
 
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]
@@ -1100,6 +1103,12 @@ commonBuildDepends ghcFlavor =
         baseBounds ghcFlavor
       ]
     specific
+       | ghcFlavor >= Ghc961  =
+         [
+           "ghc-prim > 0.2 && < 0.11"
+         , "bytestring >= 0.11.3 && < 0.12"
+         , "time >= 1.4 && < 1.13"
+         ]
        | ghcFlavor >= Ghc941  =
          [
            "ghc-prim > 0.2 && < 0.10"

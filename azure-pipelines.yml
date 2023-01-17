@@ -34,10 +34,33 @@ strategy:
     #      | ghc-9.0.*    |  >= 8.8.1   |
     #      | ghc-9.2.*    |  >= 8.10.1  |
     #      | ghc-9.4.1    |  >= 9.0.1   |
-    #      | > ghc-9.4.1  |  >= 9.2.1   |
+    #      | ghc-9.6.1    |  >= 9.2.2   | (9.2.1 is invalid)
+    #      | > ghc-9.6.1  |  >= 9.2.2   |
     #      +--------------+-------------+
     # (the general rule is only the last two compiler versions are
     # supported).
+
+    # +---------+-----------------+------------+
+    # | OS      | ghc-lib flavor  | GHC        |
+    # +=========+=================+============+
+    # | macOS   | ghc-9.6.1       | ghc-9.4.4  |
+    # | windows | ghc-9.6.1       | ghc-9.4.4  |
+    # +---------+-----------------+------------+
+    linux-ghc-9.6.1-9.4.4:
+      image: "ubuntu-22.04"
+      mode: "--ghc-flavor ghc-9.6.1"
+      resolver: "ghc-9.4.4"
+      stack-yaml: "stack-exact.yaml"
+    mac-ghc-9.6.1-9.4.4:
+      image: "macOS-latest"
+      mode: "--ghc-flavor ghc-9.6.1"
+      resolver: "ghc-9.4.4"
+      stack-yaml: "stack-exact.yaml"
+    windows-ghc-9.6.1-9.4.4:
+      image: "windows-latest"
+      mode: "--ghc-flavor ghc-9.6.1"
+      resolver: "ghc-9.4.4"
+      stack-yaml: "stack-exact.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
@@ -172,5 +195,6 @@ steps:
     displayName: run hlint
     condition: eq( variables['Agent.OS'], 'Linux' )
   - bash: |
+      GHCLIB_AZURE=1;export GHCLIB_AZURE
       stack runhaskell --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative -- CI.hs $(mode)  --stack-yaml $(stack-yaml) --resolver $(resolver)
     displayName: build
