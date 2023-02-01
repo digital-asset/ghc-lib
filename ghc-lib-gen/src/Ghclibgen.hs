@@ -1090,7 +1090,9 @@ baseBounds ghcFlavor =
     -- require bytestring >= 0.11.3 which rules out ghc-9.2.1
     Ghc961   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.7.1)
 
-    GhcMaster -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.7.1)
+    GhcMaster -- e.g. "9.7.20230119"
+              -- (c.f. 'rts/include/ghc-version.h'')
+      -> "base >= 4.17.0.0 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
 
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]
@@ -1347,6 +1349,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         -- https://github.com/digital-asset/ghc-lib/issues/27
         indent2 [ "compiler/cbits/genSym.c" ] ++
         indent2 [ if ghcFlavor >= Ghc901 then "compiler/cbits/cutils.c" else "compiler/parser/cutils.c" ] ++
+        indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor > Ghc961 ] ++
         [ "    hs-source-dirs:" ] ++
         indent2 (ghcLibParserHsSrcDirs False ghcFlavor lib) ++
         [ "    autogen-modules:" ] ++
