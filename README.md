@@ -1,10 +1,15 @@
 # ghc-lib [![Hackage version](https://img.shields.io/hackage/v/ghc-lib.svg?label=Hackage)](https://hackage.haskell.org/package/ghc-lib) [![Stackage version](https://www.stackage.org/package/ghc-lib/badge/nightly?label=Stackage)](https://www.stackage.org/package/ghc-lib) [![Build Status](https://dev.azure.com/digitalasset/ghc-lib/_apis/build/status/digital-asset.ghc-lib?branchName=master)](https://dev.azure.com/digitalasset/ghc-lib/_build/latest?definitionId=11&branchName=master)
-Copyright © 2019-2022, Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
+Copyright © 2019-2023, Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
 SPDX-License-Identifier: (Apache-2.0 OR BSD-3-Clause)
 
 The [GHC API](https://hackage.haskell.org/package/ghc) allows you to use the [GHC compiler](https://www.haskell.org/ghc/) as a library, so you can parse, analyze and compile Haskell code. The GHC API comes preinstalled with GHC, and is tied to that GHC version - if you are using GHC 8.6.3, you get version 8.6.3 of the API, and can't change it. The `ghc-lib` project solves that problem, letting you mix and match versions of the GHC compiler and GHC API. Why might you want that?
 
 * Imagine you are writing a tool to work with several versions of the GHC compiler. The GHC API changes significantly between each version, so doing this would require writing a lot of C preprocessor code to support it. An alternative is to use one version of `ghc-lib` which works across multiple versions of GHC.
+
+More precisely, building `ghc-lib` is the same as bootstrapping GHC. For a given ghc-lib 'flavor' (like `--ghc-flavor=ghc-9.6.1`), a build GHC can be at most "two versions behind & not newer" (e.g. `--ghc-flavor=ghc-9.6.1` ⇒ *[ghc-9.2.1, ghc-9.6.2)*[^1]. `ghc-lib` cabal files will not produce build plans for configurations outside of these bounds. Clients become subject to the same build constraints by transitivity e.g. hlint.
+
+[^1]: The set *ghc-9.2.1*, *ghc-9.2.2*, *...*, *ghc-9.4.1*, *ghc-9.4.2*, *...*, *ghc-9.6.1*
+
 * Imagine you are modifying the GHC API or want features from GHC HEAD. With `ghc-lib` you can depend on the revised GHC API, without upgrading the compiler used to build everything, speeding up iteration.
 
 The `ghc-lib` project provides two packages : `ghc-lib-parser` and `ghc-lib`. The `ghc-lib-parser` package is  that subset of the GHC API that is just enough to parse Haskell code. The `ghc-lib` package extends (and re-exports) `ghc-lib-parser` with the rest. While `ghc-lib` provides the full GHC API, it doesn't contain a runtime system, nor does it create a package database. That means you can't run code produced by `ghc-lib` (no runtime), and compiling off-the-shelf code is very hard (no package database containing the `base` library). What you can do:
@@ -20,7 +25,7 @@ There are some downsides to `ghc-lib`:
 
 ## Using `ghc-lib`
 
-The packages `ghc-lib-parser` and `ghc-lib` are available on [Hackage](https://hackage.haskell.org/), and can be used like any normal packages, e.g. `cabal install ghc-lib`. Since `ghc-lib-parser` and `ghc-lib` conflict perfectly with the GHC API and [`template-haskell`](https://hackage.haskell.org/package/template-haskell), ~the packages are not exposed by default so if you use GHC directly, you need to pass `-package ghc-lib`, the [GHC user guide](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/packages.html#using-packages) has more information : use the language extension `PackageImports` to do `import "ghc-lib" ...` or `import "ghc-lib-parser" ...` as approriate. There are two release streams within the `ghc-lib` name:
+The packages `ghc-lib-parser` and `ghc-lib` are available on [Hackage](https://hackage.haskell.org/), and can be used like any normal packages, e.g. `cabal install ghc-lib`. Since `ghc-lib-parser` and `ghc-lib` conflict perfectly with the GHC API and [`template-haskell`](https://hackage.haskell.org/package/template-haskell), the packages are not exposed by default so if you use GHC directly, you need to pass `-package ghc-lib`, the [GHC user guide](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/packages.html#using-packages) has more information : use the language extension `PackageImports` to do `import "ghc-lib" ...` or `import "ghc-lib-parser" ...` as approriate. There are two release streams within the `ghc-lib` name:
 
 * Version 8.8.1 will be the version of `ghc-lib` produced against the released GHC 8.8.1, once it comes out;
 * Version [0.20190204](http://hackage.haskell.org/package/ghc-lib-0.20190204) is the version of `ghc-lib` using GHC HEAD on the date 2019-02-04.
@@ -51,19 +56,6 @@ stack runhaskell --package extra --package optparse-applicative CI.hs -- --ghc-f
 Build `ghc-lib` using the [above instructions](#building-ghc-lib)  and upload the resulting `.tar.gz` files to [Hackage](https://hackage.haskell.org/upload).
 
 ## FAQ
-
-### Why doesn't `ghc-lib` version `X` build with GHC compiler version `Y`?
-
-Building `ghc-lib` is subject to the same minimum version requirements that apply to bootstrapping GHC itself. Those requirements are given in the following table.
-
-| Ghc flavor | >= version | < version |
-| ---------- |:----------:|:---------:|
-| ghc-8.8.*  | 8.4.4      | 8.10.1    |
-| ghc-8.10.* | 8.6.5      | 9.0.1     |
-| ghc-9.0.*  | 8.8.1      | 9.2.1     |
-| ghc-9.2.*  | 8.10.1     | 9.4.1     |
-| ghc-9.4.*  | 9.0.2      |
-| ghc-master | 9.2.1      |           |
 
 ### How do I use the `ghc-lib`/`ghc-lib-parser` version macros?
 
