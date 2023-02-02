@@ -6,7 +6,7 @@ The [GHC API](https://hackage.haskell.org/package/ghc) allows you to use the [GH
 
 * Imagine you are writing a tool to work with several versions of the GHC compiler. The GHC API changes significantly between each version, so doing this would require writing a lot of C preprocessor code to support it. An alternative is to use one version of `ghc-lib` which works across multiple versions of GHC.
 
-More precisely, building `ghc-lib` is the same as bootstrapping GHC. For a given ghc-lib 'flavor' (like `--ghc-flavor=ghc-9.6.1`), a build GHC can be at most "two versions behind & not newer" (e.g. `--ghc-flavor=ghc-9.6.1` ⇒ *[ghc-9.2.1, ghc-9.6.2)*[^1]. `ghc-lib` cabal files will not produce build plans for configurations outside of these bounds. Clients become subject to the same build constraints by transitivity e.g. hlint.
+More precisely, building `ghc-lib` is the same as bootstrapping GHC. For a given ghc-lib 'flavor' (like `--ghc-flavor=ghc-9.6.1`), a build GHC can be at most "two versions behind & not newer" (e.g. `--ghc-flavor=ghc-9.6.1` ⇒ *[ghc-9.2.1, ghc-9.6.2)*[^1]. `ghc-lib` cabal files will not produce build plans for configurations outside of these bounds. Clients assume the same build constraints through transitivity e.g. [HLint](https://github.com/ndmitchell/hlint).
 
 [^1]: The set *ghc-9.2.1*, *ghc-9.2.2*, *...*, *ghc-9.4.1*, *ghc-9.4.2*, *...*, *ghc-9.6.1*
 
