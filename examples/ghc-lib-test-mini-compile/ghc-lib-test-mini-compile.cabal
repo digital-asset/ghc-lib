@@ -7,7 +7,7 @@ x-license:           BSD3-Clause OR Apache-2.0
 license-file:        LICENSE
 author:              Shayne Fletcher (shayne@shaynefletcher.org)
 maintainer:          Shayne Fletcher (shayne@shaynefletcher.org) & Digital Asset
-copyright:           Digital Asset 2018-2022
+copyright:           Digital Asset 2018-2023
 build-type:          Simple
 category:            Development
 description:         "ghc-lib" usage example
@@ -31,3 +31,19 @@ flag daml-unit-ids
   description: If enabled, we use daml unit ids, e.g. daml-prim instead of ghc-prim
   manual: True
   default: False
+
+test-suite ghc-lib-test-mini-compile-test
+  type:                exitcode-stdio-1.0
+  default-language:    Haskell2010
+  main-is:             Main.hs
+  hs-source-dirs:      test
+  build-depends:       base >=4.11 && <5
+                     , directory
+                     , extra
+                     , filepath
+                     , optparse-applicative
+                     , tagged
+                     , tasty
+                     , tasty-hunit
+                     , utf8-string
+                     , ghc-lib-test-utils
