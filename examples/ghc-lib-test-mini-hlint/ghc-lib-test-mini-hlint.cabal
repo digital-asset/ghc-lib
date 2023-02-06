@@ -13,7 +13,6 @@ category:            Development
 description:         "ghc-lib-parser" usage example
 
 extra-source-files:  test/*.hs
-                     test/*.expect
 
 executable ghc-lib-test-mini-hlint
   main-is:             Main.hs
@@ -37,5 +36,6 @@ test-suite ghc-lib-test-mini-hlint-test
                      , optparse-applicative
                      , tagged
                      , tasty
-                     , tasty-golden
+                     , tasty-hunit
+                     , utf8-string
                      , ghc-lib-test-utils

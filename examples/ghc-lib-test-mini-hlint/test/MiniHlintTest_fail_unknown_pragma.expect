@@ -1,2 +1,0 @@
-test/MiniHlintTest_fail_unknown_pragma.hs:5:14: error:
-    Unsupported extension: Foo

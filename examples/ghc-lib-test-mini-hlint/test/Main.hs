@@ -6,24 +6,21 @@
 
 import Test.Tasty
 import Test.Tasty.Options
-import Test.Tasty.Golden
-import System.Info.Extra
-import System.FilePath (replaceExtension, takeFileName, takeDirectory)
-import System.FilePath.Posix((</>)) -- Generate / on all platforms
+import Test.Tasty.HUnit
 import Data.Proxy
 import Data.Maybe
 import Data.List.Extra
+import Data.ByteString.Lazy.UTF8
 
 import TestUtils
 
 main :: IO ()
 main = do
-  hsFiles <- findByExtension [".hs"] "test"
   defaultMainWithIngredients ings $
     askOption $ \ config@(StackYaml _) ->
       askOption $ \ resolver@(Resolver _) ->
-        askOption $ \ flavor@(GhcFlavor _) ->
-          goldenTests config resolver flavor hsFiles
+        askOption $ \ flavor@(GhcFlavor _) -> do
+          tests config resolver flavor
   where
     ings =
       includingOptions
@@ -33,46 +30,36 @@ main = do
         ]
       : defaultIngredients
 
--- Decide if a file is good to test.
-runTest :: GhcVersion -> String -> Bool
-runTest flavor f =
-    -- We need new expect files for ghc-9.6.1 onwards. It's getting
-    -- super tedious to maintain this test. Disable those affected for
-    -- now.
-    (isNothing . stripInfix "Main.hs" $ f) &&
-    ((isNothing . stripInfix "MiniHlintTest_respect_dynamic_pragma.hs" $ f) || (flavor >= Ghc8101) && (flavor < Ghc961)) &&
-    ((isNothing . stripInfix "MiniHlintTest_non_fatal_error.hs" $ f) || (flavor >= Ghc8101) && (flavor < Ghc961)) &&
-    ((isNothing . stripInfix "MiniHlintTest_fatal_error.hs" $ f) || (flavor < Ghc961)) &&
-    ((isNothing . stripInfix "MiniHlintTest_fail_unknown_pragma.hs" $ f) || (flavor < Ghc961))
+tests :: StackYaml -> Resolver -> GhcFlavor -> TestTree
+tests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFlavor ghcFlavor) = testGroup " All tests"
+  ([ testCase "MiniHlint.hs" $ testMiniHlintHs stackYaml stackResolver
+   , testCase "MiniHlint_fail_unknown_pragma.hs" $ testMiniHlintFailUnknownPragmaHs stackYaml stackResolver
+   , testCase "MiniHlint_fatal_error.hs" $ testMiniHlintFatalErrorHs stackYaml stackResolver ] ++
+   [ testCase "MiniHlint_non_fatal_error.hs" $ testMiniHlintNonFatalErrorHs stackYaml stackResolver | ghcFlavor >= Ghc8101 ] ++
+   [ testCase "MiniHlint_respect_dynamic_pragma.hs" $ testMiniHlintRespectDynamicPragmaHs stackYaml stackResolver | ghcFlavor >= Ghc8101 ]
+  )
 
-goldenTests :: StackYaml -> Resolver -> GhcFlavor -> [FilePath] -> TestTree
-goldenTests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFlavor ghcFlavor) hsFiles =
-  -- Note: You'll get very confused if you load expect files into your
-  -- emacs where you automatically delete whitespace at end of line on
-  -- save. In this case, disable the 'delete-trailing-whitespace' save
-  -- hook and set the local buffer variable 'show-trailing-whitespace'
-  -- to 't'. E.g. at this time on master, there's this example: 'Found
-  -- `qualified' in postpositive position. '
-  case (yaml, resolver) of
-    (_, _) ->
-      testGroup "mini-hlint tests"
-         [ goldenVsString
-              testName
-              expectFile
-              genStringAction
-         | hsFile <- filter (runTest ghcFlavor) hsFiles
-         , let testName = hsFile
-         , let expectFile =
-                 let f =
-                       if ghcFlavor >= Ghc941 then
-                         case takeFileName hsFile of
-                           "MiniHlintTest_fatal_error.hs" ->
-                             takeDirectory hsFile </> "MiniHlintTest_fatal_error-ghc-master.hs"
-                           "MiniHlintTest_non_fatal_error.hs" ->
-                             takeDirectory hsFile </> "MiniHlintTest_non_fatal_error-ghc-master.hs"
-                           _ -> hsFile
-                       else
-                         hsFile
-                 in replaceExtension f $ (if isWindows then ".windows" else "") ++ ".expect"
-         , let genStringAction = stack stackYaml stackResolver $ "--silent --no-terminal exec -- ghc-lib-test-mini-hlint " ++ hsFile
-         ]
+testMiniHlintHs :: StackYaml -> Resolver -> IO ()
+testMiniHlintHs stackYaml stackResolver = do
+  out <- stack stackYaml stackResolver $ "--silent --no-terminal exec -- ghc-lib-test-mini-hlint " ++ "test/MiniHlintTest.hs"
+  assertBool "MiniHlint.hs" (isJust $ stripInfix "lint : double negation" (toString out))
+
+testMiniHlintFailUnknownPragmaHs :: StackYaml -> Resolver -> IO ()
+testMiniHlintFailUnknownPragmaHs stackYaml stackResolver = do
+  out <- stack stackYaml stackResolver $ "--silent --no-terminal exec -- ghc-lib-test-mini-hlint " ++ "test/MiniHlintTest_fail_unknown_pragma.hs"
+  assertBool "MiniHlint_fail_unknown_pragma.hs" (isJust $ stripInfix "Unsupported extension" (toString out))
+
+testMiniHlintFatalErrorHs :: StackYaml -> Resolver -> IO ()
+testMiniHlintFatalErrorHs stackYaml stackResolver = do
+  out <- stack stackYaml stackResolver $ "--silent --no-terminal exec -- ghc-lib-test-mini-hlint " ++ "test/MiniHlintTest_fatal_error.hs"
+  assertBool "MiniHlint_fatal_error.hs" (isJust $ stripInfix "parse error" (toString out))
+
+testMiniHlintNonFatalErrorHs :: StackYaml -> Resolver -> IO ()
+testMiniHlintNonFatalErrorHs stackYaml stackResolver = do
+  out <- stack stackYaml stackResolver $ "--silent --no-terminal exec -- ghc-lib-test-mini-hlint " ++ "test/MiniHlintTest_non_fatal_error.hs"
+  assertBool "MiniHlint_non_fatal_error.hs" (isJust $ stripInfix "Found `qualified' in postpositive position" (toString out))
+
+testMiniHlintRespectDynamicPragmaHs :: StackYaml -> Resolver -> IO ()
+testMiniHlintRespectDynamicPragmaHs stackYaml stackResolver = do
+  out <- stack stackYaml stackResolver $ "--silent --no-terminal exec -- ghc-lib-test-mini-hlint " ++ "test/MiniHlintTest_respect_dynamic_pragma.hs"
+  assertEqual "MiniHlint_respect_dynamic_pragma.hs" (toString out) ""

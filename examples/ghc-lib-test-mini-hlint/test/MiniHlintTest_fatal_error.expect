@@ -1,2 +1,0 @@
-test/MiniHlintTest_fatal_error.hs:11:1: error:
-    parse error on input `{'

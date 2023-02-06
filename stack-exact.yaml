@@ -78,9 +78,10 @@ extra-deps:
 - yaml-0.11.8.0
 - witherable-0.4.2
 - QuickCheck-2.14.2
-# Dependencies (not already covered) for golden tests
+# Dependencies (not already covered) for tests
+- call-stack-0.4.0
 - tasty-1.4.3
-- tasty-golden-2.3.5
+- tasty-hunit-0.10.0.3
 - typed-process-0.2.10.1
 - utf8-string-1.0.2
 - async-2.2.4

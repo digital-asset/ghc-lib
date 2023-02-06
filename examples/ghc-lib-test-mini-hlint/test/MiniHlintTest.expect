@@ -1,1 +1,0 @@
-test/MiniHlintTest.hs:7:18-28 : lint : double negation `not (not x)'

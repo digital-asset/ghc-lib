@@ -1,7 +1,0 @@
-
-test/MiniHlintTest_non_fatal_error.hs:8:18: error:
-    Found `qualified' in postpositive position. 
-    Suggested fix: Perhaps you intended to use ImportQualifiedPost
-  |
-8 | import Data.List qualified
-  |                  ^^^^^^^^^
