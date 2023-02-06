@@ -71,7 +71,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "b69461a06166d2b1c600df87b87656d09122fb7c" -- 2023-01-30
+current = "7612dc713d5a1f108cfd6eb731435b090fbb8809" -- 2023-02-04
 
 -- Command line argument generators.
 
@@ -455,7 +455,7 @@ buildDists
     -- Run tests.
     let testArguments = "--test-arguments \"" ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ ghcFlavorOpt ghcFlavor ++ "\""
     stack $ "test ghc-lib-test-mini-hlint --no-terminal " ++ testArguments
-    stack "--no-terminal exec ghc-lib-test-mini-compile -- examples/ghc-lib-test-mini-compile/test/MiniCompileTest.hs | tail -10"
+    stack $ "test ghc-lib-test-mini-compile --no-terminal " ++ testArguments
 
 #if __GLASGOW_HASKELL__ == 808 && \
     (__GLASGOW_HASKELL_PATCHLEVEL1__ == 1 || __GLASGOW_HASKELL_PATCHLEVEL1__ == 2) && \
