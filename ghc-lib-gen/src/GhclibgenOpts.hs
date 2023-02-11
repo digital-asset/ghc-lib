@@ -74,29 +74,11 @@ ghclibgenOpts = GhclibgenOpts
 -- but for now it doesn’t seem worth it and having CI.hs be
 -- self-contained simplifies things.
 data GhcFlavor = DaGhc881
-               | Ghc881
-               | Ghc882
-               | Ghc883
-               | Ghc884
-               | Ghc8101
-               | Ghc8102
-               | Ghc8103
-               | Ghc8104
-               | Ghc8105
-               | Ghc8106
-               | Ghc8107
-               | Ghc901
-               | Ghc902
-               | Ghc921
-               | Ghc922
-               | Ghc923
-               | Ghc924
-               | Ghc925
-               | Ghc941
-               | Ghc942
-               | Ghc943
-               | Ghc944
-               | Ghc961
+               | Ghc881 | Ghc882 | Ghc883 | Ghc884
+               | Ghc8101 | Ghc8102 | Ghc8103 | Ghc8104 | Ghc8105 | Ghc8106 | Ghc8107
+               | Ghc901 | Ghc902
+               | Ghc921 | Ghc922 | Ghc923 | Ghc924 | Ghc925 | Ghc926
+               | Ghc941 | Ghc942 | Ghc943 | Ghc944 | Ghc961
                | GhcMaster
     deriving (Show, Eq, Ord)
 
@@ -108,32 +90,47 @@ ghcFlavorOpt = option readFlavor
 
 readFlavor :: ReadM GhcFlavor
 readFlavor = eitherReader $ \case
+    -- HEAD
+    "ghc-master" -> Right GhcMaster
+
+    -- ghc-9.6
     "ghc-9.6.1" -> Right Ghc961
+
+    -- ghc-9.4
     "ghc-9.4.4" -> Right Ghc944
     "ghc-9.4.3" -> Right Ghc943
     "ghc-9.4.2" -> Right Ghc942
     "ghc-9.4.1" -> Right Ghc941
+
+    -- ghc-9.2
+    "ghc-9.2.6" -> Right Ghc926
     "ghc-9.2.5" -> Right Ghc925
     "ghc-9.2.4" -> Right Ghc924
     "ghc-9.2.3" -> Right Ghc923
     "ghc-9.2.2" -> Right Ghc922
     "ghc-9.2.1" -> Right Ghc921
-    "ghc-9.0.1" -> Right Ghc901
+
+    -- ghc-9.0
     "ghc-9.0.2" -> Right Ghc902
-    "ghc-8.10.1" -> Right Ghc8101
-    "ghc-8.10.2" -> Right Ghc8102
-    "ghc-8.10.3" -> Right Ghc8103
-    "ghc-8.10.4" -> Right Ghc8104
-    "ghc-8.10.5" -> Right Ghc8105
-    "ghc-8.10.6" -> Right Ghc8106
+    "ghc-9.0.1" -> Right Ghc901
+
+    -- ghc-8.10
     "ghc-8.10.7" -> Right Ghc8107
-    "ghc-8.8.1" -> Right Ghc881
-    "ghc-8.8.2" -> Right Ghc882
-    "ghc-8.8.3" -> Right Ghc883
+    "ghc-8.10.6" -> Right Ghc8106
+    "ghc-8.10.5" -> Right Ghc8105
+    "ghc-8.10.4" -> Right Ghc8104
+    "ghc-8.10.3" -> Right Ghc8103
+    "ghc-8.10.2" -> Right Ghc8102
+    "ghc-8.10.1" -> Right Ghc8101
+
+    -- ghc-8.8
     "ghc-8.8.4" -> Right Ghc884
+    "ghc-8.8.3" -> Right Ghc883
+    "ghc-8.8.2" -> Right Ghc882
+    "ghc-8.8.1" -> Right Ghc881
     "da-ghc-8.8.1" -> Right DaGhc881
-    "ghc-master" -> Right GhcMaster
-    flavor -> Left $ "Failed to parse ghc flavor " <> show flavor <> " expected ghc-master, ghc-9.0.1, ghc-8.8.1, ghc-8.8.2, ghc-8.8.3, ghc-8.8.4, da-ghc-8.8.1, ghc-8.10.1, ghc-8.10.2, ghc-8.10.3, ghc-8.10.4, ghc-8.10.5, ghc-8.10.6, ghc-8.10.7, ghc-9.0.1, ghc-9.0.2, ghc-9.2.1, ghc-9.2.2, ghc-9.2.3 or ghc-9.4.1"
+
+    flavor -> Left $ "Unknown or unsupported flavor \"" ++ flavor ++ "\""
 
 cppCustomFlagsOpt :: Parser [String]
 cppCustomFlagsOpt =
