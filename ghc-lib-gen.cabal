@@ -28,6 +28,7 @@ library
                      , extra >=1.6
   hs-source-dirs:    ghc-lib-gen/src
   exposed-modules:   Ghclibgen
+                     GhclibgenFlavor
                      GhclibgenOpts
   other-modules:     Paths_ghc_lib_gen
   autogen-modules:   Paths_ghc_lib_gen
