@@ -3,6 +3,7 @@
 -- (Apache-2.0 OR BSD-3-Clause)
 
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 #if __GLASGOW_HASKELL__ >= 902
@@ -63,8 +64,8 @@ import GhclibgenOpts
 
 -- | Cabal files from libraries inside GHC that are merged together.
 cabalFileLibraries :: [FilePath]
-cabalFileLibraries =
-    [ "libraries/template-haskell/template-haskell.cabal"
+cabalFileLibraries = [
+      "libraries/template-haskell/template-haskell.cabal"
     , "libraries/ghc-heap/ghc-heap.cabal"
     , "libraries/ghc-boot-th/ghc-boot-th.cabal"
     , "libraries/ghc-boot/ghc-boot.cabal"
@@ -74,14 +75,13 @@ cabalFileLibraries =
 
 -- | C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: GhcFlavor -> [FilePath]
-ghcLibParserIncludeDirs ghcFlavor =
-  -- For
-  (if ghcFlavor > Ghc926 {- >= ghc-9.4.0 -}
-  then [ "rts/include" ]  -- ghcconfig.h, ghcversion.h
-  else [ "includes" ]) ++ -- ghcconfig.h, MachDeps.h, MachRegs.h, CodeGen.Platform.hs
-  -- Others
+ghcLibParserIncludeDirs ghcFlavor = (case ghcSeries ghcFlavor of
+  series | series >= Ghc94 -> [ "rts/include" ] -- ghcconfig.h, ghcversion.h
+  series | series < Ghc94 -> [ "includes" ] -- ghcconfig.h, MachDeps.h, MachRegs.h, CodeGen.Platform.hs
+  _ -> error "ghcLibParserIncludeDirs: impossible case!"
+  ) ++
   [ hadrianGeneratedRoot ghcFlavor, stage0Compiler, "compiler" ] ++
-  [ "compiler/utils" | ghcFlavor < Ghc8101 ]
+  [ "compiler/utils" | ghcSeries ghcFlavor < Ghc810 ]
 
 -- Sort by length so the longest paths are at the front. We do this
 -- so that in 'calcParserModules', longer substituions are performed
@@ -111,25 +111,16 @@ ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
         -- 'ghc-lib-parser.cabal' (i.e. 'forParserDepends == False'),
         -- we exclude these directories.
         [ dir | forParserDepends, dir <- [ stage0Ghci, stage0GhcHeap ] ] ++
-        -- This next conditional just smooths over a 'master'
-        -- vs. '8.8.1' branch difference (relating to a file
-        -- 'GhcVersion.hs' IIRC).
-        [ stage0GhcBoot | ghcFlavor >= Ghc8101 ] ++
+        [ stage0GhcBoot | ghcSeries ghcFlavor >= Ghc810 ] ++
         map takeDirectory cabalFileLibraries ++
         map (dropTrailingPathSeparator . normalise) (askFiles lib "hs-source-dirs:")
 
       excludes = Set.fromList $
-        map ("compiler" </>) (
-          [ "codeGen"
-          , "hieFile"
-          , "llvmGen"
-          , "rename"
-          , "stgSyn"
-          , "stranal"
-          ] ++
-          [ d | ghcFlavor >= Ghc901, d <- [ "typecheck", "specialise", "cmm" ] ] ++
-          [ "nativeGen" | ghcFlavor < Ghc901 ] ++ -- Since 2020-01-04. See https://gitlab.haskell.org/ghc/ghc/commit/d561c8f6244f8280a2483e8753c38e39d34c1f01.
-          [ "deSugar" | ghcFlavor >= Ghc8101 && not forParserDepends ]
+        ("compiler" </>) <$> (
+          [ "codeGen", "hieFile", "llvmGen" , "rename", "stgSyn", "stranal" ] ++
+          [ d | ghcSeries ghcFlavor >= Ghc90, d <- [ "typecheck", "specialise", "cmm" ] ] ++
+          [ "nativeGen" | ghcSeries ghcFlavor < Ghc90 ] ++
+          [ "deSugar" | ghcSeries ghcFlavor >= Ghc810 && not forParserDepends ]
         )
   in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
 
@@ -142,31 +133,21 @@ ghcLibHsSrcDirs :: GhcFlavor -> [Cabal] -> [FilePath]
 ghcLibHsSrcDirs ghcFlavor lib =
   let all = Set.fromList $
         [ stage0Compiler ] ++
-        [ stage0GhcBoot | ghcFlavor >= Ghc8101 ] ++ -- 'GHC.Platform' is in 'ghc-lib-parser', 'GHC.Platform.Host' is not.
+        [ stage0GhcBoot | ghcSeries ghcFlavor >= Ghc810 ] ++
         map takeDirectory cabalFileLibraries ++
         map (dropTrailingPathSeparator . normalise) (askFiles lib "hs-source-dirs:")
       excludes = Set.fromList $
-        [ "compiler/basicTypes"
-        , "compiler/parser"
-        , "compiler/types"
-        , "libraries/ghc-boot-th"
-        , "libraries/ghc-heap"
-        ] ++
-        [ "compiler/cmm" | ghcFlavor >= Ghc901 ]
-
+        (("compiler" </>) <$> [ "basicTypes", "parser", "types" ]) ++ (("libraries" </>) <$> [ "ghc-boot-th", "ghc-heap" ]) ++ [ "compiler/cmm" | ghcFlavor >= Ghc901 ]
   in sortDiffListByLength all excludes -- Not so important. Here for symmetry with 'ghcLibParserHsSrcDirs' I think.
 
--- | Cabal file for the GHC binary.
+dataDir :: FilePath
 cabalFileBinary :: FilePath
-cabalFileBinary = "ghc/ghc-bin.cabal"
-
--- We set the hadrian build root to 'ghc-lib'. These constants appear
--- so frequently it's convenient to alias them for syntactic brevity.
 ghcLibGeneratedPath :: FilePath
-ghcLibGeneratedPath = "ghc-lib/generated"
-
 stage0Root, stage0Compiler, stage0Rts, stage0Libraries, stage0Lib :: FilePath
 stage0GhcHeap, stage0GhcBoot, stage0Ghci :: FilePath
+dataDir = stage0Lib
+cabalFileBinary = "ghc/ghc-bin.cabal"
+ghcLibGeneratedPath = "ghc-lib/generated"
 stage0Root = "ghc-lib/stage0"
 stage0Lib = stage0Root </> "lib"
 stage0Libraries = stage0Root </> "libraries"
@@ -178,27 +159,19 @@ stage0Ghci = stage0Libraries </> "ghci/build"
 
 -- | Sources generated by Hadrian are written under this directory.
 hadrianGeneratedRoot :: GhcFlavor -> FilePath
-hadrianGeneratedRoot ghcFlavor
-  | ghcFlavor >= Ghc8101 = stage0Lib
-  | otherwise            = ghcLibGeneratedPath
-
--- |'dataDir' is the directory cabal looks for data files to install,
--- relative to the source directory.
-dataDir :: FilePath
-dataDir = stage0Lib
+hadrianGeneratedRoot = \case
+  f | f >= Ghc8101 -> stage0Lib
+  _ -> ghcLibGeneratedPath
 
 -- |'dataFiles' is a list of files to be installed for run-time use by
 -- the package.
 dataFiles :: GhcFlavor -> [FilePath]
 dataFiles ghcFlavor =
-    -- From ghc/ghc.mk: "The GHC programs need to depend on all the
-    -- helper programs they might call and the settings files they
-    -- use."
-    [ "settings"
-    , "llvm-targets"
-    , "llvm-passes"
-    ] ++
-    [ "platformConstants" | ghcFlavor < Ghc921 ]
+  -- From ghc/ghc.mk: "The GHC programs need to depend on all the
+  -- helper programs they might call and the settings files they
+  -- use."
+  [ "settings", "llvm-targets", "llvm-passes"] ++
+  [ "platformConstants" | ghcSeries ghcFlavor < Ghc92 ]
 
 -- | See 'hadrian/src/Rules/Generate.hs'.
 
@@ -208,32 +181,22 @@ cabalFileDependencies ghcFlavor =
 
 rtsDependencies :: GhcFlavor -> [FilePath]
 rtsDependencies ghcFlavor =
-  if ghcFlavor > Ghc926 {- >= ghc-4.4.0 -} then
-    map ((stage0Rts </> "include") </>) ["ghcautoconf.h", "ghcplatform.h", "DerivedConstants.h"]
+  if ghcSeries ghcFlavor >= Ghc94 then
+    ((stage0Rts </> "include") </>) <$> ["ghcautoconf.h", "ghcplatform.h", "DerivedConstants.h"]
   else
     includesDependencies ghcFlavor ++ derivedConstantsDependencies ghcFlavor
   where
     includesDependencies :: GhcFlavor -> [FilePath]
     includesDependencies ghcFlavor =
-        map (hadrianGeneratedRoot ghcFlavor </>)
-          [ "ghcautoconf.h", "ghcplatform.h", "ghcversion.h"]
-
+        (hadrianGeneratedRoot ghcFlavor </>) <$> [ "ghcautoconf.h", "ghcplatform.h", "ghcversion.h"]
     derivedConstantsDependencies :: GhcFlavor -> [FilePath]
     derivedConstantsDependencies ghcFlavor =
-         map (hadrianGeneratedRoot ghcFlavor </>)
-           ("DerivedConstants.h"
-            : [ x | ghcFlavor <= Ghc902
-                , x <- [ "GHCConstantsHaskellExports.hs"
-                       , "GHCConstantsHaskellWrappers.hs"
-                       , "GHCConstantsHaskellType.hs"
-                       ]
-              ]
-           )
+      (hadrianGeneratedRoot ghcFlavor </>) <$> ("DerivedConstants.h" : [ x | ghcSeries ghcFlavor <= Ghc90, x <- [ "GHCConstantsHaskellExports.hs", "GHCConstantsHaskellWrappers.hs", "GHCConstantsHaskellType.hs" ] ] )
 
 compilerDependencies :: GhcFlavor -> [FilePath]
 compilerDependencies ghcFlavor =
-  map (stage0Compiler </>) $
-    [ "primop-can-fail.hs-incl"
+  (stage0Compiler </>) <$> [
+      "primop-can-fail.hs-incl"
     , "primop-code-size.hs-incl"
     , "primop-commutable.hs-incl"
     , "primop-data-decl.hs-incl"
@@ -249,76 +212,53 @@ compilerDependencies ghcFlavor =
     , "primop-vector-tys.hs-incl"
     , "primop-vector-uniques.hs-incl"
     ] ++
-    [ "primop-docs.hs-incl" | ghcFlavor >= Ghc901 ] ++
-    [ "GHC/Platform/Constants.hs" | ghcFlavor >= Ghc921 ]
+    [ "primop-docs.hs-incl" | ghcSeries ghcFlavor >= Ghc90 ] ++
+    [ "GHC/Platform/Constants.hs" | ghcSeries ghcFlavor >= Ghc92 ]
 
 platformH :: GhcFlavor -> [FilePath]
 platformH ghcFlavor =
-  [ stage0Compiler </> "ghc_boot_platform.h" | ghcFlavor < Ghc8101 ]
+  [ stage0Compiler </> "ghc_boot_platform.h" | ghcSeries ghcFlavor < Ghc810 ]
 
 packageCode :: GhcFlavor -> [FilePath]
 packageCode ghcFlavor =
-  [ stage0Compiler </> "Config.hs" | ghcFlavor < Ghc901 ] ++
-  [ stage0GhcBoot  </> "GHC/Version.hs" | ghcFlavor >= Ghc8101 ] ++
-  [ stage0GhcBoot  </> "GHC/Platform/Host.hs" | ghcFlavor >= Ghc8101 ] ++
-  [ stage0Compiler </> "GHC/Settings/Config.hs" | ghcFlavor >= Ghc901 ]
+  [ stage0Compiler </> "GHC/Settings/Config.hs" | ghcSeries ghcFlavor >= Ghc90 ] ++
+  [ stage0Compiler </> "Config.hs" | ghcSeries ghcFlavor < Ghc90 ] ++
+  [ stage0GhcBoot </> "GHC" </> x | ghcSeries ghcFlavor >= Ghc810,  x <- ["Version.hs", "Platform/Host.hs"] ]
 
 fingerprint :: GhcFlavor -> [FilePath]
 fingerprint ghcFlavor =
-  [ "compiler/utils/Fingerprint.hsc" | ghcFlavor < Ghc8101 ]
+  [ "compiler/utils/Fingerprint.hsc" | ghcSeries ghcFlavor < Ghc810 ]
 
--- | The C headers shipped with ghc-lib. These globs get glommed onto
--- the 'extraFiles' above as 'extra-source-files'.
 cHeaders :: GhcFlavor -> [String]
 cHeaders ghcFlavor =
-  (if ghcFlavor > Ghc926 {- >= ghc-9.4.0 -}
-  then
-    [ "rts/include/ghcconfig.h"
-    , "rts/include/ghcversion.h" -- now generated by ./configure
-    , "compiler/MachRegs.h"
-    , "compiler/CodeGen.Platform.h"
-    , "compiler/Bytecodes.h"
-    , "compiler/ClosureTypes.h"
-    , "compiler/FunTypes.h"
-    , "compiler/Unique.h"
-    , "compiler/ghc-llvm-version.h"
-    ]
-  else
-    [ "includes/MachDeps.h"
-    , "includes/stg/MachRegs.h"
-    , "includes/CodeGen.Platform.hs"
-    , "compiler/Unique.h"
-    ]) ++
-  [ "compiler/HsVersions.h" | ghcFlavor <= Ghc926 {- < ghc-9.4.0 -} ] ++
-  [ f | ghcFlavor < Ghc8101, f <- [ "compiler/nativeGen/NCG.h", "compiler/utils/md5.h"] ]
+   [ f | ghcSeries ghcFlavor >= Ghc94, f <- (("rts/include" </>) <$> ["ghcconfig.h", "ghcversion.h" ]) ++ (("compiler" </>) <$>[ "MachRegs.h", "CodeGen.Platform.h", "Bytecodes.h", "ClosureTypes.h", "FunTypes.h", "Unique.h", "ghc-llvm-version.h" ]) ] ++
+   [ f | ghcSeries ghcFlavor < Ghc94, f <- (("includes" </>)  <$> [ "MachDeps.h", "stg/MachRegs.h", "CodeGen.Platform.hs"]) ++ (("compiler" </>) <$> [ "Unique.h", "HsVersions.h" ]) ] ++
+   [ f | ghcSeries ghcFlavor < Ghc810, f <- ("compiler" </>) <$> [ "nativeGen/NCG.h", "utils/md5.h"] ]
 
 parsersAndLexers :: GhcFlavor -> [FilePath]
-parsersAndLexers ghcFlavor =
-  map ("compiler" </>) $
-      [ x |  ghcFlavor < Ghc901, x <- [ "parser/Parser.y", "parser/Lexer.x"] ] ++
-      [ x |  ghcFlavor >= Ghc901, x <- [ "GHC/Parser.y", "GHC/Parser/Lexer.x" ] ] ++
-      [ x |  ghcFlavor > Ghc926 {- >= ghc-9.4.0 -}, x <- [ "GHC/Parser/HaddockLex.x", "GHC/Parser.hs-boot" ] ]
+parsersAndLexers ghcFlavor = ("compiler" </>) <$>
+   [ x |  ghcSeries ghcFlavor < Ghc90, x <- ("parser" </>) <$> [ "Parser.y", "Lexer.x"] ] ++
+   [ x |  ghcSeries ghcFlavor >= Ghc90, x <- ("GHC" </>) <$> [ "Parser.y", "Parser/Lexer.x" ] ] ++
+   [ x |  ghcSeries ghcFlavor >= Ghc94, x <- ("GHC" </>) <$> [ "Parser/HaddockLex.x", "Parser.hs-boot" ] ]
 
--- | Cabal "extra-source-files" files for ghc-lib-parser.
 ghcLibParserExtraFiles :: GhcFlavor -> [FilePath]
 ghcLibParserExtraFiles ghcFlavor =
-      cabalFileDependencies ghcFlavor ++
-      rtsDependencies ghcFlavor ++
-      compilerDependencies ghcFlavor ++
-      platformH ghcFlavor ++
-      fingerprint ghcFlavor ++
-      packageCode ghcFlavor ++
-      parsersAndLexers ghcFlavor ++
-      cHeaders ghcFlavor
+  cabalFileDependencies ghcFlavor ++
+  rtsDependencies ghcFlavor ++
+  compilerDependencies ghcFlavor ++
+  platformH ghcFlavor ++
+  fingerprint ghcFlavor ++
+  packageCode ghcFlavor ++
+  parsersAndLexers ghcFlavor ++
+  cHeaders ghcFlavor
 
--- | Cabal "extra-source-files" for ghc-lib.
 ghcLibExtraFiles :: GhcFlavor -> [FilePath]
 ghcLibExtraFiles ghcFlavor =
-      rtsDependencies ghcFlavor ++
-      compilerDependencies ghcFlavor ++
-      platformH ghcFlavor ++
-      fingerprint ghcFlavor ++
-      cHeaders ghcFlavor
+  rtsDependencies ghcFlavor ++
+  compilerDependencies ghcFlavor ++
+  platformH ghcFlavor ++
+  fingerprint ghcFlavor ++
+  cHeaders ghcFlavor
 
 -- | We generate some "placeholder" modules in `calcParserModues` They
 -- get written here.
@@ -334,7 +274,7 @@ calcParserModules ghcFlavor = do
   genPlaceholderModules "compiler"
   genPlaceholderModules "libraries/ghc-heap"
   genPlaceholderModules "libraries/ghci"
-  when (ghcFlavor > Ghc926 {- >= ghc-9.4.0 -}) $ do
+  when (ghcSeries ghcFlavor >= Ghc94) $ do
     copyFile "compiler/GHC/Parser.hs-boot" (placeholderModulesDir </> "GHC/Parser.hs-boot")
 
   let includeDirs = map ("-I" ++ ) (ghcLibParserIncludeDirs ghcFlavor)
@@ -343,7 +283,7 @@ calcParserModules ghcFlavor = do
       -- See [Note: GHC now depends on exceptions package].
       cmd = unwords $
         [ "stack exec" ] ++
-        [ "--package exceptions" | ghcFlavor >= Ghc901 ] ++
+        [ "--package exceptions" | ghcSeries ghcFlavor >= Ghc90 ] ++
         [ "--stack-yaml hadrian/stack.yaml" ] ++
         [ "-- ghc"
         , "-dep-suffix ''"
@@ -355,11 +295,12 @@ calcParserModules ghcFlavor = do
         , "-ignore-package ghci"
         , "-package base"
         ] ++
-        [ "-package exceptions" | ghcFlavor >= Ghc901 ] ++
+        [ "-package exceptions" | ghcSeries ghcFlavor >= Ghc90 ] ++
         hsSrcIncludes ++
-        map (placeholderModulesDir </>) (
-          [ "GHC" </> "Parser.hs" | ghcFlavor >= Ghc901] ++
-          [ "Parser.hs" | ghcFlavor < Ghc901]
+        ((placeholderModulesDir </>) <$> (
+          [ "GHC" </> "Parser.hs" | ghcSeries ghcFlavor >= Ghc90] ++
+          [ "Parser.hs" | ghcSeries ghcFlavor < Ghc90]
+         )
         )
 
   putStrLn "# Generating 'ghc/.parser-depends'..."
@@ -388,27 +329,14 @@ calcParserModules ghcFlavor = do
       -- '.parser-depends' but are required by ghc-lib-parser. We
       -- intervene and patch things up.
       extraModules =
-        [ x | ghcFlavor > Ghc926 {- >= ghc-9.4.0 -}
-            , x <- [ "GHC.Runtime.Interpreter"
-                   , "GHCi.BinaryArray"
-                   , "GHCi.BreakArray"
-                   , "GHCi.ResolvedBCO"
-                   , "GHC.Driver.Config.Parser"
-                   ]
-        ] ++
-        [ x | ghcFlavor > Ghc902
-            ,  x <- [ "GHC.Driver.Config"
-                    , "GHC.Parser.Errors.Ppr"
-                    ]
-        ] ++
-        [ if ghcFlavor >= Ghc901 then "GHC.Parser.Header" else "HeaderInfo"
-        , if ghcFlavor >= Ghc8101 then "GHC.Hs.Dump" else "HsDumpAst"
-        ]
+        [ x | ghcSeries ghcFlavor >= Ghc94, x <- [ "GHC.Runtime.Interpreter", "GHCi.BinaryArray", "GHCi.BreakArray", "GHCi.ResolvedBCO", "GHC.Driver.Config.Parser" ] ] ++
+        [ x | ghcSeries ghcFlavor >= Ghc92,  x <- [ "GHC.Driver.Config", "GHC.Parser.Errors.Ppr" ] ] ++
+        [ if ghcSeries ghcFlavor >= Ghc90 then "GHC.Parser.Header" else "HeaderInfo", if ghcSeries ghcFlavor >= Ghc810 then "GHC.Hs.Dump" else "HsDumpAst" ]
   return $ nubSort (modules ++ extraModules)
 
 applyPatchTemplateHaskellCabal :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellCabal ghcFlavor = do
-  when (ghcFlavor >= Ghc941 && ghcFlavor < Ghc961) $ do
+  when (ghcSeries ghcFlavor == Ghc94) $ do
     -- In
     -- https://gitlab.haskell.org/ghc/ghc/-/commit/b151b65ec469405dcf25f9358e7e99bcc8c2b3ac
     -- (2022/7/05) a temporary change is made to provide for vendoring
@@ -447,7 +375,7 @@ applyPatchTemplateHaskellCabal ghcFlavor = do
           "        filepath"
       =<< readFile' "libraries/template-haskell/template-haskell.cabal.in"
 
-  when (ghcFlavor >= Ghc961) $ do
+  when (ghcSeries ghcFlavor >= Ghc96) $ do
     -- As of
     -- https://gitlab.haskell.org/ghc/ghc/-/commit/9034fadaf641c3821db6e066faaf1a62ed236c13
     -- GHC always relies on vendored filepath sources
@@ -509,20 +437,20 @@ renameFileRewriteSrcs root f dirs exts = do
 -- https://github.com/digital-asset/ghc-lib/issues/204).
 applyPatchHsVersions :: GhcFlavor -> IO ()
 applyPatchHsVersions ghcFlavor =
-  when (ghcFlavor <= Ghc926 {- < ghc-9.4.0 -}) $ do
+  when (ghcSeries ghcFlavor < Ghc94) $ do
     renameFileRewriteSrcs "compiler" "HsVersions.h" ["compiler", stage0Compiler] [".hs", ".y", ".hsc"]
 
 -- Rename 'DerivedConstants.h' to 'GhclibDerivedConstants.h'.
 applyPatchDerivedConstants :: GhcFlavor -> IO ()
 applyPatchDerivedConstants ghcFlavor =
     renameFileRewriteSrcs
-      (if ghcFlavor > Ghc926 {- >= ghc-9.2.6 -} then
+      (if ghcSeries ghcFlavor >= Ghc94 then
         stage0Rts </> "include"
       else
         hadrianGeneratedRoot ghcFlavor
       )
       "DerivedConstants.h"
-      (["compiler", stage0Compiler] ++ [stage0Rts | ghcFlavor > Ghc926 {- >= ghc-9.4.0 -}])
+      (["compiler", stage0Compiler] ++ [stage0Rts | ghcSeries ghcFlavor >= Ghc94 ])
       [".hs", ".y", ".hsc"]
 
 -- Selectively disable optimizations in some particular files so as
@@ -532,8 +460,8 @@ applyPatchDerivedConstants ghcFlavor =
 applyPatchDisableCompileTimeOptimizations :: GhcFlavor -> IO ()
 applyPatchDisableCompileTimeOptimizations ghcFlavor =
     let files
-          | ghcFlavor >= Ghc901  = [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
-          | ghcFlavor >= Ghc8101 = [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
+          | ghcSeries ghcFlavor >= Ghc90 = [ "compiler/GHC/Driver/Session.hs", "compiler/GHC/Hs.hs" ]
+          | ghcSeries ghcFlavor >= Ghc810 = [ "compiler/main/DynFlags.hs", "compiler/GHC/Hs.hs" ]
           | otherwise            = [ "compiler/main/DynFlags.hs", "compiler/hsSyn/HsInstances.hs" ]
     in
       forM_ files $
@@ -564,7 +492,7 @@ applyPatchGHCiInfoTable ghcFlavor = do
            , "_flushExec = error \"_flushExec stub for ghc-lib\""
            ])
       =<< readFile' infoTableHsc
-  when(ghcFlavor >= Ghc921) $ do
+  when(ghcSeries ghcFlavor >= Ghc92) $ do
     writeFile infoTableHsc .
       replace
         (unlines newExecConItblBefore)
@@ -579,17 +507,19 @@ applyPatchGHCiInfoTable ghcFlavor = do
            "fillExecBuffer :: CSize -> (Ptr a -> Ptr a -> IO ()) -> IO (Ptr a)\n" <>
          "#endif\n") .
       replace
-        (if ghcFlavor > Ghc926 {- <= ghc-9.4.0 -}
+        (if ghcSeries ghcFlavor >= Ghc94
            then
              "#error Sorry, rts versions <= 1.0 are not supported"
            else
-             "#error hi")
-      (unlines
-         [  "foreign import ccall unsafe \"allocateExec\""
+             "#error hi"
+        )
+      (unlines [
+           "foreign import ccall unsafe \"allocateExec\""
           , "  _allocateExec :: CUInt -> Ptr (Ptr a) -> IO (Ptr a)"
           , ""
           , "foreign import ccall unsafe \"flushExec\""
-          , "  _flushExec :: CUInt -> Ptr a -> IO ()" ])
+          , "  _flushExec :: CUInt -> Ptr a -> IO ()" ]
+      )
       =<< readFile' infoTableHsc
   where
     infoTableHsc = "libraries/ghci/GHCi/InfoTable.hsc"
@@ -651,13 +581,13 @@ applyPatchGHCiInfoTable ghcFlavor = do
 
 applyPatchGHCiMessage :: GhcFlavor -> IO ()
 applyPatchGHCiMessage ghcFlavor =
-  when (ghcFlavor >= Ghc921) $ do
+  when (ghcSeries ghcFlavor >= Ghc92) $ do
     -- Synthesize a definition of MIN_VERSION_ghc_heap. If X.Y.Z is
     -- the current version, then MIN_VERSION_ghc_heap(a, b, c) is a
     -- test of whether X.Y.Z >= a.b.c (that is, ghc-heap X.Y.Z is at
     -- least a.b.c).
     versionText <-
-      if ghcFlavor <= Ghc926 {- < ghc-9.4.0 -}
+      if ghcSeries ghcFlavor < Ghc94
         then
           readFile' (hadrianGeneratedRoot ghcFlavor </> "ghcversion.h")
         else
@@ -696,7 +626,7 @@ applyPatchHaddockHs ghcFlavor = do
     =<< readFile' haddockHs
     )
   -- See https://github.com/digital-asset/ghc-lib/issues/344
-  when (ghcFlavor `elem` [Ghc921, Ghc922, Ghc923, Ghc924, Ghc925, Ghc926]) (
+  when (ghcSeries ghcFlavor == Ghc92) (
     writeFile ffiClosuresHs .
       replace
         "-- *"
@@ -721,7 +651,7 @@ applyPatchHaddockHs ghcFlavor = do
 -- instruction codes that this support relies on.
 applyPatchRtsBytecodes :: GhcFlavor -> IO ()
 applyPatchRtsBytecodes ghcFlavor = do
-  when (ghcFlavor >= Ghc921) (
+  when (ghcSeries ghcFlavor >= Ghc92) (
     writeFile asmHs .
       replace
         "#include \"rts/Bytecodes.h\""
@@ -741,10 +671,10 @@ applyPatchGhcPrim :: GhcFlavor -> IO ()
 applyPatchGhcPrim ghcFlavor = do
     let tysPrim =
           "compiler/" ++
-          if ghcFlavor >= Ghc901
+          if ghcSeries ghcFlavor >= Ghc90
             then "GHC/Builtin/Types/Prim.hs"
             else "prelude/TysPrim.hs"
-    when (ghcFlavor >= Ghc901) (
+    when (ghcSeries ghcFlavor >= Ghc90) (
       writeFile tysPrim .
           replaceIfGhcPrim070Else 0
             "bcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep"
@@ -756,7 +686,7 @@ applyPatchGhcPrim ghcFlavor = do
         )
 
     let createBCO = "libraries/ghci/GHCi/CreateBCO.hs"
-    when (ghcFlavor >= Ghc901) (
+    when (ghcSeries ghcFlavor >= Ghc90) (
       writeFile createBCO .
           replace
               "{-# LANGUAGE RecordWildCards #-}"
@@ -796,10 +726,10 @@ applyPatchGhcPrim ghcFlavor = do
 applyPatchRtsIncludePaths :: GhcFlavor -> IO ()
 applyPatchRtsIncludePaths ghcFlavor = do
   let files =
-        [ "compiler/GHC/Runtime/Heap/Layout.hs" | ghcFlavor >= Ghc901 ] ++
-        [ "compiler/cmm/SMRep.hs" | ghcFlavor < Ghc901 ] ++
-        [ "compiler/GHC/StgToCmm/Layout.hs"  | ghcFlavor >= Ghc8101 ] ++
-        [ "compiler/codeGen/StgCmmLayout.hs" | ghcFlavor < Ghc8101 ]
+        [ "compiler/GHC/Runtime/Heap/Layout.hs" | ghcSeries ghcFlavor >= Ghc90 ] ++
+        [ "compiler/cmm/SMRep.hs" | ghcSeries ghcFlavor < Ghc90 ] ++
+        [ "compiler/GHC/StgToCmm/Layout.hs"  | ghcSeries ghcFlavor >= Ghc810 ] ++
+        [ "compiler/codeGen/StgCmmLayout.hs" | ghcSeries ghcFlavor < Ghc810 ]
   forM_ files $
     \file ->
         writeFile file .
@@ -827,39 +757,30 @@ mangleCSymbols ghcFlavor = do
         prefixSymbol genSym .
         prefixSymbol initGenSym
         =<< readFile' file
-    let files =
-          if ghcFlavor >= Ghc901
-          then
-            [ "compiler/GHC/Types/Unique/Supply.hs"
-            , "compiler/GHC/Types/Unique.hs"
-            ]
-          else
-            [ "compiler/basicTypes/UniqSupply.hs" ]
+    let files
+          | ghcSeries ghcFlavor >= Ghc90 = ("compiler/GHC/Types" </>) <$> [ "Unique/Supply.hs", "Unique.hs" ]
+          | otherwise = [ "compiler/basicTypes/UniqSupply.hs" ]
     forM_ files $ \file ->
         writeFile file .
         prefixForeignImport genSym .
         prefixForeignImport initGenSym
         =<< readFile' file
-    let cUtils =
-          if ghcFlavor >= Ghc901
-            then
-              [ "compiler/cbits/cutils.c" ]
-            else
-              [ "compiler/parser/cutils.c", "compiler/parser/cutils.h" ]
+    let cUtils
+          | ghcSeries ghcFlavor >= Ghc90 = [ "compiler/cbits/cutils.c" ]
+          | otherwise = [ "compiler/parser/cutils.c", "compiler/parser/cutils.h" ]
     forM_ cUtils $ \file ->
         writeFile file .
         prefixSymbol enableTimingStats .
         prefixSymbol setHeapSize
         =<< readFile' file
-    let file =
-          if ghcFlavor >= Ghc901
-            then "compiler/GHC/Driver/Session.hs"
-            else "compiler/main/DynFlags.hs"
+    let file
+          | ghcSeries ghcFlavor >= Ghc90 = "compiler/GHC/Driver/Session.hs"
+          | otherwise = "compiler/main/DynFlags.hs"
       in
         writeFile file .
         prefixForeignImport enableTimingStats .
         prefixForeignImport setHeapSize
-        =<< readFile' file
+          =<< readFile' file
 
 -- Setting DSTAGE=2 will cause GHC to use getOrSetLibHSghc in
 -- FastString, DynFlags and Linker so we patch away that usage while
@@ -875,11 +796,8 @@ applyPatchStage ghcFlavor =
   -- get a build (`MachDeps.h` does not hide its contents from stages
   -- below 2 anymore). All usages of `getOrSetLibHSghc*` require
   -- `GHC_STAGE >= 2`. Thus, it's no longer neccessary to patch here.
-  when (ghcFlavor < Ghc8101) $
-    forM_ [ "compiler/ghci/Linker.hs"
-          , "compiler/utils/FastString.hs"
-          , "compiler/main/DynFlags.hs"
-          ] $
+  when (ghcSeries ghcFlavor < Ghc810) $
+    forM_ [ "compiler/ghci/Linker.hs", "compiler/utils/FastString.hs", "compiler/main/DynFlags.hs" ] $
     \file ->
       (writeFile file . replace "STAGE >= 2" "0" . replace "STAGE < 2" "1")
       =<< readFile' file
@@ -909,9 +827,7 @@ applyPatchAclocal ghcFlavor =
 -}
 applyPatchNoMonoLocalBinds :: GhcFlavor -> IO ()
 applyPatchNoMonoLocalBinds _ =
-    forM_ [ "libraries/ghc-heap/GHC/Exts/Heap/InfoTable.hsc"
-          , "libraries/ghc-heap/GHC/Exts/Heap/InfoTableProf.hsc"
-          ] $
+    forM_ [ "libraries/ghc-heap/GHC/Exts/Heap/InfoTable.hsc", "libraries/ghc-heap/GHC/Exts/Heap/InfoTableProf.hsc" ] $
       \file ->
         (writeFile file . ("{-# LANGUAGE NoMonoLocalBinds #-}\n" ++))
         =<< readFile' file
@@ -982,15 +898,15 @@ applyPatchHadrianStackYaml ghcFlavor resolver = do
     -- https://gitlab.haskell.org/ghc/ghc/-/issues/21634.
     --
     -- The idea is to replace the resolver with whatever is prevailing
-    -- (or ghc-9.2.2 if that's not possible).
-      resolverDefault = "nightly-2022-05-27"
+    -- (or ghc-9.2.5 if that's not possible).
+      resolverDefault = "lts-20.10" -- ghc-9.2.5
       -- The resolver has to curate packages so resolvers of the form
       -- ghc-x.y.z won't do.
       resolver' = case fromMaybe resolverDefault resolver of
         r | "ghc-" `isPrefixOf` r -> resolverDefault
         r -> r
 
-      config'' = if ghcFlavor < Ghc941
+      config'' = if ghcSeries ghcFlavor < Ghc94
                      then config'
                      else
                          HMS.insert "allow-newer" (toJSON True)
@@ -1054,8 +970,7 @@ withCommas ms =
 -- the base library version as a proxy for the minimum compiler
 -- version.
 baseBounds :: GhcFlavor -> String
-baseBounds ghcFlavor =
-  case ghcFlavor of
+baseBounds = \case
     -- ghc >= 8.4.4
     DaGhc881  -> "base >= 4.11 && < 4.16" -- unlike upstream GHC 8.8, the DA fork does work with ghc-8.10.1 and ghc-9.0.2
     Ghc881    -> "base >= 4.11 && < 4.14" -- [ghc-8.4.4, ghc-8.10.1)
@@ -1086,7 +1001,6 @@ baseBounds ghcFlavor =
     Ghc925    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
     Ghc926    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
 
-
     -- ghc-9.4.1, ghc-9.4.2, ghc-9.4.3, ghc-9.4.4 all ship with
     -- base-4.17.0.0
     Ghc941   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
@@ -1107,47 +1021,36 @@ commonBuildDepends ghcFlavor =
   base ++ specific ++ conditional ++ shared
   where
     -- base
-    base =
-      [
-        baseBounds ghcFlavor
-      ]
+    base = [ baseBounds ghcFlavor ]
     specific
-       | ghcFlavor >= Ghc961  =
-         [
+       | ghcSeries ghcFlavor >= Ghc96  = [
            "ghc-prim > 0.2 && < 0.11"
          , "bytestring >= 0.11.3 && < 0.12"
          , "time >= 1.4 && < 1.13"
          ]
-       | ghcFlavor >= Ghc941  =
-         [
+       | ghcSeries ghcFlavor >= Ghc94  = [
            "ghc-prim > 0.2 && < 0.10"
          , "bytestring >= 0.10 && < 0.12"
          , "time >= 1.4 && < 1.13"
          ]
-        | ghcFlavor >= Ghc921 =
-          [
+        | ghcSeries ghcFlavor >= Ghc92 = [
             "ghc-prim > 0.2 && < 0.9"
           , "bytestring >= 0.9 && < 0.12"
           , "time >= 1.4 && < 1.12"
           ]
-        | otherwise           =
-          [
+        | otherwise = [
             "ghc-prim > 0.2 && < 0.8"
           , "bytestring >= 0.9 && < 0.11"
           , "time >= 1.4 && < 1.10"
           ]
-    -- added in 9.0.1
-    conditional =
-      if ghcFlavor >= Ghc901 then
-        [
-          "exceptions == 0.10.*"
-        , "parsec"
-        ]
-      else
-        []
+    conditional
+        | ghcSeries ghcFlavor >= Ghc90 = [
+            "exceptions == 0.10.*"
+          , "parsec"
+          ]
+        | otherwise = []
     -- shared for all flavors
-    shared =
-      [
+    shared = [
         "containers >= 0.5 && < 0.7"
       , "binary == 0.8.*"
       , "filepath >= 1 && < 1.5"
@@ -1165,7 +1068,7 @@ ghcLibParserBuildDepends  = commonBuildDepends
 ghcLibBuildDepends :: GhcFlavor -> [String]
 ghcLibBuildDepends ghcFlavor =
   commonBuildDepends ghcFlavor ++
-  [ "stm" | ghcFlavor > Ghc926 {- <= ghc-9.4.0 -}] ++
+  [ "stm" | ghcSeries ghcFlavor >= Ghc94 ] ++
   [ "rts"
   , "hpc == 0.6.*"
   , "ghc-lib-parser"  -- we rely on this being last (in CI.hs:
@@ -1213,9 +1116,9 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         , "    location: git@github.com:digital-asset/ghc-lib.git"
         ] ++
         [ "flag threaded-rts"
-        , "  default: True"
-        , "  manual: True"
-        , "  description: Pass -DTHREADED_RTS to the C toolchain"
+        , "    default: True"
+        , "    manual: True"
+        , "    description: Pass -DTHREADED_RTS to the C toolchain"
         ] ++
         [ "library"
         , "    default-language:   Haskell2010"
@@ -1254,31 +1157,27 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
 
 generateCppOpts :: GhcFlavor -> [String] -> String
 generateCppOpts ghcFlavor customCppOpts =
-  unwords $
-    [ ghcStageDef ghcFlavor
+  unwords $ [
+      ghcStageDef ghcFlavor
     , ghciDef ghcFlavor
     , ghcInGhciDef ghcFlavor
-    ]
-    ++ customCppOpts
-
-ghciDef :: GhcFlavor -> String
-ghciDef ghcFlavor = if ghcFlavor > Ghc8101 then "" else "-DGHCI"
-
-ghcStageDef :: GhcFlavor -> String
-ghcStageDef ghcFlavor = if ghcFlavor >= Ghc8101 then "" else "-DSTAGE=2"
-
-ghcInGhciDef :: GhcFlavor -> String
-ghcInGhciDef ghcFlavor = if ghcFlavor >= Ghc921 then "" else "-DGHC_IN_GHCI"
+    ] ++
+  customCppOpts
+  where
+    ghciDef, ghcInGhciDef, ghcStageDef :: GhcFlavor -> String
+    ghciDef ghcFlavor = if ghcSeries ghcFlavor > Ghc810 then "" else "-DGHCI"
+    ghcInGhciDef = \case f | ghcSeries f >= Ghc92 -> ""; _ -> "-DGHC_IN_GHCI"
+    ghcStageDef = \case f | ghcSeries f >= Ghc810 -> ""; _ -> "-DSTAGE=2"
 
 -- Perform a set of specific substitutions on the given list of files.
 performExtraFilesSubstitutions :: GhcFlavor -> (GhcFlavor -> [FilePath]) -> [FilePath]
 performExtraFilesSubstitutions ghcFlavor files =
   foldl' sub (files ghcFlavor) $
-      [ ("rts/include/ghcversion.h", Nothing) | ghcFlavor > Ghc926 {- <= ghc-9.4.0 -} ] ++
-      [ (hadrianGeneratedRoot ghcFlavor </> "ghcversion.h", Nothing) | ghcFlavor <= Ghc926 {- < ghc-9.4.0 -}] ++
-      [  ((stage0Rts </> "include") </> "DerivedConstants.h", Just $ (stage0Rts </> "include") </> "GhclibDerivedConstants.h") | ghcFlavor > Ghc926 {- <= ghc-9.4.0 -}] ++
-      [ (hadrianGeneratedRoot ghcFlavor </> "DerivedConstants.h", Just $ hadrianGeneratedRoot ghcFlavor </> "GhclibDerivedConstants.h") | ghcFlavor <= Ghc926 {- < ghc-9.4.0 -} ] ++
-      [("compiler" </> "HsVersions.h", Just $ "compiler" </> "GhclibHsVersions.h") | ghcFlavor <= Ghc926 {- < ghc-9.4.0 -} ]
+      [ ("rts/include/ghcversion.h", Nothing) | ghcSeries ghcFlavor >= Ghc94 ] ++
+      [ (hadrianGeneratedRoot ghcFlavor </> "ghcversion.h", Nothing) | ghcSeries ghcFlavor < Ghc94 ] ++
+      [  ((stage0Rts </> "include") </> "DerivedConstants.h", Just $ (stage0Rts </> "include") </> "GhclibDerivedConstants.h") | ghcSeries ghcFlavor >= Ghc94] ++
+      [ (hadrianGeneratedRoot ghcFlavor </> "DerivedConstants.h", Just $ hadrianGeneratedRoot ghcFlavor </> "GhclibDerivedConstants.h") | ghcSeries ghcFlavor < Ghc94 ] ++
+      [("compiler" </> "HsVersions.h", Just $ "compiler" </> "GhclibHsVersions.h") | ghcSeries ghcFlavor < Ghc94 ]
   where
     sub :: Eq a => [a] -> (a, Maybe a) -> [a]
     sub xs (s, r) = replace [s] (maybeToList r) xs
@@ -1345,20 +1244,21 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         -- causes issues in ghci see
         -- https://github.com/digital-asset/ghc-lib/issues/27
         indent2 [ "compiler/cbits/genSym.c" ] ++
-        indent2 [ if ghcFlavor >= Ghc901 then "compiler/cbits/cutils.c" else "compiler/parser/cutils.c" ] ++
-        indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor == Ghc926 || ghcFlavor >= Ghc961 ] ++
+        indent2 [ "compiler/cbits/cutils.c" | ghcSeries ghcFlavor >= Ghc90 ] ++
+        indent2 [ "compiler/parser/cutils.c" | ghcSeries ghcFlavor < Ghc90 ] ++
+        indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor == Ghc926 || ghcSeries ghcFlavor >= Ghc96 ] ++
         [ "    hs-source-dirs:" ] ++
         indent2 (ghcLibParserHsSrcDirs False ghcFlavor lib) ++
         [ "    autogen-modules:" ] ++
-        indent2 [ x | ghcFlavor >= Ghc901, x <- [ "GHC.Parser.Lexer", "GHC.Parser" ] ] ++
-        indent2 [ x |  ghcFlavor < Ghc901, x <- [ "Lexer", "Parser" ] ] ++
+        indent2 [ x | ghcSeries ghcFlavor >= Ghc90, x <- [ "GHC.Parser.Lexer", "GHC.Parser" ] ] ++
+        indent2 [ x |  ghcSeries ghcFlavor < Ghc90, x <- [ "Lexer", "Parser" ] ] ++
         ["    exposed-modules:" ] ++ indent2 parserModules
     putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 
 -- | Run Hadrian to build the things that the Cabal files need.
 generatePrerequisites :: GhcFlavor -> IO ()
 generatePrerequisites ghcFlavor = do
-  when (ghcFlavor < Ghc8101) (
+  when (ghcSeries ghcFlavor < Ghc810) (
     -- Workaround a Windows bug present in at least 8.4.3. See
     -- http://haskell.1045720.n5.nabble.com/msys-woes-td5898334.html
     writeFile "./mk/get-win32-tarballs.sh" .
@@ -1378,12 +1278,13 @@ generatePrerequisites ghcFlavor = do
     -- No need to specify a stack.yaml here, we are in the hadrian
     -- directory itself.
     system_ "stack build --no-library-profiling"
-    system_ $ unwords $
-        [ "stack exec hadrian --"
+    system_ $ unwords $ [
+            "stack exec hadrian --"
           , "--directory=.."
           , "--build-root=ghc-lib"
         ] ++
-        (if ghcFlavor >= Ghc901 then ["--bignum=native"] else ["--integer-simple"]) ++
+        ["--bignum=native" | ghcSeries ghcFlavor >= Ghc90] ++
+        ["--integer-simple" | ghcSeries ghcFlavor < Ghc90] ++
         ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) (dataFiles ghcFlavor)
 
 -- | Given an Hsc, Alex, or Happy file, generate a placeholder module

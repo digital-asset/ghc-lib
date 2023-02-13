@@ -1,4 +1,4 @@
--- Copyright (c) 2019 - 2022 Digital Asset (Switzerland) GmbH and/or
+-- Copyright (c) 2019 - 2023 Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
@@ -6,7 +6,7 @@
 module GhclibgenOpts(
     GhclibgenTarget(..)
   , GhclibgenOpts(..)
-  , GhcFlavor(..)
+  , module GhclibgenFlavor
   , ghclibgenVersion
   , ghclibgenOpts
 ) where
@@ -16,6 +16,8 @@ import Options.Applicative
 import Data.Maybe
 import Data.Version (showVersion)
 import Paths_ghc_lib_gen (version)
+
+import GhclibgenFlavor
 
 -- | A ghc-lib-gen target.
 data GhclibgenTarget = GhclibParser | Ghclib
@@ -69,18 +71,6 @@ ghclibgenOpts = GhclibgenOpts
         )
   <*> cppCustomFlagsOpt
   <*> stackResolverOpt
-
--- | We might want to factor this out so we can share it with CI.hs
--- but for now it doesn’t seem worth it and having CI.hs be
--- self-contained simplifies things.
-data GhcFlavor = DaGhc881
-               | Ghc881 | Ghc882 | Ghc883 | Ghc884
-               | Ghc8101 | Ghc8102 | Ghc8103 | Ghc8104 | Ghc8105 | Ghc8106 | Ghc8107
-               | Ghc901 | Ghc902
-               | Ghc921 | Ghc922 | Ghc923 | Ghc924 | Ghc925 | Ghc926
-               | Ghc941 | Ghc942 | Ghc943 | Ghc944 | Ghc961
-               | GhcMaster
-    deriving (Show, Eq, Ord)
 
 ghcFlavorOpt :: Parser GhcFlavor
 ghcFlavorOpt = option readFlavor
