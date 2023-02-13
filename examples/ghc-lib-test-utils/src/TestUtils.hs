@@ -39,6 +39,7 @@ data GhcVersion = DaGhc881
                 | Ghc923
                 | Ghc924
                 | Ghc925
+                | Ghc926
                 | Ghc941
                 | Ghc942
                 | Ghc943
@@ -81,31 +82,40 @@ newtype GhcFlavor = GhcFlavor GhcVersion
 
 readFlavor :: String -> Maybe GhcFlavor
 readFlavor = (GhcFlavor <$>) . \case
+    -- HEAD
+    "ghc-master" -> Just GhcMaster
+    -- ghc-9.6
     "ghc-9.6.1" -> Just Ghc961
+    -- ghc-9.4
     "ghc-9.4.4" -> Just Ghc944
     "ghc-9.4.3" -> Just Ghc943
     "ghc-9.4.2" -> Just Ghc942
     "ghc-9.4.1" -> Just Ghc941
+    -- ghc-9.2
+    "ghc-9.2.6" -> Just Ghc926
     "ghc-9.2.5" -> Just Ghc925
     "ghc-9.2.4" -> Just Ghc924
     "ghc-9.2.3" -> Just Ghc923
     "ghc-9.2.2" -> Just Ghc922
     "ghc-9.2.1" -> Just Ghc921
-    "ghc-9.0.1" -> Just Ghc901
+    -- ghc-9.0
     "ghc-9.0.2" -> Just Ghc902
-    "ghc-8.10.1" -> Just Ghc8101
-    "ghc-8.10.2" -> Just Ghc8102
-    "ghc-8.10.3" -> Just Ghc8103
-    "ghc-8.10.4" -> Just Ghc8104
-    "ghc-8.10.5" -> Just Ghc8105
-    "ghc-8.10.6" -> Just Ghc8106
+    "ghc-9.0.1" -> Just Ghc901
+    -- ghc-8.10
     "ghc-8.10.7" -> Just Ghc8107
-    "ghc-8.8.1" -> Just Ghc881
-    "ghc-8.8.2" -> Just Ghc882
-    "ghc-8.8.3" -> Just Ghc883
-    "ghc-8.8.4" -> Just Ghc884
+    "ghc-8.10.6" -> Just Ghc8106
+    "ghc-8.10.5" -> Just Ghc8105
+    "ghc-8.10.4" -> Just Ghc8104
+    "ghc-8.10.3" -> Just Ghc8103
+    "ghc-8.10.2" -> Just Ghc8102
+    "ghc-8.10.1" -> Just Ghc8101
+    -- ghc-8.8
     "da-ghc-8.8.1" -> Just DaGhc881
-    "ghc-master" -> Just GhcMaster
+    "ghc-8.8.4" -> Just Ghc884
+    "ghc-8.8.3" -> Just Ghc883
+    "ghc-8.8.2" -> Just Ghc882
+    "ghc-8.8.1" -> Just Ghc881
+    -- unknown
     _ -> Nothing
 
 instance IsOption GhcFlavor where
