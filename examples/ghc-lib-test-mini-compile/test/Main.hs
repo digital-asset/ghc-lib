@@ -10,31 +10,35 @@ import Test.Tasty.HUnit
 import Data.Proxy
 import Data.Maybe
 import Data.List.Extra
-import Data.ByteString.Lazy.UTF8
 
 import TestUtils
+import System.Process.Extra
+import System.Environment
 
 main :: IO ()
 main = do
+  unsetEnv "GHC_ENVIRONMENT"
   defaultMainWithIngredients ings $
-    askOption $ \ config@(StackYaml _) ->
-      askOption $ \ resolver@(Resolver _) ->
-        askOption $ \ flavor@(GhcFlavor _) -> do
-          tests config resolver flavor
+    askOption $ \ binary@(BinaryPath _) ->
+      askOption $ \ config@(StackYaml _) ->
+        askOption $ \ resolver@(Resolver _) ->
+          askOption $ \ flavor@(GhcFlavor _) -> do
+            tests binary config resolver flavor
   where
     ings =
       includingOptions
-        [ Option (Proxy :: Proxy StackYaml)
+        [ Option (Proxy :: Proxy BinaryPath)
+        , Option (Proxy :: Proxy StackYaml)
         , Option (Proxy :: Proxy Resolver)
         , Option (Proxy :: Proxy GhcFlavor)
         ]
       : defaultIngredients
 
-tests :: StackYaml -> Resolver -> GhcFlavor -> TestTree
-tests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFlavor ghcFlavor) = testGroup " All tests"
-  [ testCase "MiniCompileTest.hs" $ testMiniCompileTestHs stackYaml stackResolver]
+tests :: BinaryPath -> StackYaml -> Resolver -> GhcFlavor -> TestTree
+tests miniCompile _stackYaml@(StackYaml _yaml) _stackResolver@(Resolver _resolver) (GhcFlavor _ghcFlavor) = testGroup " All tests"
+  [ testCase "MiniCompileTest.hs" $ testMiniCompileTestHs miniCompile ]
 
-testMiniCompileTestHs :: StackYaml -> Resolver -> IO ()
-testMiniCompileTestHs stackYaml stackResolver = do
-  out <- stack stackYaml stackResolver $ "--no-terminal exec -- ghc-lib-test-mini-compile " ++ "test/MiniCompileTest.hs"
-  assertBool "MiniCompileTest.hs" (isJust $ stripInfix "$tc'TyCon :: TyCon" (toString out))
+testMiniCompileTestHs :: BinaryPath -> IO ()
+testMiniCompileTestHs (BinaryPath miniCompile) = do
+  out <- systemOutput_ (miniCompile ++ " " ++ "test/MiniCompileTest.hs")
+  assertBool "MiniCompileTest.hs" (isJust $ stripInfix "$tc'TyCon :: TyCon" out)
