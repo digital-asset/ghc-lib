@@ -10,31 +10,35 @@ import Test.Tasty.HUnit
 import Data.Proxy
 import Data.Maybe
 import Data.List.Extra
-import Data.ByteString.Lazy.UTF8
 
 import TestUtils
+import System.Process.Extra
+import System.IO.Extra
 
 main :: IO ()
 main = do
   defaultMainWithIngredients ings $
-    askOption $ \ config@(StackYaml _) ->
-      askOption $ \ resolver@(Resolver _) ->
-        askOption $ \ flavor@(GhcFlavor _) -> do
-          tests config resolver flavor
+    askOption $ \ cmd@(CommandFile _) ->
+      askOption $ \ config@(StackYaml _) ->
+        askOption $ \ resolver@(Resolver _) ->
+          askOption $ \ flavor@(GhcFlavor _) -> do
+              tests cmd config resolver flavor
   where
     ings =
       includingOptions
-        [ Option (Proxy :: Proxy StackYaml)
+        [ Option (Proxy :: Proxy CommandFile)
+        , Option (Proxy :: Proxy StackYaml)
         , Option (Proxy :: Proxy Resolver)
         , Option (Proxy :: Proxy GhcFlavor)
-        ]
+       ]
       : defaultIngredients
 
-tests :: StackYaml -> Resolver -> GhcFlavor -> TestTree
-tests stackYaml@(StackYaml yaml) stackResolver@(Resolver resolver) (GhcFlavor ghcFlavor) = testGroup " All tests"
-  [ testCase "MiniCompileTest.hs" $ testMiniCompileTestHs stackYaml stackResolver]
+tests :: CommandFile -> StackYaml -> Resolver -> GhcFlavor -> TestTree
+tests miniCompile _stackYaml _stackResolver _ghcFlavor = testGroup " All tests"
+  [ testCase "MiniCompileTest.hs" $ testMiniCompileTestHs miniCompile ]
 
-testMiniCompileTestHs :: StackYaml -> Resolver -> IO ()
-testMiniCompileTestHs stackYaml stackResolver = do
-  out <- stack stackYaml stackResolver $ "--no-terminal exec -- ghc-lib-test-mini-compile " ++ "test/MiniCompileTest.hs"
-  assertBool "MiniCompileTest.hs" (isJust $ stripInfix "$tc'TyCon :: TyCon" (toString out))
+testMiniCompileTestHs :: CommandFile -> IO ()
+testMiniCompileTestHs (CommandFile miniCompile) = do
+  cmd <- readFile' miniCompile
+  out <- systemOutput_ $ cmd ++ "test/MiniCompileTest.hs"
+  assertBool "MiniCompileTest.hs" (isJust $ stripInfix "$tc'TyCon :: TyCon" out)
