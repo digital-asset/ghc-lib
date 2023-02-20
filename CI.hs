@@ -75,7 +75,7 @@ current = "7612dc713d5a1f108cfd6eb731435b090fbb8809" -- 2023-02-04
 
 -- Command line argument generators.
 
-stackYamlOpt :: Maybe String -> String
+stackYamlOpt :: Maybe FilePath -> String
 stackYamlOpt = \case
   Just stackYaml -> "--stack-yaml " ++ stackYaml
   Nothing -> ""
@@ -324,39 +324,7 @@ buildDists
     else do
       cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
       cmd "cd ghc && git fetch --tags"
-    case ghcFlavor of
-        Ghc961 -> cmd "cd ghc && git checkout ghc-9.6"
-        Ghc944 -> cmd "cd ghc && git checkout ghc-9.4.4-release"
-        Ghc943 -> cmd "cd ghc && git checkout ghc-9.4.3-release"
-        Ghc942 -> cmd "cd ghc && git checkout ghc-9.4.2-release"
-        Ghc941 -> cmd "cd ghc && git checkout ghc-9.4.1-release"
-        Ghc926 -> cmd "cd ghc && git checkout ghc-9.2.6-release"
-        Ghc925 -> cmd "cd ghc && git checkout ghc-9.2.5-release"
-        Ghc924 -> cmd "cd ghc && git checkout ghc-9.2.4-release"
-        Ghc923 -> cmd "cd ghc && git checkout ghc-9.2.3-release"
-        Ghc922 -> cmd "cd ghc && git checkout ghc-9.2.2-release"
-        Ghc921 -> cmd "cd ghc && git checkout ghc-9.2.1-release"
-        Ghc901 -> cmd "cd ghc && git checkout ghc-9.0.1-release"
-        Ghc902 -> cmd "cd ghc && git checkout ghc-9.0.2-release"
-        Ghc8101 -> cmd "cd ghc && git checkout ghc-8.10.1-release"
-        Ghc8102 -> cmd "cd ghc && git checkout ghc-8.10.2-release"
-        Ghc8103 -> cmd "cd ghc && git checkout ghc-8.10.3-release"
-        Ghc8104 -> cmd "cd ghc && git checkout ghc-8.10.4-release"
-        Ghc8105 -> cmd "cd ghc && git checkout ghc-8.10.5-release"
-        Ghc8106 -> cmd "cd ghc && git checkout ghc-8.10.6-release"
-        Ghc8107 -> cmd "cd ghc && git checkout ghc-8.10.7-release"
-        Ghc881 -> cmd "cd ghc && git checkout ghc-8.8.1-release"
-        Ghc882 -> cmd "cd ghc && git checkout ghc-8.8.2-release"
-        Ghc883 -> cmd "cd ghc && git checkout ghc-8.8.3-release"
-        Ghc884 -> cmd "cd ghc && git checkout ghc-8.8.4-release"
-        Da DaFlavor { mergeBaseSha, patches, upstream } -> do
-            cmd $ "cd ghc && git checkout " <> mergeBaseSha
-            -- Apply Digital Asset extensions.
-            cmd $ "cd ghc && git remote add upstream " <> upstream
-            cmd "cd ghc && git fetch upstream"
-            cmd $ "cd ghc && git -c user.name=\"Cookie Monster\" -c user.email=cookie.monster@seasame-street.com merge --no-edit " <> unwords patches
-        GhcMaster hash -> cmd $ "cd ghc && git checkout " ++ hash
-    cmd "cd ghc && git submodule update --init --recursive"
+    gitCheckout ghcFlavor
 
     -- Feedback on the compiler used for ghc-lib-gen.
     stack "exec -- ghc --version"
@@ -414,9 +382,9 @@ buildDists
 
     -- Append the libraries and examples to the prevailing stack
     -- configuration file.
-    stackYaml <- readFile' stackConfig
+    stackYamlFileContents <- readFile' stackConfig
     writeFile stackConfig $
-      stackYaml ++
+      stackYamlFileContents ++
       unlines [ "- ghc-lib-parser"
               , "- ghc-lib"
               , "- examples/ghc-lib-test-utils"
@@ -456,10 +424,11 @@ buildDists
     stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions ++ " ghc-lib"
     stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions ++ " ghc-lib-test-mini-hlint ghc-lib-test-mini-compile"
 
-    -- Run tests.
-    let testArguments = "--test-arguments \"" ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ ghcFlavorOpt ghcFlavor ++ "\""
-    stack $ "test ghc-lib-test-mini-hlint --no-terminal " ++ testArguments
-    stack $ "test ghc-lib-test-mini-compile --no-terminal " ++ testArguments
+    miniHlintCmdFile <- writeCmdFile "ghc-lib-test-mini-hlint" stackConfig resolver
+    stack $ "test ghc-lib-test-mini-hlint --no-terminal " ++ testArguments miniHlintCmdFile stackConfig resolver ghcFlavor
+
+    miniCompileCmdFile <- writeCmdFile "ghc-lib-test-mini-compile" stackConfig resolver
+    stack $ "test ghc-lib-test-mini-compile --no-terminal " ++ testArguments miniCompileCmdFile stackConfig resolver ghcFlavor
 
 #if __GLASGOW_HASKELL__ == 808 && \
     (__GLASGOW_HASKELL_PATCHLEVEL1__ == 1 || __GLASGOW_HASKELL_PATCHLEVEL1__ == 2) && \
@@ -484,6 +453,23 @@ buildDists
     tag -- The return value of type 'IO string'.
 
     where
+
+      writeCmdFile :: String -> FilePath -> Maybe String -> IO FilePath
+      writeCmdFile exe stackConfig resolver = do
+        let filename = exe
+        let cmd = "stack " ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ "exec -- " ++ exe ++ " "
+        writeFile filename cmd
+        pure filename
+
+      testArguments :: FilePath -> FilePath -> Maybe String -> GhcFlavor -> String
+      testArguments cmdFile stackConfig resolver ghcFlavor =
+        "--test-arguments " ++
+        "\"" ++
+        "--test-command " ++ "../../" </> cmdFile ++ " " ++
+        stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++
+        stackResolverOpt resolver ++ " " ++ ghcFlavorOpt ghcFlavor ++ " " ++
+        "\""
+
       ghcOptionsWithHaddock :: Maybe String -> String
       -- Enabling strict haddock mode with -haddock (and for some
       -- build compilers -Winvalid-haddock) has become too tedious.
@@ -568,3 +554,39 @@ buildDists
         whenM (doesPathExist p) $ do
           putStrLn $ "# Removing " ++ p
           removePathForcibly p
+
+      gitCheckout :: GhcFlavor -> IO ()
+      gitCheckout ghcFlavor = do
+        case ghcFlavor of
+          Ghc961 -> cmd "cd ghc && git checkout ghc-9.6"
+          Ghc944 -> cmd "cd ghc && git checkout ghc-9.4.4-release"
+          Ghc943 -> cmd "cd ghc && git checkout ghc-9.4.3-release"
+          Ghc942 -> cmd "cd ghc && git checkout ghc-9.4.2-release"
+          Ghc941 -> cmd "cd ghc && git checkout ghc-9.4.1-release"
+          Ghc926 -> cmd "cd ghc && git checkout ghc-9.2.6-release"
+          Ghc925 -> cmd "cd ghc && git checkout ghc-9.2.5-release"
+          Ghc924 -> cmd "cd ghc && git checkout ghc-9.2.4-release"
+          Ghc923 -> cmd "cd ghc && git checkout ghc-9.2.3-release"
+          Ghc922 -> cmd "cd ghc && git checkout ghc-9.2.2-release"
+          Ghc921 -> cmd "cd ghc && git checkout ghc-9.2.1-release"
+          Ghc901 -> cmd "cd ghc && git checkout ghc-9.0.1-release"
+          Ghc902 -> cmd "cd ghc && git checkout ghc-9.0.2-release"
+          Ghc8101 -> cmd "cd ghc && git checkout ghc-8.10.1-release"
+          Ghc8102 -> cmd "cd ghc && git checkout ghc-8.10.2-release"
+          Ghc8103 -> cmd "cd ghc && git checkout ghc-8.10.3-release"
+          Ghc8104 -> cmd "cd ghc && git checkout ghc-8.10.4-release"
+          Ghc8105 -> cmd "cd ghc && git checkout ghc-8.10.5-release"
+          Ghc8106 -> cmd "cd ghc && git checkout ghc-8.10.6-release"
+          Ghc8107 -> cmd "cd ghc && git checkout ghc-8.10.7-release"
+          Ghc881 -> cmd "cd ghc && git checkout ghc-8.8.1-release"
+          Ghc882 -> cmd "cd ghc && git checkout ghc-8.8.2-release"
+          Ghc883 -> cmd "cd ghc && git checkout ghc-8.8.3-release"
+          Ghc884 -> cmd "cd ghc && git checkout ghc-8.8.4-release"
+          Da DaFlavor { mergeBaseSha, patches, upstream } -> do
+              cmd $ "cd ghc && git checkout " <> mergeBaseSha
+              -- Apply Digital Asset extensions.
+              cmd $ "cd ghc && git remote add upstream " <> upstream
+              cmd "cd ghc && git fetch upstream"
+              cmd $ "cd ghc && git -c user.name=\"Cookie Monster\" -c user.email=cookie.monster@seasame-street.com merge --no-edit " <> unwords patches
+          GhcMaster hash -> cmd $ "cd ghc && git checkout " ++ hash
+        cmd "cd ghc && git submodule update --init --recursive"

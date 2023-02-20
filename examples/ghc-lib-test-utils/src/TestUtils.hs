@@ -8,9 +8,6 @@ module TestUtils where
 
 import Test.Tasty.Options
 import Data.Typeable (Typeable)
-import Data.ByteString.Lazy.UTF8
-import Data.Functor
-import System.Process.Extra
 
 newtype StackYaml = StackYaml (Maybe String)
   deriving (Eq, Ord, Typeable)
@@ -136,17 +133,11 @@ instance IsOption Resolver where
   optionName = return "resolver"
   optionHelp = return "Resolver override"
 
-stack :: StackYaml -> Resolver -> String -> IO ByteString
-stack (StackYaml stackYaml) (Resolver resolver) action =
-  systemOutput_ ("stack " ++
-    concatMap (<> " ")
-           [ stackYamlOpt stackYaml
-           , resolverOpt resolver
-           ] ++
-    action) <&> fromString
+newtype CommandFile = CommandFile String
+  deriving (Eq, Ord, Typeable)
 
-stackYamlOpt :: Maybe String -> String
-stackYamlOpt = maybe "" ("--stack-yaml " ++)
-
-resolverOpt :: Maybe String -> String
-resolverOpt = maybe "" ("--resolver " ++)
+instance IsOption CommandFile where
+  defaultValue = CommandFile "MISSING"
+  parseValue = Just . CommandFile
+  optionName = return "test-command"
+  optionHelp = return "File containing a command"
