@@ -54,7 +54,7 @@ data GhcFlavor = Da DaFlavor
                | GhcMaster String
                | Ghc961
                | Ghc944 | Ghc943 | Ghc942 | Ghc941
-               | Ghc926 | Ghc925 | Ghc924 | Ghc923 | Ghc922 | Ghc921
+               | Ghc927 | Ghc926 | Ghc925 | Ghc924 | Ghc923 | Ghc922 | Ghc921
                | Ghc902 | Ghc901
                | Ghc8107 | Ghc8106 | Ghc8105 | Ghc8104 | Ghc8103 | Ghc8102 | Ghc8101 | Ghc881
                | Ghc884 | Ghc883  | Ghc882
@@ -71,7 +71,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "7612dc713d5a1f108cfd6eb731435b090fbb8809" -- 2023-02-04
+current = "7825fef9f2096d7769baf433c6858d132af60a3a" -- 2023-02-25
 
 -- Command line argument generators.
 
@@ -92,6 +92,7 @@ ghcFlavorOpt = \case
     Ghc943 -> "--ghc-flavor ghc-9.4.3"
     Ghc942 -> "--ghc-flavor ghc-9.4.2"
     Ghc941 -> "--ghc-flavor ghc-9.4.1"
+    Ghc927 -> "--ghc-flavor ghc-9.2.7"
     Ghc926 -> "--ghc-flavor ghc-9.2.6"
     Ghc925 -> "--ghc-flavor ghc-9.2.5"
     Ghc924 -> "--ghc-flavor ghc-9.2.4"
@@ -152,6 +153,7 @@ genVersionStr flavor suffix =
       Ghc943      -> "9.4.3"
       Ghc942      -> "9.4.2"
       Ghc941      -> "9.4.1"
+      Ghc927      -> "9.2.7"
       Ghc926      -> "9.2.6"
       Ghc925      -> "9.2.5"
       Ghc924      -> "9.2.4"
@@ -204,6 +206,7 @@ parseOptions = Options
        "ghc-9.4.3" -> Right Ghc943
        "ghc-9.4.2" -> Right Ghc942
        "ghc-9.4.1" -> Right Ghc941
+       "ghc-9.2.7" -> Right Ghc927
        "ghc-9.2.6" -> Right Ghc926
        "ghc-9.2.5" -> Right Ghc925
        "ghc-9.2.4" -> Right Ghc924
@@ -442,7 +445,7 @@ buildDists
      -- know why it so far only exhibits with 9.2.6. Seems to me it
      -- should be a problem with >= ghc-9.6.1 too (but, "if it ain't
      -- broke don't fix it").
-    unless (ghcFlavor == Ghc926 && System.Info.Extra.isWindows) $ do
+    unless (ghcFlavor `elem` [Ghc926, Ghc927] && System.Info.Extra.isWindows) $ do
       -- Test everything loads in GHCi, see
       -- https://github.com/digital-asset/ghc-lib/issues/27
       stack "--no-terminal ghc -- -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
@@ -563,6 +566,7 @@ buildDists
           Ghc943 -> cmd "cd ghc && git checkout ghc-9.4.3-release"
           Ghc942 -> cmd "cd ghc && git checkout ghc-9.4.2-release"
           Ghc941 -> cmd "cd ghc && git checkout ghc-9.4.1-release"
+          Ghc927 -> cmd "cd ghc && git checkout ghc-9.2.7-release"
           Ghc926 -> cmd "cd ghc && git checkout ghc-9.2.6-release"
           Ghc925 -> cmd "cd ghc && git checkout ghc-9.2.5-release"
           Ghc924 -> cmd "cd ghc && git checkout ghc-9.2.4-release"
