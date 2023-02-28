@@ -87,36 +87,36 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-9.4.4       | ghc-9.2.5  |
-    # | macOS   | ghc-9.4.4       | ghc-9.2.5  |
-    # | windows | ghc-9.4.4       | ghc-9.2.5  |
+    # | linux   | ghc-9.4.4       | ghc-9.2.6  |
+    # | macOS   | ghc-9.4.4       | ghc-9.2.6  |
+    # | windows | ghc-9.4.4       | ghc-9.2.6  |
     # +---------+-----------------+------------+
-    linux-ghc-9.4.4-9.2.5:
+    linux-ghc-9.4.4-9.2.6:
       image: "ubuntu-22.04"
       mode: "--ghc-flavor ghc-9.4.4"
-      resolver: "lts-20.0"
+      resolver: "lts-20.12"
       stack-yaml: "stack.yaml"
-    mac-ghc-9.4.4-9.2.5:
+    mac-ghc-9.4.4-9.2.6:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-9.4.4"
-      resolver: "lts-20.0"
+      resolver: "lts-20.12"
       stack-yaml: "stack.yaml"
-    windows-ghc-9.4.4-9.2.5:
+    windows-ghc-9.4.4-9.2.6:
       image: "windows-latest"
       mode: "--ghc-flavor ghc-9.4.4"
-      resolver: "lts-20.0"
+      resolver: "lts-20.12"
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-9.2.6       | ghc-9.0.2  |
+    # | linux   | ghc-9.2.7       | ghc-9.0.2  |
     # | macOS   | ghc-9.2.5       | ghc-9.0.2  |
-    # | windows | ghc-9.2.6       | ghc-9.0.2  |
+    # | windows | ghc-9.2.7       | ghc-9.0.2  |
     # +---------+-----------------+------------+
-    linux-ghc-9.2.6-9.0.2:
+    linux-ghc-9.2.7-9.0.2:
       image: "ubuntu-22.04"
-      mode: "--ghc-flavor ghc-9.2.6"
+      mode: "--ghc-flavor ghc-9.2.7"
       resolver: "lts-19.20"
       stack-yaml: "stack.yaml"
     # The 9.0.2 resolvers all seem to be missing for macOS. You get
@@ -128,9 +128,9 @@ strategy:
     #   mode: "--ghc-flavor ghc-9.2.5"
     #   resolver: "lts.19.20"
     #   stack-yaml: "stack.yaml"
-    windows-ghc-9.2.6-9.0.2:
+    windows-ghc-9.2.7-9.0.2:
       image: "windows-latest"
-      mode: "--ghc-flavor ghc-9.2.6"
+      mode: "--ghc-flavor ghc-9.2.7"
       resolver: "lts-19.20"
       stack-yaml: "stack.yaml"
 
