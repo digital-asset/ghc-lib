@@ -16,9 +16,7 @@ ghc-options:
 extra-deps:
 # Dependencies of ghc-lib-parser & ghc-lib:
 - alex-3.2.7.1
-# Most recent happy is 1.21.0 but we can't change yet. See:
-# 'ghc/m4/fptools_happy.m4' which is what bounds ghc above to 1.20.0
-- happy-1.20.0
+- happy-1.20.1.1
 # Dependencies for ghc-lib examples:
 - data-array-byte-0.1.0.1
 - hashable-1.4.2.0

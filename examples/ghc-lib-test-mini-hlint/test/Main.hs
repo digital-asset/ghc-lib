@@ -70,4 +70,4 @@ testMiniHlintRespectDynamicPragmaHs :: CommandFile -> IO ()
 testMiniHlintRespectDynamicPragmaHs (CommandFile miniHlint) = do
   cmd <- readFile' miniHlint
   out <- systemOutput_ $ cmd ++ "test/MiniHlintTest_respect_dynamic_pragma.hs"
-  assertEqual "MiniHlint_respect_dynamic_pragma.hs" out ""  -- True if the the test file parses
+  assertBool "MiniHlint_respect_dynamic_pragma.hs" (null out) -- True if the the test file parses

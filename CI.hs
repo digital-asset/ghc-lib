@@ -71,7 +71,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "7825fef9f2096d7769baf433c6858d132af60a3a" -- 2023-02-25
+current = "bf43ba9215a726039ace7bac37c0a223a912d998" -- 2023-03-04
 
 -- Command line argument generators.
 
@@ -460,7 +460,7 @@ buildDists
       writeCmdFile :: String -> FilePath -> Maybe String -> IO FilePath
       writeCmdFile exe stackConfig resolver = do
         let filename = exe
-        let cmd = "stack " ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ "exec -- " ++ exe ++ " "
+        let cmd = "stack --silent " ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ "exec -- " ++ exe ++ " "
         writeFile filename cmd
         pure filename
 
