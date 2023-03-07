@@ -1059,7 +1059,7 @@ commonBuildDepends ghcFlavor =
       , "array >= 0.1 && < 0.6"
       , "deepseq >= 1.4 && < 1.5"
       , "pretty == 1.1.*"
-      , "transformers == 0.5.*"
+      , "transformers >= 0.5 && < 0.7"
       , "process >= 1 && < 1.7"
       ]
 
