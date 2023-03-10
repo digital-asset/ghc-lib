@@ -71,7 +71,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "bf43ba9215a726039ace7bac37c0a223a912d998" -- 2023-03-04
+current = "9ea719f2f1929bf2b789e4001f6c542a04185d61" -- 2023-03-09
 
 -- Command line argument generators.
 
@@ -560,37 +560,41 @@ buildDists
 
       gitCheckout :: GhcFlavor -> IO ()
       gitCheckout ghcFlavor = do
+        cmd $ "cd ghc && git checkout -f " <> branch ghcFlavor
         case ghcFlavor of
-          Ghc961 -> cmd "cd ghc && git checkout -f ghc-9.6"
-          Ghc944 -> cmd "cd ghc && git checkout -f ghc-9.4.4-release"
-          Ghc943 -> cmd "cd ghc && git checkout -f ghc-9.4.3-release"
-          Ghc942 -> cmd "cd ghc && git checkout -f ghc-9.4.2-release"
-          Ghc941 -> cmd "cd ghc && git checkout -f ghc-9.4.1-release"
-          Ghc927 -> cmd "cd ghc && git checkout -f ghc-9.2.7-release"
-          Ghc926 -> cmd "cd ghc && git checkout -f ghc-9.2.6-release"
-          Ghc925 -> cmd "cd ghc && git checkout -f ghc-9.2.5-release"
-          Ghc924 -> cmd "cd ghc && git checkout -f ghc-9.2.4-release"
-          Ghc923 -> cmd "cd ghc && git checkout -f ghc-9.2.3-release"
-          Ghc922 -> cmd "cd ghc && git checkout -f ghc-9.2.2-release"
-          Ghc921 -> cmd "cd ghc && git checkout -f ghc-9.2.1-release"
-          Ghc901 -> cmd "cd ghc && git checkout -f ghc-9.0.1-release"
-          Ghc902 -> cmd "cd ghc && git checkout -f ghc-9.0.2-release"
-          Ghc8101 -> cmd "cd ghc && git checkout -f ghc-8.10.1-release"
-          Ghc8102 -> cmd "cd ghc && git checkout -f ghc-8.10.2-release"
-          Ghc8103 -> cmd "cd ghc && git checkout -f ghc-8.10.3-release"
-          Ghc8104 -> cmd "cd ghc && git checkout -f ghc-8.10.4-release"
-          Ghc8105 -> cmd "cd ghc && git checkout -f ghc-8.10.5-release"
-          Ghc8106 -> cmd "cd ghc && git checkout -f ghc-8.10.6-release"
-          Ghc8107 -> cmd "cd ghc && git checkout -f ghc-8.10.7-release"
-          Ghc881 -> cmd "cd ghc && git checkout -f ghc-8.8.1-release"
-          Ghc882 -> cmd "cd ghc && git checkout -f ghc-8.8.2-release"
-          Ghc883 -> cmd "cd ghc && git checkout -f ghc-8.8.3-release"
-          Ghc884 -> cmd "cd ghc && git checkout -f ghc-8.8.4-release"
-          Da DaFlavor { mergeBaseSha, patches, upstream } -> do
-              cmd $ "cd ghc && git checkout -f " <> mergeBaseSha
-              -- Apply Digital Asset extensions.
-              cmd $ "cd ghc && git remote add upstream " <> upstream
-              cmd "cd ghc && git fetch upstream"
-              cmd $ "cd ghc && git -c user.name=\"Cookie Monster\" -c user.email=cookie.monster@seasame-street.com merge --no-edit " <> unwords patches
-          GhcMaster hash -> cmd $ "cd ghc && git checkout -f " ++ hash
+          Da DaFlavor { patches, upstream } -> do
+            cmd $ "cd ghc && git remote add upstream " <> upstream
+            cmd   "cd ghc && git fetch upstream"
+            cmd $ "cd ghc && git -c user.name=\"Cookie Monster\" -c user.email=cookie.monster@seasame-street.com merge --no-edit " <> unwords patches
+          _ -> pure ()
         cmd "cd ghc && git submodule update --init --recursive"
+
+      branch :: GhcFlavor -> String
+      branch = \case
+          Ghc961  -> "ghc-9.6"
+          Ghc944  -> "ghc-9.4.4-release"
+          Ghc943  -> "ghc-9.4.3-release"
+          Ghc942  -> "ghc-9.4.2-release"
+          Ghc941  -> "ghc-9.4.1-release"
+          Ghc927  -> "ghc-9.2.7-release"
+          Ghc926  -> "ghc-9.2.6-release"
+          Ghc925  -> "ghc-9.2.5-release"
+          Ghc924  -> "ghc-9.2.4-release"
+          Ghc923  -> "ghc-9.2.3-release"
+          Ghc922  -> "ghc-9.2.2-release"
+          Ghc921  -> "ghc-9.2.1-release"
+          Ghc901  -> "ghc-9.0.1-release"
+          Ghc902  -> "ghc-9.0.2-release"
+          Ghc8101 -> "ghc-8.10.1-release"
+          Ghc8102 -> "ghc-8.10.2-release"
+          Ghc8103 -> "ghc-8.10.3-release"
+          Ghc8104 -> "ghc-8.10.4-release"
+          Ghc8105 -> "ghc-8.10.5-release"
+          Ghc8106 -> "ghc-8.10.6-release"
+          Ghc8107 -> "ghc-8.10.7-release"
+          Ghc881  -> "ghc-8.8.1-release"
+          Ghc882  -> "ghc-8.8.2-release"
+          Ghc883  -> "ghc-8.8.3-release"
+          Ghc884  -> "ghc-8.8.4-release"
+          Da DaFlavor { mergeBaseSha } -> mergeBaseSha
+          GhcMaster hash -> hash
