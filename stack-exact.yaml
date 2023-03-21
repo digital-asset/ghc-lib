@@ -7,7 +7,7 @@
 # You can add --resolver xxx to the above command to have the effect
 # of overriding the choice of compiler if desired.
 
-resolver: ghc-9.2.2
+resolver: ghc-9.6.1
 
 ghc-options:
   # Try to be quick.
@@ -91,13 +91,15 @@ extra-deps:
 - wcwidth-0.0.2
 
 flags:
-  # Win32 is a compiler lib, the current version is 2.12.0.1
+  # Win32 is a compiler lib, the version with ghc-9.6.1 is 2.13.3.0
   # (https://www.snoyman.com/base/)
   mintty:
-    win32-2-13-1: false
+    # True for ghc >= 9.6.1 else False.
+    win32-2-13-1: true # Win32 (>=2.13.1)
 
   ansi-terminal:
-    win32-2-13-1: false
+    # True for ghc >= 9.6.1 else False.
+    win32-2-13-1: true # Win32 (>=2.13.1)
 
 # Packages MUST go at the end, since we append to it during the CI.hs
 # script.
