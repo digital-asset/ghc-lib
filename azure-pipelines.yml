@@ -135,6 +135,10 @@ strategy:
 pool: {vmImage: '$(image)'}
 
 steps:
+  # windows
+  - bash: |
+      /usr/bin/find patches -name "*.patch" -exec dos2unix {} \;
+    condition: eq( variables['Agent.OS'], 'Windows_NT' )
   # macOS
   - bash: |
       /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"

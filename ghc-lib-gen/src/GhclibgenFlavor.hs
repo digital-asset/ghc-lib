@@ -18,7 +18,7 @@ data GhcFlavor = DaGhc881
                | GhcMaster
   deriving (Show, Eq, Ord)
 
-data GhcSeries = Ghc88 | Ghc810 | Ghc90 | Ghc92 | Ghc94 | Ghc96 | Ghc97
+data GhcSeries = Ghc88 | Ghc810 | Ghc90 | Ghc92 | Ghc94 | Ghc96 | Ghc98
   deriving (Show, Eq, Ord)
 
 ghcSeries :: GhcFlavor -> GhcSeries
@@ -29,5 +29,5 @@ ghcSeries = \case
     f | Ghc921 <= f && f < Ghc941 -> Ghc92
     f | Ghc941 <= f && f < Ghc961 -> Ghc94
     f | Ghc961 <= f && f < GhcMaster -> Ghc96
-    GhcMaster -> Ghc97
+    GhcMaster -> Ghc98
     _ -> error "ghcSeries: impossible case"

@@ -23,7 +23,7 @@ main = ghclibgen =<< execParser opts
       )
 
 ghclibgen :: GhclibgenOpts -> IO ()
-ghclibgen (GhclibgenOpts root target ghcFlavor skipInit cppOpts resolver) = do
+ghclibgen (GhclibgenOpts root patches target ghcFlavor skipInit cppOpts resolver) = do
   withCurrentDirectory root $
     case target of
       GhclibParser -> do
@@ -45,6 +45,9 @@ ghclibgen (GhclibgenOpts root target ghcFlavor skipInit cppOpts resolver) = do
 
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do
+        -- A ghc-lib patch but it removes a file and that needs to
+        -- happen before calc parser depends.
+        applyPatchSystemSemaphore patches ghcFlavor
         applyPatchTemplateHaskellCabal ghcFlavor
         applyPatchHadrianStackYaml ghcFlavor resolver
         applyPatchHeapClosures ghcFlavor

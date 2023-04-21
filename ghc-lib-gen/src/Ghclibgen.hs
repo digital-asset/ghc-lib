@@ -27,6 +27,7 @@ module Ghclibgen (
   , applyPatchCmmParseNoImplicitPrelude
   , applyPatchHadrianStackYaml
   , applyPatchTemplateHaskellCabal
+  , applyPatchSystemSemaphore
   , generatePrerequisites
   , mangleCSymbols
   , generateGhcLibCabal
@@ -58,7 +59,7 @@ import qualified Data.Yaml as Y
 import Data.Yaml (ToJSON(..), (.:?), (.!=))
 import qualified Data.HashMap.Strict as HMS
 
-import GhclibgenOpts
+import GhclibgenFlavor
 
 -- Constants.
 
@@ -333,6 +334,26 @@ calcParserModules ghcFlavor = do
         [ x | ghcSeries ghcFlavor >= Ghc92,  x <- [ "GHC.Driver.Config", "GHC.Parser.Errors.Ppr" ] ] ++
         [ if ghcSeries ghcFlavor >= Ghc90 then "GHC.Parser.Header" else "HeaderInfo", if ghcSeries ghcFlavor >= Ghc810 then "GHC.Hs.Dump" else "HsDumpAst" ]
   return $ nubSort (modules ++ extraModules)
+
+applyPatchSystemSemaphore :: FilePath -> GhcFlavor -> IO ()
+applyPatchSystemSemaphore patches ghcFlavor = do
+  when (ghcSeries ghcFlavor == Ghc98) $ do
+    -- https://gitlab.haskell.org/ghc/ghc/-/commit/5c8731244bc13a3d813d2a4d53b3188b28dc8355#774d88050336ef660c7a219fb06c480c2fc639bc
+
+    -- Since Apr 2023 ghc depends on a newly created library -
+    -- semaphore-compat. To keep building ghc-flavor 9.8 with ghc-9.4
+    -- and ghc-9.6 series build compilers on all platforms we do as
+    -- minimal an unwinding of the commit as we can such that ghc-lib
+    -- itself avoids depending on semaphore-compat. Hopefully this
+    -- patch will hold us over until the minimum build compiler
+    -- version is known to ship with semaphore-compat at which point
+    -- semaphore-compat can be added to the ghc-lib build deps and
+    -- this patch removed.
+    system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-ghc_cabal_in.patch")
+    system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_MakeSem_hs.patch")
+    system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Make_hs.patch")
+    system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Session_hs.patch")
+    system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Pipeline_LogQueue_hs.patch")
 
 applyPatchTemplateHaskellCabal :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellCabal ghcFlavor = do
