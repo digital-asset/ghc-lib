@@ -25,6 +25,7 @@ data GhclibgenTarget = GhclibParser | Ghclib
 -- | The type of ghc-lib-gen options.
 data GhclibgenOpts = GhclibgenOpts {
     ghclibgenOpts_root :: !FilePath -- ^ Path to a GHC git repository.
+  , ghclibgenOpts_patches :: !FilePath -- ^ Path to a directory of patches.
   , ghclibgenOpts_target :: !GhclibgenTarget
   , ghclibgenOpts_ghcFlavor :: !GhcFlavor
   , ghclibgenOpts_skipInit :: !Bool
@@ -63,6 +64,7 @@ ghclibgenTarget =
 ghclibgenOpts :: Parser GhclibgenOpts
 ghclibgenOpts = GhclibgenOpts
   <$> argument str (metavar "GHC_ROOT")
+  <*> argument str (metavar "PATCHES_DIR")
   <*> ghclibgenTarget
   <*> ghcFlavorOpt
   <*> switch
