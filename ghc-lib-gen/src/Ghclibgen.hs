@@ -178,7 +178,7 @@ dataFiles ghcFlavor =
 
 cabalFileDependencies :: GhcFlavor -> [FilePath]
 cabalFileDependencies ghcFlavor =
-  [ f | ghcFlavor > Ghc944, f <- cabalFileBinary : cabalFileLibraries ]
+  [ f | ghcSeries ghcFlavor > Ghc94, f <- cabalFileBinary : cabalFileLibraries ]
 
 rtsDependencies :: GhcFlavor -> [FilePath]
 rtsDependencies ghcFlavor =
@@ -1024,11 +1024,12 @@ baseBounds = \case
     Ghc927    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
 
     -- ghc-9.4.1, ghc-9.4.2, ghc-9.4.3, ghc-9.4.4 all ship with
-    -- base-4.17.0.0
+    -- base-4.17.0.0, ghc-9.4.5 has base-4.17.1.0
     Ghc941   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
     Ghc942   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
     Ghc943   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
     Ghc944   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
+    Ghc945   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
 
     -- require bytestring >= 0.11.3 which rules out ghc-9.2.1
     Ghc961   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.7.1)
@@ -1268,7 +1269,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         indent2 [ "compiler/cbits/genSym.c" ] ++
         indent2 [ "compiler/cbits/cutils.c" | ghcSeries ghcFlavor >= Ghc90 ] ++
         indent2 [ "compiler/parser/cutils.c" | ghcSeries ghcFlavor < Ghc90 ] ++
-        indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor `elem` [Ghc926, Ghc927] || ghcSeries ghcFlavor >= Ghc96 ] ++
+        indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor `elem` [Ghc926, Ghc927, Ghc945] || ghcSeries ghcFlavor >= Ghc96 ] ++
         [ "    hs-source-dirs:" ] ++
         indent2 (ghcLibParserHsSrcDirs False ghcFlavor lib) ++
         [ "    autogen-modules:" ] ++
