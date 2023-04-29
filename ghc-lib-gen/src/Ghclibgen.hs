@@ -25,7 +25,7 @@ module Ghclibgen (
   , applyPatchStage
   , applyPatchNoMonoLocalBinds
   , applyPatchCmmParseNoImplicitPrelude
-  , applyPatchHadrianStackYaml
+  -- , applyPatchHadrianStackYaml
   , applyPatchTemplateHaskellCabal
   , applyPatchSystemSemaphore
   , generatePrerequisites
@@ -876,64 +876,64 @@ applyPatchCmmParseNoImplicitPrelude _ = do
         "import GhcPrelude\nimport qualified Prelude"
     =<< readFile' cmmParse
 
--- [Note : GHC now depends on exceptions package]
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--- As of
--- https://gitlab.haskell.org/ghc/ghc/-/commit/30272412fa437ab8e7a8035db94a278e10513413
--- (4th May 2020), certain GHC modules depend on the exceptions
--- package. Depending on the boot compiler, this package may or may
--- not be present and if it's missing, determining the list of
--- ghc-lib-parser modules (via 'calcParserModules') will fail. The
--- function 'appyPatchHadrianStackYaml' guarantees it is available
--- if its needed.
+-- -- [Note : GHC now depends on exceptions package]
+-- -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- -- As of
+-- -- https://gitlab.haskell.org/ghc/ghc/-/commit/30272412fa437ab8e7a8035db94a278e10513413
+-- -- (4th May 2020), certain GHC modules depend on the exceptions
+-- -- package. Depending on the boot compiler, this package may or may
+-- -- not be present and if it's missing, determining the list of
+-- -- ghc-lib-parser modules (via 'calcParserModules') will fail. The
+-- -- function 'appyPatchHadrianStackYaml' guarantees it is available
+-- -- if its needed.
 
--- | Patch Hadrian's Cabal.
-applyPatchHadrianStackYaml :: GhcFlavor -> Maybe String -> IO ()
-applyPatchHadrianStackYaml ghcFlavor resolver = do
-  let hadrianStackYaml = "hadrian/stack.yaml"
-  config <- Y.decodeFileThrow hadrianStackYaml
-  -- See [Note : GHC now depends on exceptions package]
-  let deps = ["exceptions-0.10.4" | ghcFlavor >= Ghc901 ] ++
-        case parse (\cfg -> cfg .:? "extra-deps" .!= []) config of
-          Success ls -> ls :: [Y.Value]
-          Error msg -> error msg
- -- Build hadrian (and any artifacts we generate via hadrian e.g.
- -- Parser.hs) as quickly as possible.
-  let opts = HMS.insert "$everything" "-O0 -j" $
-        case parse (\cfg -> cfg .:? "ghc-options" .!= HMS.empty) config of
-          Success os -> os :: HMS.HashMap T.Text Y.Value
-          Error msg -> error msg
-  let config' =
-        HMS.insert "extra-deps" (toJSON deps)
-          (HMS.insert "ghc-options" (toJSON opts)
-#if !MIN_VERSION_aeson(2, 0, 2)
-                                     config
-#else
-                                     (toHashMap config)
-#endif
-          )
-    -- [Note: Hack "ghc-X.X.X does not compile with ghc XXX"]
-    -- ------------------------------------------------------
-    -- See for example
-    -- https://gitlab.haskell.org/ghc/ghc/-/issues/21633 &
-    -- https://gitlab.haskell.org/ghc/ghc/-/issues/21634.
-    --
-    -- The idea is to replace the resolver with whatever is prevailing
-    -- (or ghc-9.2.5 if that's not possible).
-      resolverDefault = "lts-20.10" -- ghc-9.2.5
-      -- The resolver has to curate packages so resolvers of the form
-      -- ghc-x.y.z won't do.
-      resolver' = case fromMaybe resolverDefault resolver of
-        r | "ghc-" `isPrefixOf` r -> resolverDefault
-        r -> r
+-- -- | Patch Hadrian's Cabal.
+-- applyPatchHadrianStackYaml :: GhcFlavor -> Maybe String -> IO ()
+-- applyPatchHadrianStackYaml ghcFlavor resolver = do
+--   let hadrianStackYaml = "hadrian/stack.yaml"
+--   config <- Y.decodeFileThrow hadrianStackYaml
+--   -- See [Note : GHC now depends on exceptions package]
+--   let deps = ["exceptions-0.10.4" | ghcFlavor >= Ghc901 ] ++
+--         case parse (\cfg -> cfg .:? "extra-deps" .!= []) config of
+--           Success ls -> ls :: [Y.Value]
+--           Error msg -> error msg
+--  -- Build hadrian (and any artifacts we generate via hadrian e.g.
+--  -- Parser.hs) as quickly as possible.
+--   let opts = HMS.insert "$everything" "-O0 -j" $
+--         case parse (\cfg -> cfg .:? "ghc-options" .!= HMS.empty) config of
+--           Success os -> os :: HMS.HashMap T.Text Y.Value
+--           Error msg -> error msg
+--   let config' =
+--         HMS.insert "extra-deps" (toJSON deps)
+--           (HMS.insert "ghc-options" (toJSON opts)
+-- #if !MIN_VERSION_aeson(2, 0, 2)
+--                                      config
+-- #else
+--                                      (toHashMap config)
+-- #endif
+--           )
+--     -- [Note: Hack "ghc-X.X.X does not compile with ghc XXX"]
+--     -- ------------------------------------------------------
+--     -- See for example
+--     -- https://gitlab.haskell.org/ghc/ghc/-/issues/21633 &
+--     -- https://gitlab.haskell.org/ghc/ghc/-/issues/21634.
+--     --
+--     -- The idea is to replace the resolver with whatever is prevailing
+--     -- (or ghc-9.2.5 if that's not possible).
+--       resolverDefault = "lts-20.10" -- ghc-9.2.5
+--       -- The resolver has to curate packages so resolvers of the form
+--       -- ghc-x.y.z won't do.
+--       resolver' = case fromMaybe resolverDefault resolver of
+--         r | "ghc-" `isPrefixOf` r -> resolverDefault
+--         r -> r
 
-      config'' = if ghcSeries ghcFlavor < Ghc94
-                     then config'
-                     else
-                         HMS.insert "allow-newer" (toJSON True)
-                           (HMS.update (\_ -> Just (toJSON resolver')) "resolver" config')
+--       config'' = if ghcSeries ghcFlavor < Ghc94
+--                      then config'
+--                      else
+--                          HMS.insert "allow-newer" (toJSON True)
+--                            (HMS.update (\_ -> Just (toJSON resolver')) "resolver" config')
 
-  Y.encodeFile hadrianStackYaml config''
+--   Y.encodeFile hadrianStackYaml config''
 
 -- | Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal

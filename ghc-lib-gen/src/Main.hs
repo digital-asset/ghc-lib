@@ -49,7 +49,7 @@ ghclibgen (GhclibgenOpts root patches target ghcFlavor skipInit cppOpts resolver
         -- happen before calc parser depends.
         applyPatchSystemSemaphore patches ghcFlavor
         applyPatchTemplateHaskellCabal ghcFlavor
-        applyPatchHadrianStackYaml ghcFlavor resolver
+        -- applyPatchHadrianStackYaml ghcFlavor resolver
         applyPatchHeapClosures ghcFlavor
         applyPatchRtsIncludePaths ghcFlavor
         applyPatchGhcPrim ghcFlavor
