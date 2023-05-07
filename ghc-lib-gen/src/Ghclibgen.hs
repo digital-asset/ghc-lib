@@ -832,7 +832,7 @@ applyPatchStage ghcFlavor =
 -- how it currently is on HEAD.
 applyPatchAclocal :: GhcFlavor -> IO ()
 applyPatchAclocal ghcFlavor =
-  when (ghcFlavor == Ghc901) $
+  when (ghcFlavor <= Ghc901) $
     writeFile aclocalm4 .
       replace "_AC_PROG_CC_C99" "AC_PROG_CC_C99"
     =<< readFile' aclocalm4
