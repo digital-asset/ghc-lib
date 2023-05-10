@@ -284,7 +284,7 @@ calcParserModules ghcFlavor = do
       -- See [Note: GHC now depends on exceptions package].
       cmd = unwords $
         [ "stack exec" ] ++
-        [ "--package exceptions" | ghcSeries ghcFlavor >= Ghc90 ] ++
+        [ "--package exceptions" | ghcSeries ghcFlavor == Ghc90 ] ++
         [ "--stack-yaml hadrian/stack.yaml" ] ++
         [ "-- ghc"
         , "-dep-suffix ''"
@@ -296,7 +296,7 @@ calcParserModules ghcFlavor = do
         , "-ignore-package ghci"
         , "-package base"
         ] ++
-        [ "-package exceptions" | ghcSeries ghcFlavor >= Ghc90 ] ++
+        [ "-package exceptions" | ghcSeries ghcFlavor == Ghc90 ] ++
         hsSrcIncludes ++
         ((placeholderModulesDir </>) <$> (
           [ "GHC" </> "Parser.hs" | ghcSeries ghcFlavor >= Ghc90] ++
@@ -876,24 +876,17 @@ applyPatchCmmParseNoImplicitPrelude _ = do
         "import GhcPrelude\nimport qualified Prelude"
     =<< readFile' cmmParse
 
--- [Note : GHC now depends on exceptions package]
--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--- As of
--- https://gitlab.haskell.org/ghc/ghc/-/commit/30272412fa437ab8e7a8035db94a278e10513413
--- (4th May 2020), certain GHC modules depend on the exceptions
--- package. Depending on the boot compiler, this package may or may
--- not be present and if it's missing, determining the list of
--- ghc-lib-parser modules (via 'calcParserModules') will fail. The
--- function 'appyPatchHadrianStackYaml' guarantees it is available
--- if its needed.
-
 -- | Patch Hadrian's Cabal.
 applyPatchHadrianStackYaml :: GhcFlavor -> Maybe String -> IO ()
 applyPatchHadrianStackYaml ghcFlavor resolver = do
   let hadrianStackYaml = "hadrian/stack.yaml"
   config <- Y.decodeFileThrow hadrianStackYaml
-  -- See [Note : GHC now depends on exceptions package]
-  let deps = ["exceptions-0.10.4" | ghcFlavor >= Ghc901 ] ++
+  -- [Note : GHC now depends on exceptions package]
+  -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  -- 'exceptions' is required by flavors >= ghc-9.0.1 but isn't in the
+  -- compiler packages when the build compiler is of the 8.8 series so
+  -- this makes sure it's there in that case.
+  let deps = ["exceptions-0.10.4" | ghcSeries ghcFlavor == Ghc90] ++
         case parse (\cfg -> cfg .:? "extra-deps" .!= []) config of
           Success ls -> ls :: [Y.Value]
           Error msg -> error msg
@@ -926,13 +919,14 @@ applyPatchHadrianStackYaml ghcFlavor resolver = do
       resolver' = case fromMaybe resolverDefault resolver of
         r | "ghc-" `isPrefixOf` r -> resolverDefault
         r -> r
-
+      -- This is still an issue with 9.6.1 (resolver in
+      -- hadrian/stack.yaml is a 9.0.2 resolver i.e. not recent enough
+      -- to build GHC so causes a configure error).
       config'' = if ghcSeries ghcFlavor < Ghc94
                      then config'
                      else
                          HMS.insert "allow-newer" (toJSON True)
                            (HMS.update (\_ -> Just (toJSON resolver')) "resolver" config')
-
   Y.encodeFile hadrianStackYaml config''
 
 -- | Data type representing an approximately parsed Cabal file.
