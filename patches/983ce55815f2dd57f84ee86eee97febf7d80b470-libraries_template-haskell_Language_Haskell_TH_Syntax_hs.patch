@@ -1,0 +1,94 @@
+diff --git a/libraries/template-haskell/Language/Haskell/TH/Syntax.hs b/libraries/template-haskell/Language/Haskell/TH/Syntax.hs
+index 92612225e6..513edd5abc 100644
+--- a/libraries/template-haskell/Language/Haskell/TH/Syntax.hs
++++ b/libraries/template-haskell/Language/Haskell/TH/Syntax.hs
+@@ -6,7 +6,6 @@
+              Trustworthy, DeriveFunctor, BangPatterns, RecordWildCards, ImplicitParams #-}
+ 
+ {-# OPTIONS_GHC -fno-warn-inline-rule-shadowing #-}
+-{-# LANGUAGE TemplateHaskellQuotes #-}
+ 
+ -----------------------------------------------------------------------------
+ -- |
+@@ -55,7 +54,7 @@ import Data.Ratio
+ import GHC.CString      ( unpackCString# )
+ import GHC.Generics     ( Generic )
+ import GHC.Types        ( Int(..), Word(..), Char(..), Double(..), Float(..),
+-                          TYPE, RuntimeRep(..), Multiplicity (..) )
++                          TYPE, RuntimeRep(..) )
+ import GHC.Prim         ( Int#, Word#, Char#, Double#, Float#, Addr# )
+ import GHC.Ptr          ( Ptr, plusPtr )
+ import GHC.Lexeme       ( startsVarSym, startsVarId )
+@@ -66,6 +65,7 @@ import Prelude hiding (Applicative(..))
+ import Foreign.ForeignPtr
+ import Foreign.C.String
+ import Foreign.C.Types
++import GHC.Stack
+ 
+ #if __GLASGOW_HASKELL__ >= 901
+ import GHC.Types ( Levity(..) )
+@@ -1067,7 +1067,8 @@ instance Lift (Fixed.Fixed a) where
+     ex <- lift x
+     return (ConE mkFixedName `AppE` ex)
+     where
+-      mkFixedName = 'Fixed.MkFixed
++      mkFixedName =
++        mkNameG DataName "base" "Data.Fixed" "MkFixed"
+ 
+ instance Integral a => Lift (Ratio a) where
+   liftTyped x = unsafeCodeCoerce (lift x)
+@@ -1138,8 +1139,19 @@ instance Lift ByteArray where
+       ptr :: ForeignPtr Word8
+       ptr = ForeignPtr (byteArrayContents# pb) (PlainPtr (unsafeCoerce# pb))
+ 
++
++-- We can't use a TH quote in this module because we're in the template-haskell
++-- package, so we conconct this quite defensive solution to make the correct name
++-- which will work if the package name or module name changes in future.
+ addrToByteArrayName :: Name
+-addrToByteArrayName = 'addrToByteArray
++addrToByteArrayName = helper
++  where
++    helper :: HasCallStack => Name
++    helper =
++      case getCallStack ?callStack of
++        [] -> error "addrToByteArrayName: empty call stack"
++        (_, SrcLoc{..}) : _ -> mkNameG_v srcLocPackage srcLocModule "addrToByteArray"
++
+ 
+ addrToByteArray :: Int -> Addr# -> ByteArray
+ addrToByteArray (I# len) addr = runST $ ST $
+@@ -1359,24 +1371,23 @@ instance (Lift a, Lift b, Lift c, Lift d, Lift e, Lift f, Lift g)
+ 
+ 
+ trueName, falseName :: Name
+-trueName  = 'True
+-falseName = 'False
++trueName  = mkNameG DataName "ghc-prim" "GHC.Types" "True"
++falseName = mkNameG DataName "ghc-prim" "GHC.Types" "False"
+ 
+ nothingName, justName :: Name
+-nothingName = 'Nothing
+-justName    = 'Just
++nothingName = mkNameG DataName "base" "GHC.Maybe" "Nothing"
++justName    = mkNameG DataName "base" "GHC.Maybe" "Just"
+ 
+ leftName, rightName :: Name
+-leftName  = 'Left
+-rightName = 'Right
++leftName  = mkNameG DataName "base" "Data.Either" "Left"
++rightName = mkNameG DataName "base" "Data.Either" "Right"
+ 
+ nonemptyName :: Name
+-nonemptyName = '(:|)
++nonemptyName = mkNameG DataName "base" "GHC.Base" ":|"
+ 
+ oneName, manyName :: Name
+-oneName  = 'One
+-manyName = 'Many
+-
++oneName  = mkNameG DataName "ghc-prim" "GHC.Types" "One"
++manyName = mkNameG DataName "ghc-prim" "GHC.Types" "Many"
+ -----------------------------------------------------
+ --
+ --              Generic Lift implementations

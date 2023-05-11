@@ -26,6 +26,7 @@ module Ghclibgen (
   , applyPatchNoMonoLocalBinds
   , applyPatchCmmParseNoImplicitPrelude
   , applyPatchHadrianStackYaml
+  , applyPatchTemplateHaskellLanguageHaskellTHSyntax
   , applyPatchTemplateHaskellCabal
   , applyPatchSystemSemaphore
   , generatePrerequisites
@@ -337,13 +338,17 @@ calcParserModules ghcFlavor = do
 
 applyPatchSystemSemaphore :: FilePath -> GhcFlavor -> IO ()
 applyPatchSystemSemaphore patches ghcFlavor = do
-  when (ghcSeries ghcFlavor == Ghc98) $ do
-    -- https://gitlab.haskell.org/ghc/ghc/-/commit/5c8731244bc13a3d813d2a4d53b3188b28dc8355#774d88050336ef660c7a219fb06c480c2fc639bc
-
+  when (ghcSeries ghcFlavor >= Ghc98) $ do
+    -- Selectively restore some files to revision
+    --   5c8731244bc13a3d813d2a4d53b3188b28dc8355^1
+    -- reverting the changes that result from these two commits:
+    --   https://gitlab.haskell.org/ghc/ghc/-/commit/5c8731244bc13a3d813d2a4d53b3188b28dc8355
+    --   https://gitlab.haskell.org/ghc/ghc/-/commit/18a7d03d46706d2217235d26a72e6f1e82c62192
+    --
     -- Since Apr 2023 ghc depends on a newly created library -
     -- semaphore-compat. To keep building ghc-flavor 9.8 with ghc-9.4
     -- and ghc-9.6 series build compilers on all platforms we do as
-    -- minimal an unwinding of the commit as we can such that ghc-lib
+    -- minimal an unwinding of the commits as we can such that ghc-lib
     -- itself avoids depending on semaphore-compat. Hopefully this
     -- patch will hold us over until the minimum build compiler
     -- version is known to ship with semaphore-compat at which point
@@ -351,9 +356,22 @@ applyPatchSystemSemaphore patches ghcFlavor = do
     -- this patch removed.
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-ghc_cabal_in.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_MakeSem_hs.patch")
-    system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Make_hs.patch")
+    system_ $ "git apply " ++ (patches </> "18a7d03d46706d2217235d26a72e6f1e82c62192-GHC_Driver_Make_hs.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Session_hs.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Pipeline_LogQueue_hs.patch")
+
+applyPatchTemplateHaskellLanguageHaskellTHSyntax :: FilePath -> GhcFlavor -> IO ()
+applyPatchTemplateHaskellLanguageHaskellTHSyntax patches ghcFlavor = do
+  -- Selectively restore one file to revision
+  --   983ce55815f2dd57f84ee86eee97febf7d80b470^1
+  -- reverting the changes that result from the commit:
+  --   https://gitlab.haskell.org/ghc/ghc/-/commit/983ce55815f2dd57f84ee86eee97febf7d80b470
+  -- The above commit uses `TemplateHaskellQuotes` to define `Name`s.
+  -- Doing that produces values of type `Name` from the
+  -- template-haskell package rather than values of type `Name` as
+  -- defined in `Language.Haskell.TH.Syntax`.
+  when (ghcSeries ghcFlavor >= Ghc98) $ do
+    system_ $ "git apply " ++ (patches </> "983ce55815f2dd57f84ee86eee97febf7d80b470-libraries_template-haskell_Language_Haskell_TH_Syntax_hs.patch")
 
 applyPatchTemplateHaskellCabal :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellCabal ghcFlavor = do
