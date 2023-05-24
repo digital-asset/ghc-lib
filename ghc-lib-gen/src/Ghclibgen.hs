@@ -699,7 +699,8 @@ applyPatchHaddockHs ghcFlavor = do
 -- instruction codes that this support relies on.
 applyPatchRtsBytecodes :: GhcFlavor -> IO ()
 applyPatchRtsBytecodes ghcFlavor = do
-  when (ghcSeries ghcFlavor >= Ghc92) (
+  let series = ghcSeries ghcFlavor
+  when (series >= Ghc92 && series < Ghc96) (
     writeFile asmHs .
       replace
         "#include \"rts/Bytecodes.h\""
