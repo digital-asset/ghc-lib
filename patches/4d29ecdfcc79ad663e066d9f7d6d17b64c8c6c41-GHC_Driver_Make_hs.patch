@@ -1,5 +1,5 @@
 diff --git a/compiler/GHC/Driver/Make.hs b/compiler/GHC/Driver/Make.hs
-index b7bc05f74a..d72b452d2e 100644
+index a8187074fe..d72b452d2e 100644
 --- a/compiler/GHC/Driver/Make.hs
 +++ b/compiler/GHC/Driver/Make.hs
 @@ -75,7 +75,6 @@ import GHC.Driver.Env
@@ -102,7 +102,41 @@ index b7bc05f74a..d72b452d2e 100644
      -> HscEnv -- ^ The base HscEnv, which is augmented for each module
      -> Maybe ModIfaceCache -- ^ A cache to incrementally write final interface files to
      -> Maybe Messager
-@@ -2853,14 +2832,16 @@ label_self thread_name = do
+@@ -1681,10 +1660,8 @@ downsweep hsc_env old_summaries excl_mods allow_dup_roots
+             k = NodeKey_Module (msKey ms)
+ 
+             hs_file_for_boot
+-              | HsBootFile <- ms_hsc_src ms
+-              = Just $ ((ms_unitid ms), NoPkgQual, (GWIB (noLoc $ ms_mod_name ms) NotBoot))
+-              | otherwise
+-              = Nothing
++              | HsBootFile <- ms_hsc_src ms = Just $ ((ms_unitid ms), NoPkgQual, (GWIB (noLoc $ ms_mod_name ms) NotBoot))
++              | otherwise = Nothing
+ 
+ 
+         -- This loops over each import in each summary. It is mutually recursive with loopSummaries if we discover
+@@ -2209,9 +2186,9 @@ summariseModule hsc_env' home_unit old_summary_map is_boot (L _ wanted_mod) mb_p
+         -- annotation, but we don't know if it's a signature or a regular
+         -- module until we actually look it up on the filesystem.
+         let hsc_src
+-              | is_boot == IsBoot           = HsBootFile
++              | is_boot == IsBoot = HsBootFile
+               | isHaskellSigFilename src_fn = HsigFile
+-              | otherwise                   = HsSrcFile
++              | otherwise = HsSrcFile
+ 
+         when (pi_mod_name /= wanted_mod) $
+                 throwE $ singleMessage $ mkPlainErrorMsgEnvelope pi_mod_name_loc
+@@ -2536,7 +2513,7 @@ executeCompileNode k n !old_hmi hug mrehydrate_mods mod = do
+         -- compiling a signature requires an knot_var for that unit.
+         -- If you remove this then a lot of backpack tests fail.
+         HsigFile -> Just []
+-        _        -> mrehydrate_mods
++        _ -> mrehydrate_mods
+ 
+ {- Rehydration, see Note [Rehydrating Modules] -}
+ 
+@@ -2855,14 +2832,16 @@ label_self thread_name = do
      CC.labelThread self_tid thread_name
  
  
@@ -123,7 +157,7 @@ index b7bc05f74a..d72b452d2e 100644
  
  runSeqPipelines :: HscEnv -> Maybe Messager -> [MakeAction] -> IO ()
  runSeqPipelines plugin_hsc_env mHscMessager all_pipelines =
-@@ -2869,38 +2850,16 @@ runSeqPipelines plugin_hsc_env mHscMessager all_pipelines =
+@@ -2871,38 +2850,16 @@ runSeqPipelines plugin_hsc_env mHscMessager all_pipelines =
                      , compile_sem = AbstractSem (return ()) (return ())
                      , env_messager = mHscMessager
                      }
@@ -166,7 +200,7 @@ index b7bc05f74a..d72b452d2e 100644
  
  
    -- A variable which we write to when an error has happened and we have to tell the
-@@ -2910,23 +2869,39 @@ runParPipelines worker_limit plugin_hsc_env mHscMessager all_pipelines = do
+@@ -2912,23 +2869,39 @@ runParPipelines worker_limit plugin_hsc_env mHscMessager all_pipelines = do
    -- will add it's LogQueue into this queue.
    log_queue_queue_var <- newTVarIO newLogQueueQueue
    -- Thread which coordinates the printing of logs
@@ -216,7 +250,7 @@ index b7bc05f74a..d72b452d2e 100644
  
  withLocalTmpFS :: RunMakeM a -> RunMakeM a
  withLocalTmpFS act = do
-@@ -2943,11 +2918,10 @@ withLocalTmpFS act = do
+@@ -2945,11 +2918,10 @@ withLocalTmpFS act = do
    MC.bracket initialiser finaliser $ \lcl_hsc_env -> local (\env -> env { hsc_env = lcl_hsc_env}) act
  
  -- | Run the given actions and then wait for them all to finish.

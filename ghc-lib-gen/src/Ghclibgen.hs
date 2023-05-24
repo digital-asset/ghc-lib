@@ -356,9 +356,18 @@ applyPatchSystemSemaphore patches ghcFlavor = do
     -- this patch removed.
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-ghc_cabal_in.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_MakeSem_hs.patch")
-    system_ $ "git apply " ++ (patches </> "18a7d03d46706d2217235d26a72e6f1e82c62192-GHC_Driver_Make_hs.patch")
-    system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Session_hs.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Pipeline_LogQueue_hs.patch")
+    system_ $ "git apply " ++ (patches </> "4d29ecdfcc79ad663e066d9f7d6d17b64c8c6c41-GHC_Driver_Make_hs.patch")
+    writeFile "compiler/GHC/Driver/Make.hs" .
+      replace
+        (unlines [
+            "    n_jobs <- case parMakeCount (hsc_dflags hsc_env) of"
+            , "                    Nothing -> liftIO getNumProcessors"
+            , "                    Just n  -> return n"
+            ]
+        )
+        "    n_jobs <- liftIO getNumProcessors"
+      =<< readFile' "compiler/GHC/Driver/Make.hs"
 
 applyPatchTemplateHaskellLanguageHaskellTHSyntax :: FilePath -> GhcFlavor -> IO ()
 applyPatchTemplateHaskellLanguageHaskellTHSyntax patches ghcFlavor = do
@@ -1126,7 +1135,7 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
     (lib, _bin, parserModules) <- libBinParserModules ghcFlavor
     let nonParserModules =
           Set.toList (Set.difference
-          (Set.fromList (askField lib "exposed-modules:" ))
+          (Set.fromList $ askField lib "exposed-modules:" )
           (Set.fromList parserModules))
 
     writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
