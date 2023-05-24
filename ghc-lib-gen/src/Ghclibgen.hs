@@ -717,12 +717,9 @@ applyPatchRtsBytecodes ghcFlavor = do
 -- (https://gitlab.haskell.org/ghc/ghc/commit/705a16df02411ec2445c9a254396a93cabe559ef)
 applyPatchGhcPrim :: GhcFlavor -> IO ()
 applyPatchGhcPrim ghcFlavor = do
-    let tysPrim =
-          "compiler/" ++
-          if ghcSeries ghcFlavor >= Ghc90
-            then "GHC/Builtin/Types/Prim.hs"
-            else "prelude/TysPrim.hs"
-    when (ghcSeries ghcFlavor >= Ghc90) (
+    let series = ghcSeries ghcFlavor
+    when (series >= Ghc90 && series < Ghc96) $ do
+      let tysPrim = "compiler/GHC/Builtin/Types/Prim.hs"
       writeFile tysPrim .
           replaceIfGhcPrim070Else 0
             "bcoPrimTyCon = pcPrimTyCon0 bcoPrimTyConName LiftedRep"
@@ -731,10 +728,7 @@ applyPatchGhcPrim ghcFlavor = do
             "bcoPrimTyConName              = mkPrimTc (fsLit \"BCO\") bcoPrimTyConKey bcoPrimTyCon"
             "bcoPrimTyConName              = mkPrimTc (fsLit \"BCO#\") bcoPrimTyConKey bcoPrimTyCon"
         =<< readFile' tysPrim
-        )
-
-    let createBCO = "libraries/ghci/GHCi/CreateBCO.hs"
-    when (ghcSeries ghcFlavor >= Ghc90) (
+      let createBCO = "libraries/ghci/GHCi/CreateBCO.hs"
       writeFile createBCO .
           replace
               "{-# LANGUAGE RecordWildCards #-}"
@@ -758,7 +752,6 @@ applyPatchGhcPrim ghcFlavor = do
             "newBCO# instrs lits ptrs arity bitmap s"
             "case newBCO# instrs lits ptrs arity bitmap s of\n    (# s1, bco #) -> (# s1, BCO bco #)"
         =<< readFile' createBCO
-        )
   where
     replaceIfGhcPrim070Else :: Int -> String -> String -> String -> String
     replaceIfGhcPrim070Else n s r = replace s (ifGhcPrim070Else n s r)
