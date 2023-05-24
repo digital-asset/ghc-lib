@@ -1053,7 +1053,9 @@ baseBounds = \case
     Ghc945   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
 
     -- require bytestring >= 0.11.3 which rules out ghc-9.2.1
-    Ghc961   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.7.1)
+    -- base-4.18.0
+    Ghc961   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
+    Ghc962   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
 
     GhcMaster -- e.g. "9.7.20230119"
               -- (c.f. 'rts/include/ghc-version.h'')

@@ -14,7 +14,7 @@ data GhcFlavor = DaGhc881
                | Ghc901 | Ghc902
                | Ghc921 | Ghc922 | Ghc923 | Ghc924 | Ghc925 | Ghc926 | Ghc927
                | Ghc941 | Ghc942 | Ghc943 | Ghc944 | Ghc945
-               | Ghc961
+               | Ghc961 | Ghc962
                | GhcMaster
   deriving (Show, Eq, Ord)
 
