@@ -331,9 +331,10 @@ calcParserModules ghcFlavor = do
       -- '.parser-depends' but are required by ghc-lib-parser. We
       -- intervene and patch things up.
       extraModules =
+        [  if ghcSeries ghcFlavor >= Ghc90 then "GHC.Parser.Header" else "HeaderInfo", if ghcSeries ghcFlavor >= Ghc810 then "GHC.Hs.Dump" else "HsDumpAst" ] ++
+        [ x | ghcSeries ghcFlavor >= Ghc92, x <- [ "GHC.Driver.Config", "GHC.Parser.Errors.Ppr" ] ] ++
         [ x | ghcSeries ghcFlavor >= Ghc94, x <- [ "GHC.Runtime.Interpreter", "GHCi.BinaryArray", "GHCi.BreakArray", "GHCi.ResolvedBCO", "GHC.Driver.Config.Parser" ] ] ++
-        [ x | ghcSeries ghcFlavor >= Ghc92,  x <- [ "GHC.Driver.Config", "GHC.Parser.Errors.Ppr" ] ] ++
-        [ if ghcSeries ghcFlavor >= Ghc90 then "GHC.Parser.Header" else "HeaderInfo", if ghcSeries ghcFlavor >= Ghc810 then "GHC.Hs.Dump" else "HsDumpAst" ]
+        [ x | ghcSeries ghcFlavor >= Ghc98, x <- [ "GHC.Driver.Session", "GHC.Driver.CmdLine", "GHC.SysTools.BaseDir" ] ]
   return $ nubSort (modules ++ extraModules)
 
 applyPatchSystemSemaphore :: FilePath -> GhcFlavor -> IO ()
@@ -357,8 +358,9 @@ applyPatchSystemSemaphore patches ghcFlavor = do
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-ghc_cabal_in.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_MakeSem_hs.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Pipeline_LogQueue_hs.patch")
-    system_ $ "git apply " ++ (patches </> "4d29ecdfcc79ad663e066d9f7d6d17b64c8c6c41-GHC_Driver_Make_hs.patch")
+    system_ $ "git apply " ++ (patches </> "b112546afa694efc0ae20d9d6c00b572a75c0239-GHC_Driver_Make_hs.patch")
     writeFile "compiler/GHC/Driver/Make.hs" .
+      -- patch 1
       replace
         (unlines [
             "    n_jobs <- case parMakeCount (hsc_dflags hsc_env) of"
@@ -366,7 +368,21 @@ applyPatchSystemSemaphore patches ghcFlavor = do
             , "                    Just n  -> return n"
             ]
         )
-        "    n_jobs <- liftIO getNumProcessors"
+        "    n_jobs <- liftIO getNumProcessors" .
+      -- patch 2
+      replace
+        (unlines [
+            "load' :: GhcMonad m => Maybe ModIfaceCache -> LoadHowMuch -> Maybe Messager -> ModuleGraph -> m SuccessFlag"
+          , "load' mhmi_cache how_much mHscMessage mod_graph = do"
+           ])
+        (unlines [
+            "load' :: GhcMonad m => Maybe ModIfaceCache -> LoadHowMuch -> (GhcMessage -> a) -> Maybe Messager -> ModuleGraph -> m SuccessFlag"
+          , "load' mhmi_cache how_much  _diag_wrapper mHscMessage mod_graph = do"
+           ]) .
+      replace
+        "    success <- load' cache how_much (Just msg) mod_graph"
+        "    success <- load' cache how_much undefined (Just msg) mod_graph"
+      -- fini
       =<< readFile' "compiler/GHC/Driver/Make.hs"
 
 applyPatchTemplateHaskellLanguageHaskellTHSyntax :: FilePath -> GhcFlavor -> IO ()
