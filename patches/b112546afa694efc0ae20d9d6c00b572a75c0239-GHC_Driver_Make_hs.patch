@@ -1,7 +1,16 @@
 diff --git a/compiler/GHC/Driver/Make.hs b/compiler/GHC/Driver/Make.hs
-index a8187074fe..d72b452d2e 100644
+index 86129cc96e..d72b452d2e 100644
 --- a/compiler/GHC/Driver/Make.hs
 +++ b/compiler/GHC/Driver/Make.hs
+@@ -27,7 +27,7 @@
+ -- -----------------------------------------------------------------------------
+ module GHC.Driver.Make (
+         depanal, depanalE, depanalPartial, checkHomeUnitsClosed,
+-        load, loadWithCache, load', AnyGhcDiagnostic, LoadHowMuch(..), ModIfaceCache(..), noIfaceCache, newIfaceCache,
++        load, loadWithCache, load', LoadHowMuch(..), ModIfaceCache(..), noIfaceCache, newIfaceCache,
+         instantiationNodes,
+ 
+         downsweep,
 @@ -75,7 +75,6 @@ import GHC.Driver.Env
  import GHC.Driver.Errors
  import GHC.Driver.Errors.Types
@@ -22,7 +31,38 @@ index a8187074fe..d72b452d2e 100644
  
  -- -----------------------------------------------------------------------------
  -- Loading the program
-@@ -665,39 +664,11 @@ createBuildPlan mod_graph maybe_top_mod =
+@@ -486,7 +485,7 @@ newIfaceCache = do
+ -- All other errors are reported using the 'defaultWarnErrLogger'.
+ 
+ load :: GhcMonad f => LoadHowMuch -> f SuccessFlag
+-load how_much = loadWithCache noIfaceCache mkUnknownDiagnostic how_much
++load how_much = loadWithCache noIfaceCache how_much
+ 
+ mkBatchMsg :: HscEnv -> Messager
+ mkBatchMsg hsc_env =
+@@ -495,18 +494,12 @@ mkBatchMsg hsc_env =
+     then batchMultiMsg
+     else batchMsg
+ 
+-type AnyGhcDiagnostic = UnknownDiagnostic (DiagnosticOpts GhcMessage)
+ 
+-loadWithCache :: GhcMonad m => Maybe ModIfaceCache -- ^ Instructions about how to cache interfaces as we create them.
+-                            -> (GhcMessage -> AnyGhcDiagnostic) -- ^ How to wrap error messages before they are displayed to a user.
+-                                                                -- If you are using the GHC API you can use this to override how messages
+-                                                                -- created during 'loadWithCache' are displayed to the user.
+-                            -> LoadHowMuch -- ^ How much `loadWithCache` should load
+-                            -> m SuccessFlag
+-loadWithCache cache diag_wrapper how_much = do
++loadWithCache :: GhcMonad m => Maybe ModIfaceCache -> LoadHowMuch -> m SuccessFlag
++loadWithCache cache how_much = do
+     (errs, mod_graph) <- depanalE [] False                        -- #17459
+     msg <- mkBatchMsg <$> getSession
+-    success <- load' cache how_much diag_wrapper (Just msg) mod_graph
++    success <- load' cache how_much (Just msg) mod_graph
+     if isEmptyMessages errs
+       then pure success
+       else throwErrors (fmap GhcDriverMessage errs)
+@@ -671,39 +664,11 @@ createBuildPlan mod_graph maybe_top_mod =
                (vcat [text "Build plan missing nodes:", (text "PLAN:" <+> ppr (sum (map countMods build_plan))), (text "GRAPH:" <+> ppr (length (mgModSummaries' mod_graph )))])
                build_plan
  
@@ -53,16 +93,18 @@ index a8187074fe..d72b452d2e 100644
  -- | Generalized version of 'load' which also supports a custom
  -- 'Messager' (for reporting progress) and 'ModuleGraph' (generally
  -- produced by calling 'depanal'.
- load' :: GhcMonad m => Maybe ModIfaceCache -> LoadHowMuch -> Maybe Messager -> ModuleGraph -> m SuccessFlag
- load' mhmi_cache how_much mHscMessage mod_graph = do
+-load' :: GhcMonad m => Maybe ModIfaceCache -> LoadHowMuch -> (GhcMessage -> AnyGhcDiagnostic) -> Maybe Messager -> ModuleGraph -> m SuccessFlag
+-load' mhmi_cache how_much diag_wrapper mHscMessage mod_graph = do
 -    -- In normal usage plugins are initialised already by ghc/Main.hs this is protective
 -    -- for any client who might interact with GHC via load'.
 -    -- See Note [Timing of plugin initialization]
 -    initializeSessionPlugins
++load' :: GhcMonad m => Maybe ModIfaceCache -> LoadHowMuch -> Maybe Messager -> ModuleGraph -> m SuccessFlag
++load' mhmi_cache how_much mHscMessage mod_graph = do
      modifySession $ \hsc_env -> hsc_env { hsc_mod_graph = mod_graph }
      guessOutputFile
      hsc_env <- getSession
-@@ -773,12 +744,14 @@ load' mhmi_cache how_much mHscMessage mod_graph = do
+@@ -779,12 +744,14 @@ load' mhmi_cache how_much diag_wrapper mHscMessage mod_graph = do
      liftIO $ debugTraceMsg logger 2 (hang (text "Ready for upsweep")
                                      2 (ppr build_plan))
  
@@ -74,12 +116,12 @@ index a8187074fe..d72b452d2e 100644
      setSession $ hscUpdateHUG (unitEnv_map pruneHomeUnitEnv) hsc_env
      (upsweep_ok, hsc_env1) <- withDeferredDiagnostics $ do
        hsc_env <- getSession
--      liftIO $ upsweep worker_limit hsc_env mhmi_cache mHscMessage (toCache pruned_cache) build_plan
+-      liftIO $ upsweep worker_limit hsc_env mhmi_cache diag_wrapper mHscMessage (toCache pruned_cache) build_plan
 +      liftIO $ upsweep n_jobs hsc_env mhmi_cache mHscMessage (toCache pruned_cache) build_plan
      setSession hsc_env1
      case upsweep_ok of
        Failed -> loadFinish upsweep_ok
-@@ -1063,7 +1036,13 @@ getDependencies direct_deps build_map =
+@@ -1069,7 +1036,13 @@ getDependencies direct_deps build_map =
  type BuildM a = StateT BuildLoopState IO a
  
  
@@ -93,7 +135,15 @@ index a8187074fe..d72b452d2e 100644
  
  -- | Environment used when compiling a module
  data MakeEnv = MakeEnv { hsc_env :: !HscEnv -- The basic HscEnv which will be augmented for each module
-@@ -1248,7 +1227,7 @@ withCurrentUnit uid = do
+@@ -1080,7 +1053,6 @@ data MakeEnv = MakeEnv { hsc_env :: !HscEnv -- The basic HscEnv which will be au
+                        --          into the log queue.
+                        , withLogger :: forall a . Int -> ((Logger -> Logger) -> IO a) -> IO a
+                        , env_messager :: !(Maybe Messager)
+-                       , diag_wrapper :: GhcMessage -> AnyGhcDiagnostic
+                        }
+ 
+ type RunMakeM a = ReaderT MakeEnv (MaybeT IO) a
+@@ -1255,17 +1227,16 @@ withCurrentUnit uid = do
    local (\env -> env { hsc_env = hscSetActiveUnitId uid (hsc_env env)})
  
  upsweep
@@ -101,8 +151,20 @@ index a8187074fe..d72b452d2e 100644
 +    :: Int -- ^ The number of workers we wish to run in parallel
      -> HscEnv -- ^ The base HscEnv, which is augmented for each module
      -> Maybe ModIfaceCache -- ^ A cache to incrementally write final interface files to
+-    -> (GhcMessage -> AnyGhcDiagnostic)
      -> Maybe Messager
-@@ -1681,10 +1660,8 @@ downsweep hsc_env old_summaries excl_mods allow_dup_roots
+     -> M.Map ModNodeKeyWithUid HomeModInfo
+     -> [BuildPlan]
+     -> IO (SuccessFlag, HscEnv)
+-upsweep n_jobs hsc_env hmi_cache diag_wrapper mHscMessage old_hpt build_plan = do
++upsweep n_jobs hsc_env hmi_cache mHscMessage old_hpt build_plan = do
+     (cycle, pipelines, collect_result) <- interpretBuildPlan (hsc_HUG hsc_env) hmi_cache old_hpt build_plan
+-    runPipelines n_jobs hsc_env diag_wrapper mHscMessage pipelines
++    runPipelines n_jobs hsc_env mHscMessage pipelines
+     res <- collect_result
+ 
+     let completed = [m | Just (Just m) <- res]
+@@ -1689,10 +1660,8 @@ downsweep hsc_env old_summaries excl_mods allow_dup_roots
              k = NodeKey_Module (msKey ms)
  
              hs_file_for_boot
@@ -115,7 +177,7 @@ index a8187074fe..d72b452d2e 100644
  
  
          -- This loops over each import in each summary. It is mutually recursive with loopSummaries if we discover
-@@ -2209,9 +2186,9 @@ summariseModule hsc_env' home_unit old_summary_map is_boot (L _ wanted_mod) mb_p
+@@ -2217,9 +2186,9 @@ summariseModule hsc_env' home_unit old_summary_map is_boot (L _ wanted_mod) mb_p
          -- annotation, but we don't know if it's a signature or a regular
          -- module until we actually look it up on the filesystem.
          let hsc_src
@@ -127,7 +189,44 @@ index a8187074fe..d72b452d2e 100644
  
          when (pi_mod_name /= wanted_mod) $
                  throwE $ singleMessage $ mkPlainErrorMsgEnvelope pi_mod_name_loc
-@@ -2536,7 +2513,7 @@ executeCompileNode k n !old_hmi hug mrehydrate_mods mod = do
+@@ -2449,12 +2418,12 @@ setHUG deps hsc_env =
+   hscUpdateHUG (const $ deps) hsc_env
+ 
+ -- | Wrap an action to catch and handle exceptions.
+-wrapAction :: (GhcMessage -> AnyGhcDiagnostic) -> HscEnv -> IO a -> IO (Maybe a)
+-wrapAction msg_wrapper hsc_env k = do
++wrapAction :: HscEnv -> IO a -> IO (Maybe a)
++wrapAction hsc_env k = do
+   let lcl_logger = hsc_logger hsc_env
+       lcl_dynflags = hsc_dflags hsc_env
+       print_config = initPrintConfig lcl_dynflags
+-  let logg err = printMessages lcl_logger print_config (initDiagOpts lcl_dynflags) (msg_wrapper <$> srcErrorMessages err)
++  let logg err = printMessages lcl_logger print_config (initDiagOpts lcl_dynflags) (srcErrorMessages err)
+   -- MP: It is a bit strange how prettyPrintGhcErrors handles some errors but then we handle
+   -- SourceError and ThreadKilled differently directly below. TODO: Refactor to use `catches`
+   -- directly. MP should probably use safeTry here to not catch async exceptions but that will regress performance due to
+@@ -2504,10 +2473,9 @@ executeInstantiationNode k n deps uid iu = do
+         -- Output of the logger is mediated by a central worker to
+         -- avoid output interleaving
+         msg <- asks env_messager
+-        wrapper <- asks diag_wrapper
+         lift $ MaybeT $ withLoggerHsc k env $ \hsc_env ->
+           let lcl_hsc_env = setHUG deps hsc_env
+-          in wrapAction wrapper lcl_hsc_env $ do
++          in wrapAction lcl_hsc_env $ do
+             res <- upsweep_inst lcl_hsc_env msg k n uid iu
+             cleanCurrentModuleTempFilesMaybe (hsc_logger hsc_env) (hsc_tmpfs hsc_env) (hsc_dflags hsc_env)
+             return res
+@@ -2533,7 +2501,7 @@ executeCompileNode k n !old_hmi hug mrehydrate_mods mod = do
+              hydrated_hsc_env
+      -- Compile the module, locking with a semaphore to avoid too many modules
+      -- being compiled at the same time leading to high memory usage.
+-     wrapAction diag_wrapper lcl_hsc_env $ do
++     wrapAction lcl_hsc_env $ do
+       res <- upsweep_mod lcl_hsc_env env_messager old_hmi mod k n
+       cleanCurrentModuleTempFilesMaybe (hsc_logger hsc_env) (hsc_tmpfs hsc_env) lcl_dynflags
+       return res)
+@@ -2545,7 +2513,7 @@ executeCompileNode k n !old_hmi hug mrehydrate_mods mod = do
          -- compiling a signature requires an knot_var for that unit.
          -- If you remove this then a lot of backpack tests fail.
          HsigFile -> Just []
@@ -136,30 +235,34 @@ index a8187074fe..d72b452d2e 100644
  
  {- Rehydration, see Note [Rehydrating Modules] -}
  
-@@ -2855,14 +2832,16 @@ label_self thread_name = do
+@@ -2864,55 +2832,34 @@ label_self thread_name = do
      CC.labelThread self_tid thread_name
  
  
--runPipelines :: WorkerLimit -> HscEnv -> Maybe Messager -> [MakeAction] -> IO ()
+-runPipelines :: WorkerLimit -> HscEnv -> (GhcMessage -> AnyGhcDiagnostic) -> Maybe Messager -> [MakeAction] -> IO ()
 +runPipelines :: Int -> HscEnv -> Maybe Messager -> [MakeAction] -> IO ()
  -- Don't even initialise plugins if there are no pipelines
- runPipelines _ _ _ [] = return ()
--runPipelines n_job hsc_env mHscMessager all_pipelines = do
+-runPipelines n_job hsc_env diag_wrapper mHscMessager all_pipelines = do
++runPipelines _ _ _ [] = return ()
 +runPipelines n_job orig_hsc_env mHscMessager all_pipelines = do
    liftIO $ label_self "main --make thread"
 +
 +  plugins_hsc_env <- initializePlugins orig_hsc_env
    case n_job of
--    NumProcessorsLimit n | n <= 1 -> runSeqPipelines hsc_env mHscMessager all_pipelines
--    _n -> runParPipelines n_job hsc_env mHscMessager all_pipelines
+-    NumProcessorsLimit n | n <= 1 -> runSeqPipelines hsc_env diag_wrapper mHscMessager all_pipelines
+-    _n -> runParPipelines n_job hsc_env diag_wrapper mHscMessager all_pipelines
 +    1 -> runSeqPipelines plugins_hsc_env mHscMessager all_pipelines
 +    _n -> runParPipelines n_job plugins_hsc_env mHscMessager all_pipelines
  
- runSeqPipelines :: HscEnv -> Maybe Messager -> [MakeAction] -> IO ()
- runSeqPipelines plugin_hsc_env mHscMessager all_pipelines =
-@@ -2871,38 +2850,16 @@ runSeqPipelines plugin_hsc_env mHscMessager all_pipelines =
+-runSeqPipelines :: HscEnv -> (GhcMessage -> AnyGhcDiagnostic) -> Maybe Messager -> [MakeAction] -> IO ()
+-runSeqPipelines plugin_hsc_env diag_wrapper mHscMessager all_pipelines =
++runSeqPipelines :: HscEnv -> Maybe Messager -> [MakeAction] -> IO ()
++runSeqPipelines plugin_hsc_env mHscMessager all_pipelines =
+   let env = MakeEnv { hsc_env = plugin_hsc_env
+                     , withLogger = \_ k -> k id
                      , compile_sem = AbstractSem (return ()) (return ())
                      , env_messager = mHscMessager
+-                    , diag_wrapper = diag_wrapper
                      }
 -  in runAllPipelines (NumProcessorsLimit 1) env all_pipelines
 +  in runAllPipelines 1 env all_pipelines
@@ -190,17 +293,18 @@ index a8187074fe..d72b452d2e 100644
  -- | Build and run a pipeline
 -runParPipelines :: WorkerLimit -- ^ How to limit work parallelism
 -             -> HscEnv         -- ^ The basic HscEnv which is augmented with specific info for each module
+-             -> (GhcMessage -> AnyGhcDiagnostic)
 +runParPipelines :: Int              -- ^ How many capabilities to use
 +             -> HscEnv           -- ^ The basic HscEnv which is augmented with specific info for each module
               -> Maybe Messager   -- ^ Optional custom messager to use to report progress
               -> [MakeAction]  -- ^ The build plan for all the module nodes
               -> IO ()
--runParPipelines worker_limit plugin_hsc_env mHscMessager all_pipelines = do
+-runParPipelines worker_limit plugin_hsc_env diag_wrapper mHscMessager all_pipelines = do
 +runParPipelines n_jobs plugin_hsc_env mHscMessager all_pipelines = do
  
  
    -- A variable which we write to when an error has happened and we have to tell the
-@@ -2912,23 +2869,39 @@ runParPipelines worker_limit plugin_hsc_env mHscMessager all_pipelines = do
+@@ -2922,24 +2869,39 @@ runParPipelines worker_limit plugin_hsc_env diag_wrapper mHscMessager all_pipeli
    -- will add it's LogQueue into this queue.
    log_queue_queue_var <- newTVarIO newLogQueueQueue
    -- Thread which coordinates the printing of logs
@@ -217,6 +321,7 @@ index a8187074fe..d72b452d2e 100644
 -                      , withLogger = withParLog log_queue_queue_var
 -                      , compile_sem = abstract_sem
 -                      , env_messager = mHscMessager
+-                      , diag_wrapper = diag_wrapper
 -                      }
 +  let updNumCapabilities = liftIO $ do
 +          n_capabilities <- getNumCapabilities
@@ -250,7 +355,7 @@ index a8187074fe..d72b452d2e 100644
  
  withLocalTmpFS :: RunMakeM a -> RunMakeM a
  withLocalTmpFS act = do
-@@ -2945,11 +2918,10 @@ withLocalTmpFS act = do
+@@ -2956,11 +2918,10 @@ withLocalTmpFS act = do
    MC.bracket initialiser finaliser $ \lcl_hsc_env -> local (\env -> env { hsc_env = lcl_hsc_env}) act
  
  -- | Run the given actions and then wait for them all to finish.
