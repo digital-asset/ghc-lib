@@ -1,0 +1,16 @@
+import GHC.Driver.Session
+import GHC.Driver.Types
+import GHC.Parser
+import GHC.Parser.Lexer
+import GHC.Parser.Header
+import GHC.Parser.Annotation
+import GHC.Hs
+import GHC.Types.Name.Reader
+import GHC.Data.StringBuffer
+import GHC.Data.FastString
+import GHC.Utils.Error
+import GHC.Utils.Outputable
+import GHC.Utils.Fingerprint
+import GHC.Settings
+import GHC.Settings.Config
+import GHC.Platform

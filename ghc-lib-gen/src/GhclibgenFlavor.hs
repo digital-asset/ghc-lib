@@ -19,7 +19,17 @@ data GhcFlavor = DaGhc881
   deriving (Show, Eq, Ord)
 
 data GhcSeries = Ghc88 | Ghc810 | Ghc90 | Ghc92 | Ghc94 | Ghc96 | Ghc98
-  deriving (Show, Eq, Ord)
+  deriving (Eq, Ord)
+
+instance Show GhcSeries where
+  show = \case
+    Ghc98  -> "ghc-9.8"
+    Ghc96  -> "ghc-9.6"
+    Ghc94  -> "ghc-9.4"
+    Ghc92  -> "ghc-9.2"
+    Ghc90  -> "ghc-9.0"
+    Ghc810 -> "ghc-8.10"
+    Ghc88  -> "ghc-8.8"
 
 ghcSeries :: GhcFlavor -> GhcSeries
 ghcSeries = \case

@@ -271,21 +271,24 @@ placeholderModulesDir = "placeholder_modules"
 -- 'ghc-lib-parser'.
 calcParserModules :: GhcFlavor -> IO [String]
 calcParserModules ghcFlavor = do
+  let flavor = ghcSeries ghcFlavor
+
   lib <- mapM readCabalFile cabalFileLibraries
 
   genPlaceholderModules "compiler"
   genPlaceholderModules "libraries/ghc-heap"
   genPlaceholderModules "libraries/ghci"
-  when (ghcSeries ghcFlavor >= Ghc94) $ do
+  when (flavor >= Ghc94) $ do
     copyFile "compiler/GHC/Parser.hs-boot" (placeholderModulesDir </> "GHC/Parser.hs-boot")
+  let rootModulePath = placeholderModulesDir </> "Main.hs"
+  copyFile ("../ghc-lib-gen/ghc-lib-parser" </> show flavor </> "Main.hs") rootModulePath
 
   let includeDirs = map ("-I" ++ ) (ghcLibParserIncludeDirs ghcFlavor)
       hsSrcDirs = ghcLibParserHsSrcDirs True ghcFlavor lib
       hsSrcIncludes = map ("-i" ++ ) (placeholderModulesDir : hsSrcDirs)
-      -- See [Note: GHC now depends on exceptions package].
       cmd = unwords $
         [ "stack exec" ] ++
-        [ "--package exceptions" | ghcSeries ghcFlavor == Ghc90 ] ++
+        [ "--package exceptions" | flavor == Ghc90 ] ++
         [ "--stack-yaml hadrian/stack.yaml" ] ++
         [ "-- ghc"
         , "-dep-suffix ''"
@@ -297,14 +300,9 @@ calcParserModules ghcFlavor = do
         , "-ignore-package ghci"
         , "-package base"
         ] ++
-        [ "-package exceptions" | ghcSeries ghcFlavor == Ghc90 ] ++
+        [ "-package exceptions" | flavor == Ghc90 ] ++
         hsSrcIncludes ++
-        ((placeholderModulesDir </>) <$> (
-          [ "GHC" </> "Parser.hs" | ghcSeries ghcFlavor >= Ghc90] ++
-          [ "Parser.hs" | ghcSeries ghcFlavor < Ghc90]
-         )
-        )
-
+        [ rootModulePath ]
   putStrLn "# Generating 'ghc/.parser-depends'..."
   putStrLn $ "\n\n# Running: " ++ cmd
   system_ cmd
@@ -326,16 +324,9 @@ calcParserModules ghcFlavor = do
         (placeholderModulesDir : hsSrcDirs)
       -- Lastly, manipulate text like 'GHC/Exts/Heap/Constants.hs'
       -- into 'GHC.Exts.Heap.Constants'.
-      modules = map (replace "/" "." . dropSuffix ".hs") strippedModulePaths
-      -- The modules in this list elude being listed in
-      -- '.parser-depends' but are required by ghc-lib-parser. We
-      -- intervene and patch things up.
-      extraModules =
-        [  if ghcSeries ghcFlavor >= Ghc90 then "GHC.Parser.Header" else "HeaderInfo", if ghcSeries ghcFlavor >= Ghc810 then "GHC.Hs.Dump" else "HsDumpAst" ] ++
-        [ x | ghcSeries ghcFlavor >= Ghc92, x <- [ "GHC.Driver.Config", "GHC.Parser.Errors.Ppr" ] ] ++
-        [ x | ghcSeries ghcFlavor >= Ghc94, x <- [ "GHC.Runtime.Interpreter", "GHCi.BinaryArray", "GHCi.BreakArray", "GHCi.ResolvedBCO", "GHC.Driver.Config.Parser" ] ] ++
-        [ x | ghcSeries ghcFlavor >= Ghc98, x <- [ "GHC.Driver.Session", "GHC.Driver.CmdLine", "GHC.SysTools.BaseDir" ] ]
-  return $ nubSort (modules ++ extraModules)
+      modules = [ replace "/" "." . dropSuffix ".hs" $ m | m <- strippedModulePaths, m /= "Main.hs" ]
+
+  return $ nubSort modules
 
 applyPatchSystemSemaphore :: FilePath -> GhcFlavor -> IO ()
 applyPatchSystemSemaphore patches ghcFlavor = do
