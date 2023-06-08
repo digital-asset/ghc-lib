@@ -1,5 +1,5 @@
 diff --git a/compiler/GHC/Driver/Make.hs b/compiler/GHC/Driver/Make.hs
-index 86129cc96e..d72b452d2e 100644
+index 08d89aede9..d72b452d2e 100644
 --- a/compiler/GHC/Driver/Make.hs
 +++ b/compiler/GHC/Driver/Make.hs
 @@ -27,7 +27,7 @@
@@ -104,7 +104,7 @@ index 86129cc96e..d72b452d2e 100644
      modifySession $ \hsc_env -> hsc_env { hsc_mod_graph = mod_graph }
      guessOutputFile
      hsc_env <- getSession
-@@ -779,12 +744,14 @@ load' mhmi_cache how_much diag_wrapper mHscMessage mod_graph = do
+@@ -779,17 +744,21 @@ load' mhmi_cache how_much diag_wrapper mHscMessage mod_graph = do
      liftIO $ debugTraceMsg logger 2 (hang (text "Ready for upsweep")
                                      2 (ppr build_plan))
  
@@ -114,14 +114,23 @@ index 86129cc96e..d72b452d2e 100644
 +                    Just n  -> return n
  
      setSession $ hscUpdateHUG (unitEnv_map pruneHomeUnitEnv) hsc_env
-     (upsweep_ok, hsc_env1) <- withDeferredDiagnostics $ do
+-    (upsweep_ok, new_deps) <- withDeferredDiagnostics $ do
++    (upsweep_ok, hsc_env1) <- withDeferredDiagnostics $ do
        hsc_env <- getSession
 -      liftIO $ upsweep worker_limit hsc_env mhmi_cache diag_wrapper mHscMessage (toCache pruned_cache) build_plan
+-    modifySession (addDepsToHscEnv new_deps)
 +      liftIO $ upsweep n_jobs hsc_env mhmi_cache mHscMessage (toCache pruned_cache) build_plan
-     setSession hsc_env1
++    setSession hsc_env1
      case upsweep_ok of
        Failed -> loadFinish upsweep_ok
-@@ -1069,7 +1036,13 @@ getDependencies direct_deps build_map =
+       Succeeded -> do
+           liftIO $ debugTraceMsg logger 2 (text "Upsweep completely successful.")
++          -- Clean up after ourselves
++          liftIO $ cleanCurrentModuleTempFilesMaybe logger (hsc_tmpfs hsc_env1) dflags
+           loadFinish upsweep_ok
+ 
+ 
+@@ -1067,7 +1036,13 @@ getDependencies direct_deps build_map =
  type BuildM a = StateT BuildLoopState IO a
  
  
@@ -135,7 +144,7 @@ index 86129cc96e..d72b452d2e 100644
  
  -- | Environment used when compiling a module
  data MakeEnv = MakeEnv { hsc_env :: !HscEnv -- The basic HscEnv which will be augmented for each module
-@@ -1080,7 +1053,6 @@ data MakeEnv = MakeEnv { hsc_env :: !HscEnv -- The basic HscEnv which will be au
+@@ -1078,7 +1053,6 @@ data MakeEnv = MakeEnv { hsc_env :: !HscEnv -- The basic HscEnv which will be au
                         --          into the log queue.
                         , withLogger :: forall a . Int -> ((Logger -> Logger) -> IO a) -> IO a
                         , env_messager :: !(Maybe Messager)
@@ -143,7 +152,7 @@ index 86129cc96e..d72b452d2e 100644
                         }
  
  type RunMakeM a = ReaderT MakeEnv (MaybeT IO) a
-@@ -1255,17 +1227,16 @@ withCurrentUnit uid = do
+@@ -1253,20 +1227,20 @@ withCurrentUnit uid = do
    local (\env -> env { hsc_env = hscSetActiveUnitId uid (hsc_env env)})
  
  upsweep
@@ -155,8 +164,9 @@ index 86129cc96e..d72b452d2e 100644
      -> Maybe Messager
      -> M.Map ModNodeKeyWithUid HomeModInfo
      -> [BuildPlan]
-     -> IO (SuccessFlag, HscEnv)
+-    -> IO (SuccessFlag, [HomeModInfo])
 -upsweep n_jobs hsc_env hmi_cache diag_wrapper mHscMessage old_hpt build_plan = do
++    -> IO (SuccessFlag, HscEnv)
 +upsweep n_jobs hsc_env hmi_cache mHscMessage old_hpt build_plan = do
      (cycle, pipelines, collect_result) <- interpretBuildPlan (hsc_HUG hsc_env) hmi_cache old_hpt build_plan
 -    runPipelines n_jobs hsc_env diag_wrapper mHscMessage pipelines
@@ -164,7 +174,24 @@ index 86129cc96e..d72b452d2e 100644
      res <- collect_result
  
      let completed = [m | Just (Just m) <- res]
-@@ -1689,10 +1660,8 @@ downsweep hsc_env old_summaries excl_mods allow_dup_roots
++    let hsc_env' = addDepsToHscEnv completed hsc_env
+ 
+     -- Handle any cycle in the original compilation graph and return the result
+     -- of the upsweep.
+@@ -1274,10 +1248,10 @@ upsweep n_jobs hsc_env hmi_cache diag_wrapper mHscMessage old_hpt build_plan = d
+         Just mss -> do
+           let logger = hsc_logger hsc_env
+           liftIO $ fatalErrorMsg logger (cyclicModuleErr mss)
+-          return (Failed, [])
++          return (Failed, hsc_env)
+         Nothing  -> do
+           let success_flag = successIf (all isJust res)
+-          return (success_flag, completed)
++          return (success_flag, hsc_env')
+ 
+ toCache :: [HomeModInfo] -> M.Map (ModNodeKeyWithUid) HomeModInfo
+ toCache hmis = M.fromList ([(miKey $ hm_iface hmi, hmi) | hmi <- hmis])
+@@ -1686,10 +1660,8 @@ downsweep hsc_env old_summaries excl_mods allow_dup_roots
              k = NodeKey_Module (msKey ms)
  
              hs_file_for_boot
@@ -177,7 +204,7 @@ index 86129cc96e..d72b452d2e 100644
  
  
          -- This loops over each import in each summary. It is mutually recursive with loopSummaries if we discover
-@@ -2217,9 +2186,9 @@ summariseModule hsc_env' home_unit old_summary_map is_boot (L _ wanted_mod) mb_p
+@@ -2214,9 +2186,9 @@ summariseModule hsc_env' home_unit old_summary_map is_boot (L _ wanted_mod) mb_p
          -- annotation, but we don't know if it's a signature or a regular
          -- module until we actually look it up on the filesystem.
          let hsc_src
@@ -189,7 +216,46 @@ index 86129cc96e..d72b452d2e 100644
  
          when (pi_mod_name /= wanted_mod) $
                  throwE $ singleMessage $ mkPlainErrorMsgEnvelope pi_mod_name_loc
-@@ -2449,12 +2418,12 @@ setHUG deps hsc_env =
+@@ -2342,21 +2314,18 @@ withDeferredDiagnostics f = do
+           let action = logMsg logger msgClass srcSpan msg
+           case msgClass of
+             MCDiagnostic SevWarning _reason _code
+-              -> atomicModifyIORef' warnings $ \(!i) -> (action: i, ())
++              -> atomicModifyIORef' warnings $ \i -> (action: i, ())
+             MCDiagnostic SevError _reason _code
+-              -> atomicModifyIORef' errors   $ \(!i) -> (action: i, ())
++              -> atomicModifyIORef' errors   $ \i -> (action: i, ())
+             MCFatal
+-              -> atomicModifyIORef' fatals   $ \(!i) -> (action: i, ())
++              -> atomicModifyIORef' fatals   $ \i -> (action: i, ())
+             _ -> action
+ 
+         printDeferredDiagnostics = liftIO $
+           forM_ [warnings, errors, fatals] $ \ref -> do
+             -- This IORef can leak when the dflags leaks, so let us always
+-            -- reset the content. The lazy variant is used here as we want to force
+-            -- this error if the IORef is ever accessed again, rather than now.
+-            -- See #20981 for an issue which discusses this general issue.
+-            let landmine = if debugIsOn then panic "withDeferredDiagnostics: use after free" else []
+-            actions <- atomicModifyIORef ref $ \i -> (landmine, i)
++            -- reset the content.
++            actions <- atomicModifyIORef' ref $ \i -> ([], i)
+             sequence_ $ reverse actions
+ 
+     MC.bracket
+@@ -2432,9 +2401,8 @@ cyclicModuleErr mss
+ 
+ cleanCurrentModuleTempFilesMaybe :: MonadIO m => Logger -> TmpFs -> DynFlags -> m ()
+ cleanCurrentModuleTempFilesMaybe logger tmpfs dflags =
+-  if gopt Opt_KeepTmpFiles dflags
+-    then liftIO $ keepCurrentModuleTempFiles logger tmpfs
+-    else liftIO $ cleanCurrentModuleTempFiles logger tmpfs
++  unless (gopt Opt_KeepTmpFiles dflags) $
++    liftIO $ cleanCurrentModuleTempFiles logger tmpfs
+ 
+ 
+ addDepsToHscEnv ::  [HomeModInfo] -> HscEnv -> HscEnv
+@@ -2450,12 +2418,12 @@ setHUG deps hsc_env =
    hscUpdateHUG (const $ deps) hsc_env
  
  -- | Wrap an action to catch and handle exceptions.
@@ -205,7 +271,7 @@ index 86129cc96e..d72b452d2e 100644
    -- MP: It is a bit strange how prettyPrintGhcErrors handles some errors but then we handle
    -- SourceError and ThreadKilled differently directly below. TODO: Refactor to use `catches`
    -- directly. MP should probably use safeTry here to not catch async exceptions but that will regress performance due to
-@@ -2504,10 +2473,9 @@ executeInstantiationNode k n deps uid iu = do
+@@ -2505,10 +2473,9 @@ executeInstantiationNode k n deps uid iu = do
          -- Output of the logger is mediated by a central worker to
          -- avoid output interleaving
          msg <- asks env_messager
@@ -217,7 +283,7 @@ index 86129cc96e..d72b452d2e 100644
              res <- upsweep_inst lcl_hsc_env msg k n uid iu
              cleanCurrentModuleTempFilesMaybe (hsc_logger hsc_env) (hsc_tmpfs hsc_env) (hsc_dflags hsc_env)
              return res
-@@ -2533,7 +2501,7 @@ executeCompileNode k n !old_hmi hug mrehydrate_mods mod = do
+@@ -2534,7 +2501,7 @@ executeCompileNode k n !old_hmi hug mrehydrate_mods mod = do
               hydrated_hsc_env
       -- Compile the module, locking with a semaphore to avoid too many modules
       -- being compiled at the same time leading to high memory usage.
@@ -226,7 +292,7 @@ index 86129cc96e..d72b452d2e 100644
        res <- upsweep_mod lcl_hsc_env env_messager old_hmi mod k n
        cleanCurrentModuleTempFilesMaybe (hsc_logger hsc_env) (hsc_tmpfs hsc_env) lcl_dynflags
        return res)
-@@ -2545,7 +2513,7 @@ executeCompileNode k n !old_hmi hug mrehydrate_mods mod = do
+@@ -2546,7 +2513,7 @@ executeCompileNode k n !old_hmi hug mrehydrate_mods mod = do
          -- compiling a signature requires an knot_var for that unit.
          -- If you remove this then a lot of backpack tests fail.
          HsigFile -> Just []
@@ -235,7 +301,7 @@ index 86129cc96e..d72b452d2e 100644
  
  {- Rehydration, see Note [Rehydrating Modules] -}
  
-@@ -2864,55 +2832,34 @@ label_self thread_name = do
+@@ -2865,55 +2832,34 @@ label_self thread_name = do
      CC.labelThread self_tid thread_name
  
  
@@ -304,7 +370,7 @@ index 86129cc96e..d72b452d2e 100644
  
  
    -- A variable which we write to when an error has happened and we have to tell the
-@@ -2922,24 +2869,39 @@ runParPipelines worker_limit plugin_hsc_env diag_wrapper mHscMessager all_pipeli
+@@ -2923,24 +2869,39 @@ runParPipelines worker_limit plugin_hsc_env diag_wrapper mHscMessager all_pipeli
    -- will add it's LogQueue into this queue.
    log_queue_queue_var <- newTVarIO newLogQueueQueue
    -- Thread which coordinates the printing of logs
@@ -355,7 +421,7 @@ index 86129cc96e..d72b452d2e 100644
  
  withLocalTmpFS :: RunMakeM a -> RunMakeM a
  withLocalTmpFS act = do
-@@ -2956,11 +2918,10 @@ withLocalTmpFS act = do
+@@ -2957,11 +2918,10 @@ withLocalTmpFS act = do
    MC.bracket initialiser finaliser $ \lcl_hsc_env -> local (\env -> env { hsc_env = lcl_hsc_env}) act
  
  -- | Run the given actions and then wait for them all to finish.

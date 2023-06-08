@@ -71,7 +71,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "ecadbc7e7eda5b854b7dcbff7f1dee2dd2c0883c" -- 2023-06-06
+current = "273ff0c786965de805976e52c8367a036f4f8d95" -- 2023-06-09
 
 -- Command line argument generators.
 
@@ -332,7 +332,14 @@ buildDists
       cmd "{ cd ghc; git remote remove upstream || true; }"
       cmd "cd ghc && git clean -xdf && git submodule foreach git clean -xdf && git submodule foreach git checkout . && git checkout ."
     else do
-      cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
+      if isWindows then do
+        cmd "git clone https://github.com/ghc/ghc.git"
+        cmd "git config --global url.\"git://github.com/ghc/packages-\".insteadOf     git://github.com/ghc/packages/"
+        cmd "git config --global url.\"http://github.com/ghc/packages-\".insteadOf    http://github.com/ghc/packages/"
+        cmd "git config --global url.\"https://github.com/ghc/packages-\".insteadOf   https://github.com/ghc/packages/"
+        cmd "git config --global url.\"git\\@github.com:/ghc/packages-\".insteadOf    git\\@github.com:/ghc/packages/"
+      else
+        cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
       cmd "cd ghc && git fetch --tags"
     gitCheckout ghcFlavor
 
