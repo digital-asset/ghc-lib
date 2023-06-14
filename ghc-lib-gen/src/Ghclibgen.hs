@@ -349,7 +349,7 @@ applyPatchSystemSemaphore patches ghcFlavor = do
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-ghc_cabal_in.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_MakeSem_hs.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Pipeline_LogQueue_hs.patch")
-    system_ $ "git apply " ++ (patches </> "b112546afa694efc0ae20d9d6c00b572a75c0239-GHC_Driver_Make_hs.patch")
+    system_ $ "git apply " ++ (patches </> "432c736c19446a011fca1f9485c67761c991bd42-GHC_Driver_Make_hs.patch")
     writeFile "compiler/GHC/Driver/Make.hs" .
       -- patch 1
       replace
@@ -372,22 +372,83 @@ applyPatchSystemSemaphore patches ghcFlavor = do
            ]) .
       replace
         "    success <- load' cache how_much (Just msg) mod_graph"
-        "    success <- load' cache how_much undefined (Just msg) mod_graph"
+        "    success <- load' cache how_much undefined (Just msg) mod_graph" .
+      -- patch 3
+      replace
+        "(upsweep_ok, hsc_env1)"
+        "(upsweep_ok, new_deps)" .
+      replace
+        "setSession hsc_env1"
+        "modifySession (addDepsToHscEnv new_deps)" .
+      replace
+        "-> IO (SuccessFlag, HscEnv)"
+        "-> IO (SuccessFlag, [HomeModInfo])" .
+      replace
+        "    let hsc_env' = addDepsToHscEnv completed hsc_env"
+        "" .
+      replace
+        "return (Failed, hsc_env)"
+        "return (Failed, [])" .
+      replace
+        "return (success_flag, hsc_env')"
+        "return (success_flag, completed)" .
+      replace
+        (unlines[
+            "          -- Clean up after ourselves"
+          , "          liftIO $ cleanCurrentModuleTempFilesMaybe logger (hsc_tmpfs hsc_env1) dflags" ])
+        ""
       -- fini
       =<< readFile' "compiler/GHC/Driver/Make.hs"
 
-applyPatchTemplateHaskellLanguageHaskellTHSyntax :: FilePath -> GhcFlavor -> IO ()
-applyPatchTemplateHaskellLanguageHaskellTHSyntax patches ghcFlavor = do
-  -- Selectively restore one file to revision
-  --   983ce55815f2dd57f84ee86eee97febf7d80b470^1
-  -- reverting the changes that result from the commit:
+applyPatchTemplateHaskellLanguageHaskellTHSyntax :: GhcFlavor -> IO ()
+applyPatchTemplateHaskellLanguageHaskellTHSyntax ghcFlavor = do
+  -- Revert the changes that result from the commit:
   --   https://gitlab.haskell.org/ghc/ghc/-/commit/983ce55815f2dd57f84ee86eee97febf7d80b470
   -- The above commit uses `TemplateHaskellQuotes` to define `Name`s.
   -- Doing that produces values of type `Name` from the
   -- template-haskell package rather than values of type `Name` as
   -- defined in `Language.Haskell.TH.Syntax`.
   when (ghcSeries ghcFlavor >= Ghc98) $ do
-    system_ $ "git apply " ++ (patches </> "983ce55815f2dd57f84ee86eee97febf7d80b470-libraries_template-haskell_Language_Haskell_TH_Syntax_hs.patch")
+    writeFile "libraries/template-haskell/Language/Haskell/TH/Syntax.hs" .
+      replace
+        "{-# LANGUAGE TemplateHaskellQuotes #-}"
+        "" .
+      replace
+        "TYPE, RuntimeRep(..), Multiplicity (..) )"
+        "TYPE, RuntimeRep(..) )" .
+      replace
+        "import Foreign.C.Types"
+        (unlines [ "import Foreign.C.Types", "import GHC.Stack" ] ) .
+      replace
+        "mkFixedName = 'Fixed.MkFixed"
+        "mkFixedName = mkNameG DataName \"base\" \"Data.Fixed\" \"MkFixed\"" .
+      replace
+        "addrToByteArrayName = 'addrToByteArray"
+        (unlines [
+            "addrToByteArrayName = helper"
+          , "  where"
+          , "    helper :: HasCallStack => Name"
+          , "    helper ="
+          , "      case getCallStack ?callStack of"
+          , "        [] -> error \"addrToByteArrayName: empty call stack\""
+          , "        (_, SrcLoc{..}) : _ -> mkNameG_v srcLocPackage srcLocModule \"addrToByteArray\""
+          ]) .
+      replace
+        (unlines [ "trueName  = 'True", "falseName = 'False" ] )
+        (unlines [ "trueName  = mkNameG DataName \"ghc-prim\" \"GHC.Types\" \"True\"", "falseName = mkNameG DataName \"ghc-prim\" \"GHC.Types\" \"False\"" ] ) .
+      replace
+        (unlines [ "nothingName = 'Nothing", "justName    = 'Just" ] )
+        (unlines [ "nothingName = mkNameG DataName \"base\" \"GHC.Maybe\" \"Nothing\"", "justName    = mkNameG DataName \"base\" \"GHC.Maybe\" \"Just\"" ] ) .
+      replace
+        (unlines [ "leftName  = 'Left", "rightName = 'Right" ] )
+        (unlines [ "leftName  = mkNameG DataName \"base\" \"Data.Either\" \"Left\"", "rightName = mkNameG DataName \"base\" \"Data.Either\" \"Right\"" ] ) .
+      replace
+        "nonemptyName = '(:|)"
+        "nonemptyName = mkNameG DataName \"base\" \"GHC.Base\" \":|\"" .
+      replace
+        (unlines [ "oneName  = 'One", "manyName = 'Many" ] )
+        (unlines [ "oneName  = mkNameG DataName \"ghc-prim\" \"GHC.Types\" \"One\"", "manyName = mkNameG DataName \"ghc-prim\" \"GHC.Types\" \"Many\"" ] )
+      =<< readFile' "libraries/template-haskell/Language/Haskell/TH/Syntax.hs"
 
 applyPatchTemplateHaskellCabal :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellCabal ghcFlavor = do
