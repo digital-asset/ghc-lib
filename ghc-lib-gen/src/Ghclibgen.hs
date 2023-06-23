@@ -1426,6 +1426,7 @@ genPlaceholderModule m = do
         l <- T.hGetLine h
         acc <- if "import " `T.isPrefixOf` l then
                  case T.words l of
+                  _import : "::" : _ -> pure acc -- Skip `import :: { ... }` in Parser.y
                   _import : "qualified" : name : _ -> do
                       pure $ T.takeWhile (/= '(') name : acc
                   _import : name : _ -> do
