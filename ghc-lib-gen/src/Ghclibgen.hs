@@ -83,7 +83,8 @@ ghcLibParserIncludeDirs ghcFlavor = (case ghcSeries ghcFlavor of
   _ -> error "ghcLibParserIncludeDirs: impossible case!"
   ) ++
   [ hadrianGeneratedRoot ghcFlavor, stage0Compiler, "compiler" ] ++
-  [ "compiler/utils" | ghcSeries ghcFlavor < Ghc810 ]
+  [ "compiler/utils" | ghcSeries ghcFlavor < Ghc810 ] ++
+  [ "libraries/containers/containers/include" | ghcSeries ghcFlavor >= Ghc98 ] -- containers.h
 
 -- Sort by length so the longest paths are at the front. We do this
 -- so that in 'calcParserModules', longer substituions are performed
@@ -233,6 +234,7 @@ fingerprint ghcFlavor =
 
 cHeaders :: GhcFlavor -> [String]
 cHeaders ghcFlavor =
+   [ f | ghcSeries ghcFlavor >= Ghc98, f <- [ "libraries/containers/containers/include/containers.h" ] ] ++
    [ f | ghcSeries ghcFlavor >= Ghc94, f <- (("rts/include" </>) <$> ["ghcconfig.h", "ghcversion.h" ]) ++ (("compiler" </>) <$>[ "MachRegs.h", "CodeGen.Platform.h", "Bytecodes.h", "ClosureTypes.h", "FunTypes.h", "Unique.h", "ghc-llvm-version.h" ]) ] ++
    [ f | ghcSeries ghcFlavor < Ghc94, f <- (("includes" </>)  <$> [ "MachDeps.h", "stg/MachRegs.h", "CodeGen.Platform.hs"]) ++ (("compiler" </>) <$> [ "Unique.h", "HsVersions.h" ]) ] ++
    [ f | ghcSeries ghcFlavor < Ghc810, f <- ("compiler" </>) <$> [ "nativeGen/NCG.h", "utils/md5.h"] ]
@@ -349,8 +351,22 @@ applyPatchSystemSemaphore patches ghcFlavor = do
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-ghc_cabal_in.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_MakeSem_hs.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Pipeline_LogQueue_hs.patch")
-    system_ $ "git apply " ++ (patches </> "432c736c19446a011fca1f9485c67761c991bd42-GHC_Driver_Make_hs.patch")
+    system_ $ "git apply " ++ (patches </> "9edcb1fb02d799acd4a7d0c145796aecb6e54ea3-GHC_Driver_Make_hs.patch")
     writeFile "compiler/GHC/Driver/Make.hs" .
+     -- patch 0
+     replace
+       "import qualified Data.IntSet as I"
+       "import qualified GHC.Data.Word64Set as W" .
+     replace "I.IntSet" "W.Word64Set" .
+     replace "I.empty" "W.empty" .
+     replace "I.union" "W.union" .
+     replace "I.singleton" "W.singleton" .
+     replace
+       "                                (hsc_tmpfs hsc_env')"
+       (unlines [
+         "                                (hsc_tmpfs hsc_env')"
+       , "                                (hsc_FC hsc_env')"
+       ]) .
       -- patch 1
       replace
         (unlines [
