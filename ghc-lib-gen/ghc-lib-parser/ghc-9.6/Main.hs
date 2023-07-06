@@ -23,3 +23,4 @@ import GHC.Settings.Config
 import GHC.Data.StringBuffer
 import GHC.Data.FastString
 import GHC.Platform
+import GHC.Hs.Dump

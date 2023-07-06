@@ -16,3 +16,4 @@ import FastString
 import StringBuffer
 import Bag
 import Platform
+import HsDumpAst

@@ -16,3 +16,4 @@ import HeaderInfo
 import ApiAnnotation
 import ToolSettings
 import GHC.Platform
+import HsDumpAst

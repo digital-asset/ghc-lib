@@ -14,3 +14,4 @@ import GHC.Utils.Fingerprint
 import GHC.Settings
 import GHC.Settings.Config
 import GHC.Platform
+import GHC.Hs.Dump

@@ -17,3 +17,4 @@ import GHC.Utils.Fingerprint
 import GHC.Utils.Outputable
 import GHC.Utils.Error
 import GHC.Platform
+import GHC.Hs.Dump
