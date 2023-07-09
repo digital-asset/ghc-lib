@@ -13,6 +13,8 @@ import GHC.Data.StringBuffer
 import GHC.Data.FastString
 import GHC.Types.Name.Reader
 import GHC.Types.SourceError
+import GHC.Types.SrcLoc
+import GHC.Utils.Panic
 import GHC.Utils.Fingerprint
 import GHC.Utils.Outputable
 import GHC.Utils.Error

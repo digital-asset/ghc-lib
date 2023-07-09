@@ -18,6 +18,8 @@ import GHC.Hs
 import GHC.Types.Error
 import GHC.Types.Name.Reader
 import GHC.Types.SourceError
+import GHC.Types.SrcLoc
+import GHC.Utils.Panic
 import GHC.Settings
 import GHC.Settings.Config
 import GHC.Data.StringBuffer

@@ -6,6 +6,8 @@ import GHC.Parser.Header
 import GHC.Parser.Annotation
 import GHC.Hs
 import GHC.Types.Name.Reader
+import GHC.Types.SrcLoc
+import GHC.Utils.Panic
 import GHC.Data.StringBuffer
 import GHC.Data.FastString
 import GHC.Utils.Error
