@@ -15,9 +15,11 @@ import GHC.Utils.Outputable
 import GHC.Utils.Error
 import GHC.Utils.Fingerprint
 import GHC.Hs
+import GHC.Types.SrcLoc
 import GHC.Types.Error
 import GHC.Types.Name.Reader
 import GHC.Types.SourceError
+import GHC.Utils.Panic
 import GHC.Settings
 import GHC.Settings.Config
 import GHC.Data.StringBuffer

@@ -1,4 +1,4 @@
--- Copyright (c) 2019-2022, Digital Asset (Switzerland) GmbH and/or
+-- Copyright (c) 2019-2023, Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
@@ -21,6 +21,9 @@ import Data.List.Extra
 import Data.Time.Clock
 import Data.Time.Calendar
 import qualified Options.Applicative as Opts
+import Data.Foldable
+import GHC.Stack
+import System.IO.Unsafe
 
 main :: IO ()
 main = do
@@ -71,7 +74,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "53ed21c5d142961848f4b24fa8d5f45d500b9494" -- 2023-07-05
+current = "d284470a77042e6bc17bdb0ab0d740011196958a" -- 2023-07-09
 
 -- Command line argument generators.
 
@@ -388,6 +391,10 @@ buildDists
     removeFile "ghc/ghc-lib.cabal"
     cmd "git checkout stack.yaml"
 
+    copyDirectoryRecursive
+      "ghc-lib-gen/ghc-lib-parser"
+      "examples/ghc-lib-test-mini-hlint/extra-source-files"
+
     patchVersion version "ghc-lib-gen.cabal"
     patchVersion version "examples/ghc-lib-test-utils/ghc-lib-test-utils.cabal"
     patchConstraints version "examples/ghc-lib-test-utils/ghc-lib-test-utils.cabal"
@@ -559,7 +566,7 @@ buildDists
       patchConstraints version file =
         writeFile file .
           -- affects ghc-lib.cabal
-          replace "ghc-lib-parser\n" ("ghc-lib-parser == " ++ version ++ "\n") .
+          replace "        ghc-lib-parser\n" ("        ghc-lib-parser == " ++ version ++ "\n") .
           -- affects ghc-lib-test-utils, ghc-lib-test-mini-hlint, ghc-lib-test-mini-compile
           replace ", ghc-lib-test-utils" (", ghc-lib-test-utils == " ++ version ++ "\n") .
           replace ", ghc-lib\n" (", ghc-lib == " ++ version ++ "\n") .
@@ -626,3 +633,35 @@ buildDists
           Ghc884  -> "ghc-8.8.4-release"
           Da DaFlavor { mergeBaseSha } -> mergeBaseSha
           GhcMaster hash -> hash
+
+copyDirectoryRecursive :: FilePath -> FilePath -> IO ()
+copyDirectoryRecursive srcDir destDir = withFrozenCallStack $ do
+  srcFiles <- getDirectoryContentsRecursive srcDir
+  copyFilesWith copyFile destDir [ (srcDir, f) | f <- srcFiles ]
+
+getDirectoryContentsRecursive :: FilePath -> IO [FilePath]
+getDirectoryContentsRecursive topdir = recurseDirectories [""]
+  where
+    recurseDirectories :: [FilePath] -> IO [FilePath]
+    recurseDirectories [] = return []
+    recurseDirectories (dir : dirs) = unsafeInterleaveIO $ do
+      (files, dirs') <- collect [] [] =<< listDirectory (topdir </> dir)
+      files' <- recurseDirectories (dirs' ++ dirs)
+      return (files ++ files')
+      where
+        collect files dirs' [] = return (reverse files, reverse dirs')
+        collect files dirs' (entry : entries) = do
+          let dirEntry = dir </> entry
+          isDirectory <- doesDirectoryExist (topdir </> dirEntry)
+          if isDirectory
+            then collect files (dirEntry : dirs') entries
+            else collect (dirEntry : files) dirs' entries
+
+copyFilesWith :: (FilePath -> FilePath -> IO ()) -> FilePath -> [(FilePath, FilePath)] -> IO ()
+copyFilesWith doCopy targetDir srcFiles = withFrozenCallStack $ do
+  let dirs = map (targetDir </>) . nub . map (takeDirectory . snd) $ srcFiles
+  traverse_ (createDirectoryIfMissing True) dirs
+  sequence_ [ let src = srcBase </> srcFile
+                  dest = targetDir </> srcFile
+               in doCopy src dest
+            | (srcBase, srcFile) <- srcFiles ]
