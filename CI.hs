@@ -74,7 +74,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "d284470a77042e6bc17bdb0ab0d740011196958a" -- 2023-07-09
+current = "eb1a6ab1df473c7ec0e1cbb20fc7124706326ce1" -- 2023-07-16
 
 -- Command line argument generators.
 
@@ -394,6 +394,12 @@ buildDists
     copyDirectoryRecursive
       "ghc-lib-gen/ghc-lib-parser"
       "examples/ghc-lib-test-mini-hlint/extra-source-files"
+    copyDirectoryRecursive
+      "ghc-lib-gen/ghc-lib-parser"
+      "examples/ghc-lib-test-mini-compile/extra-source-files/ghc-lib-parser"
+    copyDirectoryRecursive
+      "ghc-lib-gen/ghc-lib"
+      "examples/ghc-lib-test-mini-compile/extra-source-files/ghc-lib"
 
     patchVersion version "ghc-lib-gen.cabal"
     patchVersion version "examples/ghc-lib-test-utils/ghc-lib-test-utils.cabal"

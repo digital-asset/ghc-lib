@@ -75,7 +75,7 @@ cabalFileLibraries = [
     , "compiler/ghc.cabal"
     ]
 
--- | C-preprocessor "include dirs" for 'ghc-lib-parser'.
+-- C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: GhcFlavor -> [FilePath]
 ghcLibParserIncludeDirs ghcFlavor = (case ghcSeries ghcFlavor of
   series | series >= Ghc94 -> [ "rts/include" ] -- ghcconfig.h, ghcversion.h
@@ -86,6 +86,10 @@ ghcLibParserIncludeDirs ghcFlavor = (case ghcSeries ghcFlavor of
   [ "compiler/utils" | ghcSeries ghcFlavor < Ghc810 ] ++
   [ "libraries/containers/containers/include" | ghcSeries ghcFlavor >= Ghc98 ] -- containers.h
 
+-- C-preprocessor "include dirs" for 'ghc-lib'.
+ghcLibIncludeDirs :: GhcFlavor -> [FilePath]
+ghcLibIncludeDirs = ghcLibParserIncludeDirs
+
 -- Sort by length so the longest paths are at the front. We do this
 -- so that in 'calcParserModules', longer substituions are performed
 -- before shorter ones (and bad things will happen if that were
@@ -94,54 +98,40 @@ sortDiffListByLength :: Set.Set FilePath -> Set.Set FilePath -> [FilePath]
 sortDiffListByLength all excludes =
   nubOrd . sortOn (Down . length) $ Set.toList (Set.difference all excludes)
 
--- | The "hs-source-dirs" for 'ghc-lib-parser' (actually used in two
--- contexts, 'ghc-lib-parser.cabal' generation and when calculating
--- the set of parser modules).
+-- The "hs-source-dirs" universe.
+allHsSrcDirs :: Bool -> GhcFlavor -> [Cabal] -> [FilePath]
+allHsSrcDirs forDepends ghcFlavor lib =
+  [ stage0Compiler ] ++
+  [ dir | forDepends, dir <- [ stage0Ghci, stage0GhcHeap ] ] ++
+  [ stage0GhcBoot | ghcSeries ghcFlavor >= Ghc810 ] ++
+  map takeDirectory cabalFileLibraries ++
+  map (dropTrailingPathSeparator . normalise) (askFiles lib "hs-source-dirs:")
+
+-- The "hs-source-dirs" for 'ghc-lib-parser'.
 ghcLibParserHsSrcDirs :: Bool -> GhcFlavor -> [Cabal] -> [FilePath]
-ghcLibParserHsSrcDirs forParserDepends ghcFlavor lib =
-  let all = Set.fromList $
-        [ stage0Compiler ] ++
-        -- The subtlety here is that, when calculating parser modules
-        -- (i.e. 'forParserDepends == True') via 'ghc -M' we need
-        -- these directories poplulated with generated intermediate
-        -- files ('ghc -M' isn't smart enough to "read through" .hsc
-        -- files). When we sdist though, we exclude the generated
-        -- files (rather, we ship their .hsc sources and the generated
-        -- files are physically deleted at that point) and
-        -- consequently, these directories are empty causing Cabal to
-        -- warn (which is then going to cause problems with uploading
-        -- to Hackage for example). Thus, when writing
-        -- 'ghc-lib-parser.cabal' (i.e. 'forParserDepends == False'),
-        -- we exclude these directories.
-        [ dir | forParserDepends, dir <- [ stage0Ghci, stage0GhcHeap ] ] ++
-        [ stage0GhcBoot | ghcSeries ghcFlavor >= Ghc810 ] ++
-        map takeDirectory cabalFileLibraries ++
-        map (dropTrailingPathSeparator . normalise) (askFiles lib "hs-source-dirs:")
+ghcLibParserHsSrcDirs forDepends ghcFlavor lib =
+  let all = Set.fromList $ allHsSrcDirs forDepends ghcFlavor lib
+      exclusions =
+         case ghcSeries ghcFlavor of
+              Ghc88 -> [ "compiler/codeGen", "compiler/hieFile", "compile/llvmGen", "compiler/stranal", "compiler/rename", "compiler/stgSyn", "compiler/llvmGen" ]
+              Ghc810 -> [ "compiler/nativeGen", "compiler/deSugar", "compiler/HieFile", "compiler/llvmGen", "compiler/stranal", "compiler/rename", "compiler/stgSyn"  ]
+              _ -> []
+  in sortDiffListByLength all $ Set.fromList [ dir | not forDepends, dir <- exclusions ]
 
-      excludes = Set.fromList $
-        ("compiler" </>) <$> (
-          [ "codeGen", "hieFile", "llvmGen" , "rename", "stgSyn", "stranal" ] ++
-          [ d | ghcSeries ghcFlavor >= Ghc90, d <- [ "typecheck", "specialise", "cmm" ] ] ++
-          [ "nativeGen" | ghcSeries ghcFlavor < Ghc90 ] ++
-          [ "deSugar" | ghcSeries ghcFlavor >= Ghc810 && not forParserDepends ]
-        )
-  in sortDiffListByLength all excludes -- Very important. See the comment on 'sortDiffListByLength' above.
-
--- | C-preprocessor "include dirs" for 'ghc-lib'.
-ghcLibIncludeDirs :: GhcFlavor -> [FilePath]
-ghcLibIncludeDirs = ghcLibParserIncludeDirs -- Needs checking (good enough for now).
-
--- | The "hs-source-dirs" for 'ghc-lib'.
-ghcLibHsSrcDirs :: GhcFlavor -> [Cabal] -> [FilePath]
-ghcLibHsSrcDirs ghcFlavor lib =
-  let all = Set.fromList $
-        [ stage0Compiler ] ++
-        [ stage0GhcBoot | ghcSeries ghcFlavor >= Ghc810 ] ++
-        map takeDirectory cabalFileLibraries ++
-        map (dropTrailingPathSeparator . normalise) (askFiles lib "hs-source-dirs:")
-      excludes = Set.fromList $
-        (("compiler" </>) <$> [ "basicTypes", "parser", "types" ]) ++ (("libraries" </>) <$> [ "ghc-boot-th", "ghc-heap" ]) ++ [ "compiler/cmm" | ghcFlavor >= Ghc901 ]
-  in sortDiffListByLength all excludes -- Not so important. Here for symmetry with 'ghcLibParserHsSrcDirs' I think.
+-- The "hs-source-dirs" for 'ghc-lib'.
+ghcLibHsSrcDirs :: Bool -> GhcFlavor -> [Cabal] -> [FilePath]
+ghcLibHsSrcDirs forDepends ghcFlavor lib =
+  let all = Set.fromList $ allHsSrcDirs forDepends ghcFlavor lib
+      exclusions =
+        case ghcSeries ghcFlavor of
+              Ghc88 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "compiler/basicTypes", "libraries/ghc-boot", "libraries/ghc-heap", "compiler/parser", "compiler/types" ]
+              Ghc810 -> [ "ghc-lib/stage0/libraries/ghc-boot/build", "libraries/template-haskell", "libraries/ghc-boot-th", "compiler/basicTypes", "libraries/ghc-heap", "compiler/parser", "compiler/types" ]
+              Ghc90 -> [ "ghc-lib/stage0/libraries/ghc-boot/build", "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-heap" ]
+              Ghc92 -> [ "ghc-lib/stage0/libraries/ghc-boot/build", "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-heap" ]
+              Ghc94 -> [ "ghc-lib/stage0/libraries/ghc-boot/build", "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-heap", "libraries/ghci" ]
+              Ghc96 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghci" ]
+              Ghc98 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap" ]
+  in sortDiffListByLength all $ Set.fromList [ dir | not forDepends, dir <- exclusions ]
 
 dataDir :: FilePath
 cabalFileBinary :: FilePath
@@ -292,8 +282,11 @@ calcParserModules ghcFlavor = do
         [ "stack exec" ] ++
         [ "--package exceptions" | flavor == Ghc90 ] ++
         [ "--stack-yaml hadrian/stack.yaml" ] ++
-        [ "-- ghc"
-        , "-dep-suffix ''"
+        [ "-- ghc" ] ++
+        [ "-optP -DGHCI" | ghcSeries ghcFlavor < Ghc810 ] ++
+        [ "-optP -DSTAGE=2" | ghcSeries ghcFlavor < Ghc810 ] ++
+        [ "-optP -DGHC_IN_GHCI" | ghcSeries ghcFlavor < Ghc92 ] ++
+        [ "-dep-suffix ''"
         , "-dep-makefile .parser-depends"
         , "-M"
         ] ++
@@ -310,6 +303,63 @@ calcParserModules ghcFlavor = do
   system_ cmd
 
   buf <- readFile' ".parser-depends"
+  -- The idea here is harvest from lines like
+  -- 'compiler/prelude/PrelRules.o : compiler/prelude/PrelRules.hs',
+  -- just the module name e.g. in this example, 'PrelRules'.
+      -- Strip comment lines.
+  let depends = filter (not . isPrefixOf "#") (lines buf)
+      -- Restrict to Haskell source file lines.
+      moduleLines = filter (isSuffixOf ".hs") depends
+      -- Strip each line up-to and including ':'.
+      modulePaths = map (trim . snd) (mapMaybe (stripInfix ":") moduleLines)
+      -- Remove leading source directories from what's left.
+      strippedModulePaths = foldl
+        (\acc p -> map (replace (p ++ "/") "") acc)
+        modulePaths
+        (placeholderModulesDir : hsSrcDirs)
+      -- Lastly, manipulate text like 'GHC/Exts/Heap/Constants.hs'
+      -- into 'GHC.Exts.Heap.Constants'.
+      modules = [ replace "/" "." . dropSuffix ".hs" $ m | m <- strippedModulePaths, m /= "Main.hs" ]
+
+  return $ nubSort modules
+
+calcLibModules :: GhcFlavor -> IO [String]
+calcLibModules ghcFlavor = do
+  let flavor = ghcSeries ghcFlavor
+
+  lib <- mapM readCabalFile cabalFileLibraries
+
+  let rootModulePath = placeholderModulesDir </> "Main.hs"
+  copyFile ("../ghc-lib-gen/ghc-lib" </> show flavor </> "Main.hs") rootModulePath
+
+  let hsSrcDirs = ghcLibHsSrcDirs True ghcFlavor lib
+      hsSrcIncludes = map ("-i" ++ ) (placeholderModulesDir : hsSrcDirs)
+      includeDirs = map ("-I" ++ ) (ghcLibIncludeDirs ghcFlavor)
+      cmd = unwords $
+        [ "stack exec" ] ++
+        [ "--package exceptions" | flavor == Ghc90 ] ++
+        [ "--stack-yaml hadrian/stack.yaml" ] ++
+        [ "-- ghc" ] ++
+        [ "-optP -DGHCI" | ghcSeries ghcFlavor < Ghc810 ] ++
+        [ "-optP -DSTAGE=2" | ghcSeries ghcFlavor < Ghc810 ] ++
+        [ "-optP -DGHC_IN_GHCI" | ghcSeries ghcFlavor < Ghc92 ] ++
+        [ "-dep-suffix ''"
+        , "-dep-makefile .lib-depends"
+        , "-M"
+        ] ++
+        includeDirs ++
+        [ "-ignore-package ghc"
+        , "-ignore-package ghci"
+        , "-package base"
+        ] ++
+        [ "-package exceptions" | flavor == Ghc90 ] ++
+        hsSrcIncludes ++
+        [ rootModulePath ]
+  putStrLn "# Generating 'ghc/.lib-depends'..."
+  putStrLn $ "\n\n# Running: " ++ cmd
+  system_ cmd
+
+  buf <- readFile' ".lib-depends"
   -- The idea here is harvest from lines like
   -- 'compiler/prelude/PrelRules.o : compiler/prelude/PrelRules.hs',
   -- just the module name e.g. in this example, 'PrelRules'.
@@ -1200,24 +1250,32 @@ ghcLibBuildDepends ghcFlavor =
   ]
 
 -- | This utility factored out to avoid repetion.
-libBinParserModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String])
-libBinParserModules ghcFlavor = do
+libBinParserLibModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String], [String])
+libBinParserLibModules ghcFlavor = do
     lib <- mapM readCabalFile cabalFileLibraries
     bin <- readCabalFile cabalFileBinary
     parserModules <- calcParserModules ghcFlavor
-    return (lib, [bin], parserModules)
+    libModules <- calcLibModules ghcFlavor
+
+    return (lib, [bin], parserModules, libModules)
 
 -- | Produces a ghc-lib Cabal file.
 generateGhcLibCabal :: GhcFlavor -> [String] -> IO ()
 generateGhcLibCabal ghcFlavor customCppOpts = do
-    -- Compute the list of modules to be compiled. The rest are parser
-    -- modules re-exported from ghc-lib-parser.
-    (lib, _bin, parserModules) <- libBinParserModules ghcFlavor
+    (lib, _bin, parserModules, libModules) <- libBinParserLibModules ghcFlavor
     let nonParserModules =
           Set.toList (Set.difference
-          (Set.fromList $ askField lib "exposed-modules:" )
+          (Set.fromList libModules)
           (Set.fromList parserModules))
-
+    {- Alternative:
+       ```
+         let nonParserModules =
+              Set.toList (Set.difference
+              (Set.fromList $ askField lib "exposed-modules:" )
+              (Set.fromList parserModules))
+        ```
+    -}
+    let hsSrcDirs = ghcLibHsSrcDirs False ghcFlavor lib
     writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
         [ "cabal-version: 2.0"
         , "build-type: Simple"
@@ -1267,7 +1325,7 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
         [ "    hs-source-dirs:" ] ++
-        indent2 (ghcLibHsSrcDirs ghcFlavor lib) ++
+        indent2 hsSrcDirs ++
         [ "    autogen-modules:"
         , "        Paths_ghc_lib"
         ] ++
@@ -1309,7 +1367,7 @@ performExtraFilesSubstitutions ghcFlavor files =
 -- | Produces a ghc-lib-parser Cabal file.
 generateGhcLibParserCabal :: GhcFlavor -> [String] -> IO ()
 generateGhcLibParserCabal ghcFlavor customCppOpts = do
-    (lib, _bin, parserModules) <- libBinParserModules ghcFlavor
+    (lib, _bin, parserModules, _) <- libBinParserLibModules ghcFlavor
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
         [ "cabal-version: 2.0"
         , "build-type: Simple"
