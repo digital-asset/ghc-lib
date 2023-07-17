@@ -17,3 +17,4 @@ import StringBuffer
 import Bag
 import Platform
 import HsDumpAst
+import Module

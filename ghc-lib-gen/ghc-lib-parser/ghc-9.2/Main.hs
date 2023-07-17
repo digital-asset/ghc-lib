@@ -20,3 +20,4 @@ import GHC.Utils.Outputable
 import GHC.Utils.Error
 import GHC.Platform
 import GHC.Hs.Dump
+import GHC.Unit.Types

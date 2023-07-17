@@ -7,7 +7,7 @@ x-license:           BSD-3-Clause OR Apache-2.0
 license-file:        LICENSE
 author:              Shayne Fletcher (shayne@shaynefletcher.org)
 maintainer:          Shayne Fletcher (shayne@shaynefletcher.org) & Digital Asset
-copyright:           Digital Asset 2018-2022
+copyright:           Digital Asset 2018-2023
 build-type:          Simple
 category:            Development
 description:         "ghc-lib-parser" usage example

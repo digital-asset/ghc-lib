@@ -26,3 +26,4 @@ import GHC.Data.StringBuffer
 import GHC.Data.FastString
 import GHC.Platform
 import GHC.Hs.Dump
+import GHC.Unit.Types

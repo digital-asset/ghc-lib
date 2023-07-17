@@ -26,3 +26,4 @@ import GHC.Platform
 import GHC.Parser.Header
 import GHC.Parser.Annotation
 import GHC.Hs.Dump
+import GHC.Unit.Types

@@ -169,7 +169,7 @@ steps:
       hlint ghc-lib-gen
       hlint examples/ghc-lib-test-utils/src
       hlint examples/ghc-lib-test-mini-hlint/src --cpp-include examples/ghc-lib-test-mini-hlint/extra-source-files
-      hlint examples/ghc-lib-test-mini-hlint/test/Main.hs
+      hlint examples/ghc-lib-test-mini-hlint/test/Main.hs --cpp-include examples/ghc-lib-test-mini-compile/extra-source-files
       hlint examples/ghc-lib-test-mini-compile/src
     displayName: run hlint
     condition: eq( variables['Agent.OS'], 'Linux' )

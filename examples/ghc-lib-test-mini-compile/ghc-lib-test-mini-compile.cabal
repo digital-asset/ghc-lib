@@ -1,9 +1,9 @@
-cabal-version:       2.0
+cabal-version:       2.4
 name:                ghc-lib-test-mini-compile
 version:             0.1.0.0
 synopsis:            Example code
-license:             BSD3
-x-license:           BSD3-Clause OR Apache-2.0
+license:             BSD-3-Clause
+x-license:           BSD-3-Clause OR Apache-2.0
 license-file:        LICENSE
 author:              Shayne Fletcher (shayne@shaynefletcher.org)
 maintainer:          Shayne Fletcher (shayne@shaynefletcher.org) & Digital Asset
@@ -13,6 +13,7 @@ category:            Development
 description:         "ghc-lib" usage example
 
 extra-source-files:  test/*.hs
+                   , extra-source-files/**/*.hs
 
 executable ghc-lib-test-mini-compile
   main-is:             Main.hs
@@ -24,6 +25,7 @@ executable ghc-lib-test-mini-compile
                      , ghc-lib-parser
                      , ghc-lib
   hs-source-dirs:      src
+  include-dirs:        extra-source-files
   if flag(daml-unit-ids)
       cpp-options: -DDAML_UNIT_IDS
 
