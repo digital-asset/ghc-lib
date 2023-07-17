@@ -54,175 +54,187 @@ main = do
       s <- readFile' file
       flags <- mkDynFlags file s
       dataDir <- getDataDir
-      -- On mingw we avoid a "could not detect toolchain mingw"
-      -- runtime error. The error originates from `findToolDir`
-      -- indirectly invoked by `initGhcMonad` from `runGhc`). This
-      -- line tricks `findToolDir`.
-      createDirectoryIfMissing True $ dataDir ++ "/../mingw"
+      createDirectoryIfMissing True $ dataDir ++ "/../mingw" -- hack: avoid "could not detect toolchain mingw"
       cm <- runGhc (Just dataDir) $ do
               setSessionDynFlags flags
               compileToCoreSimplified file
       putStrLn $ showSDoc flags $ ppr cm
     _ -> fail "Exactly one file argument required"
 
+ghclibPrimUnitId :: String
+ghclibPrimUnitId =
+#if defined (DAML_UNIT_IDS)
+ "daml-prim"
+#else
+ "ghc-prim"
+#endif
 
--- | Create a DynFlags which is sufficiently filled in to work, but not complete
+-- Create a DynFlags which is sufficiently filled in to work, but not
+-- complete.
 mkDynFlags :: String -> String -> IO DynFlags
 mkDynFlags filename s = do
+
+#if defined (GHC_8_8)
+
   dirs_to_clean <- newIORef Map.empty
-#if defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2)
-       -- Intentionally empty (temp file flags have moved to HscEnv).
-#else
   files_to_clean <- newIORef emptyFilesToClean
-#endif
   next_temp_suffix <- newIORef 0
   let baseFlags =
-#if defined (GHC_9_8) || defined (GHC_9_6)
-        (defaultDynFlags fakeSettings) {
-#else
         (defaultDynFlags fakeSettings fakeLlvmConfig) {
-#endif
           ghcLink = NoLink
-#if defined (GHC_9_8) || defined (GHC_9_6)
-        , backend = noBackend
-#elif defined (GHC_9_4) || defined (GHC_9_2)
-        , backend = NoBackend
-#else
         , hscTarget = HscNothing
-#endif
-#if defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2)
-        -- Intentionally empty (unit related flags have moved to
-        -- HscEnv).
-#elif defined (GHC_9_0)
-        , unitDatabases = Just []
-#else
         , pkgDatabase = Just []
-#endif
-#if defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2)
-       -- Intentionally empty (temp file flags have moved to HscEnv).
-#else
         , dirsToClean = dirs_to_clean
         , filesToClean = files_to_clean
         , nextTempSuffix = next_temp_suffix
-#endif
-#if defined(DAML_UNIT_IDS)
-        , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "daml-prim")
-#else
-#if defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2)
-        , homeUnitId_ = toUnitId (stringToUnit "ghc-prim")
-#elif defined (GHC_9_0)
-        , homeUnitId = toUnitId (stringToUnit "ghc-prim")
-#else
-        , thisInstalledUnitId = toInstalledUnitId (stringToUnitId "ghc-prim")
-#endif
-#endif
+        , thisInstalledUnitId = toInstalledUnitId (stringToUnitId ghclibPrimUnitId)
         }
   parsePragmasIntoDynFlags filename s baseFlags
   where
     parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
     parsePragmasIntoDynFlags filepath contents dflags0 = do
-#if defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4)
-      let (_, opts) = getOptions (initParserOpts dflags0)
-                        (stringToStringBuffer contents) filepath
-#else
-      let opts = getOptions dflags0 (stringToStringBuffer contents) filepath
-#endif
+      let opts = getOptions dflags0
+                    (stringToStringBuffer contents) filepath
       (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
       return dflags
 
-#if defined (GHC_9_8) || defined (GHC_9_6)
--- Intentionally empty
-#elif defined (GHC_9_4) || defined (GHC_9_2) || defined (GHC_9_0) || defined (GHC_8_10)
-fakeLlvmConfig :: LlvmConfig
-fakeLlvmConfig = LlvmConfig [] []
+#elif defined (GHC_8_10)
+
+  dirs_to_clean <- newIORef Map.empty
+  files_to_clean <- newIORef emptyFilesToClean
+  next_temp_suffix <- newIORef 0
+
+  let baseFlags =
+        (defaultDynFlags fakeSettings fakeLlvmConfig) {
+          ghcLink = NoLink
+        , hscTarget = HscNothing
+        , pkgDatabase = Just []
+        , dirsToClean = dirs_to_clean
+        , filesToClean = files_to_clean
+        , nextTempSuffix = next_temp_suffix
+        , thisInstalledUnitId = toInstalledUnitId (stringToUnitId ghclibPrimUnitId)
+        }
+  parsePragmasIntoDynFlags filename s baseFlags
+  where
+    parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
+    parsePragmasIntoDynFlags filepath contents dflags0 = do
+      let opts = getOptions dflags0 (stringToStringBuffer contents) filepath
+      (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
+      return dflags
+
+#elif defined (GHC_9_0)
+
+  dirs_to_clean <- newIORef Map.empty
+  files_to_clean <- newIORef emptyFilesToClean
+  next_temp_suffix <- newIORef 0
+
+  let baseFlags =
+        (defaultDynFlags fakeSettings fakeLlvmConfig) {
+          ghcLink = NoLink
+        , hscTarget = HscNothing
+        , unitDatabases = Just []
+        , dirsToClean = dirs_to_clean
+        , filesToClean = files_to_clean
+        , nextTempSuffix = next_temp_suffix
+        , homeUnitId = toUnitId (stringToUnit ghclibPrimUnitId)
+        }
+  parsePragmasIntoDynFlags filename s baseFlags
+  where
+    parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
+    parsePragmasIntoDynFlags filepath contents dflags0 = do
+      let opts = getOptions dflags0
+                    (stringToStringBuffer contents) filepath
+      (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
+      return dflags
+
+#elif defined (GHC_9_2)
+
+  let baseFlags =
+        (defaultDynFlags fakeSettings fakeLlvmConfig) {
+          ghcLink = NoLink
+        , backend = NoBackend
+        , homeUnitId_ = toUnitId (stringToUnit ghclibPrimUnitId)
+        }
+  parsePragmasIntoDynFlags filename s baseFlags
+  where
+    parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
+    parsePragmasIntoDynFlags filepath contents dflags0 = do
+      let opts = getOptions dflags0
+                    (stringToStringBuffer contents) filepath
+      (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
+      return dflags
+
+#elif defined (GHC_9_4)
+
+  let baseFlags =
+        (defaultDynFlags fakeSettings fakeLlvmConfig) {
+          ghcLink = NoLink
+        , backend = NoBackend
+        , homeUnitId_ = toUnitId (stringToUnit ghclibPrimUnitId)
+        }
+  parsePragmasIntoDynFlags filename s baseFlags
+  where
+    parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
+    parsePragmasIntoDynFlags filepath contents dflags0 = do
+      let (_, opts) = getOptions (initParserOpts dflags0)
+                        (stringToStringBuffer contents) filepath
+      (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
+      return dflags
+
 #else
+
+  let baseFlags =
+        (defaultDynFlags fakeSettings) {
+          ghcLink = NoLink
+        , backend = noBackend
+        , homeUnitId_ = toUnitId (stringToUnit ghclibPrimUnitId)
+        }
+  parsePragmasIntoDynFlags filename s baseFlags
+  where
+    parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
+    parsePragmasIntoDynFlags filepath contents dflags0 = do
+      let (_, opts) = getOptions (initParserOpts dflags0)
+                        (stringToStringBuffer contents) filepath
+      (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
+      return dflags
+
+#endif
+
+#if defined (GHC_8_8)
+
 fakeLlvmConfig :: (LlvmTargets, LlvmPasses)
 fakeLlvmConfig = ([], [])
+
+#elif defined (GHC_8_10) || defined (GHC_9_0) || defined (GHC_9_2) || defined (GHC_9_4)
+
+fakeLlvmConfig :: LlvmConfig
+fakeLlvmConfig = LlvmConfig [] []
+
+#else
+   {- defined (GHC_9_6) || defined (GHC_9_8) -}
+
 #endif
 
 fakeSettings :: Settings
-fakeSettings = Settings
-#if defined (GHC_9_8) || defined (GHC_9_6) ||  defined (GHC_9_4) || defined (GHC_9_2) || defined (GHC_9_0) || defined (GHC_8_10)
-  { sGhcNameVersion=ghcNameVersion
-  , sFileSettings=fileSettings
-  , sTargetPlatform=platform
-  , sPlatformMisc=platformMisc
-#  if !defined (GHC_9_8) && !defined (GHC_9_6) && !defined(GHC_9_4) && !defined (GHC_9_2)
-  , sPlatformConstants=platformConstants
-#  endif
-  , sToolSettings=toolSettings
-  }
-#else
-  { sTargetPlatform=platform
+fakeSettings = Settings {
+
+#if defined (GHC_8_8)
+
+    sTargetPlatform=platform
   , sPlatformConstants=platformConstants
   , sProjectVersion=cProjectVersion
   , sProgramName="ghc"
   , sOpt_P_fingerprint=fingerprint0
   , sTmpDir="."
   }
-#endif
   where
-#if defined (GHC_9_8)  || defined (GHC_9_6)||  defined (GHC_9_4) || defined (GHC_9_2) || defined (GHC_9_0) || defined (GHC_8_10)
-    fileSettings = FileSettings {
-#if defined (GHC_8_10)
-        fileSettings_tmpDir="."
-#else
-#if !defined(GHC_9_8) && !defined (GHC_9_6) && !defined(GHC_9_4)
-        fileSettings_tmpDir=".",
-#endif
-       fileSettings_topDir=".",
-       fileSettings_toolDir=Nothing,
-       fileSettings_ghcUsagePath=".",
-       fileSettings_ghciUsagePath=".",
-       fileSettings_globalPackageDatabase="."
-#endif
-      }
-
-    toolSettings = ToolSettings {
-        toolSettings_opt_P_fingerprint=fingerprint0
-      }
-    platformMisc = PlatformMisc {
-#if !defined (GHC_9_8) && !defined (GHC_9_6) && !defined(GHC_9_4) && !defined (GHC_9_2) && !defined (GHC_9_0)
-        platformMisc_integerLibraryType=IntegerSimple
-#endif
-      }
-    ghcNameVersion =
-      GhcNameVersion{
-        ghcNameVersion_programName="ghc"
-      , ghcNameVersion_projectVersion=cProjectVersion
-      }
-#endif
-    platform =
-#if defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2)
-      genericPlatform
-#else
-      Platform{
-#if defined (GHC_9_0)
-      -- It doesn't matter what values we write here as these fields are
-      -- not referenced for our purposes. However the fields are strict
-      -- so we must say something.
-        platformByteOrder=LittleEndian
-      , platformHasGnuNonexecStack=True
-      , platformHasIdentDirective=False
-      , platformHasSubsectionsViaSymbols=False
-      , platformIsCrossCompiling=False
-      , platformLeadingUnderscore=False
-      , platformTablesNextToCode=False
-      ,
-#endif
-#if defined (GHC_8_10) || defined (GHC_9_0)
-        platformWordSize=PW8
-      , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
-#else
+    platform = Platform {
         platformWordSize=8
       , platformOS=OSUnknown
-#endif
       , platformUnregisterised=True
       }
-#endif
-#if !defined (GHC_9_8) && !defined (GHC_9_6) && !defined(GHC_9_4) && !defined (GHC_9_2)
-    platformConstants =
-       PlatformConstants {
+
+    platformConstants = PlatformConstants {
          pc_DYNAMIC_BY_DEFAULT=False
        , pc_WORD_SIZE=8
        , pc_STD_HDR_SIZE=1
@@ -234,4 +246,172 @@ fakeSettings = Settings
        , pc_MAX_Vanilla_REG=10
        , pc_MAX_Real_Long_REG=0
        }
+
+#elif defined (GHC_8_10)
+
+    sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+  , sToolSettings=toolSettings
+  , sPlatformConstants=platformConstants
+  }
+  where
+    fileSettings = FileSettings {
+         fileSettings_tmpDir="."
+       }
+
+    toolSettings = ToolSettings {
+         toolSettings_opt_P_fingerprint=fingerprint0
+       }
+
+    platformMisc = PlatformMisc {
+        platformMisc_integerLibraryType=IntegerSimple
+       }
+
+    ghcNameVersion = GhcNameVersion{
+         ghcNameVersion_programName="ghc"
+       , ghcNameVersion_projectVersion=cProjectVersion
+      }
+
+    platform = Platform{
+         platformWordSize=PW8
+       , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
+       , platformUnregisterised=True
+      }
+
+    platformConstants = PlatformConstants {
+         pc_DYNAMIC_BY_DEFAULT=False
+       , pc_WORD_SIZE=8
+       , pc_STD_HDR_SIZE=1
+       , pc_TAG_BITS=3
+       , pc_BLOCKS_PER_MBLOCK=252
+       , pc_BLOCK_SIZE=4096
+       , pc_MIN_PAYLOAD_SIZE=1
+       , pc_MAX_Real_Vanilla_REG=6
+       , pc_MAX_Vanilla_REG=10
+       , pc_MAX_Real_Long_REG=0
+       }
+
+#elif defined (GHC_9_0)
+
+    sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+  , sToolSettings=toolSettings
+  , sPlatformConstants=platformConstants
+  }
+  where
+    fileSettings = FileSettings {
+         fileSettings_tmpDir="."
+       , fileSettings_topDir="."
+       , fileSettings_toolDir=Nothing
+       , fileSettings_ghcUsagePath="."
+       , fileSettings_ghciUsagePath="."
+       , fileSettings_globalPackageDatabase="."
+       }
+
+    toolSettings = ToolSettings {
+         toolSettings_opt_P_fingerprint=fingerprint0
+       }
+
+    platformMisc = PlatformMisc {
+       }
+
+    ghcNameVersion = GhcNameVersion {
+         ghcNameVersion_programName="ghc"
+       , ghcNameVersion_projectVersion=cProjectVersion
+      }
+
+    platform = Platform {
+        platformByteOrder=LittleEndian
+      , platformHasGnuNonexecStack=True
+      , platformHasIdentDirective=False
+      , platformHasSubsectionsViaSymbols=False
+      , platformIsCrossCompiling=False
+      , platformLeadingUnderscore=False
+      , platformTablesNextToCode=False
+      , platformWordSize=PW8
+      , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
+      , platformUnregisterised=True
+      }
+
+    platformConstants = PlatformConstants {
+         pc_DYNAMIC_BY_DEFAULT=False
+       , pc_WORD_SIZE=8
+       , pc_STD_HDR_SIZE=1
+       , pc_TAG_BITS=3
+       , pc_BLOCKS_PER_MBLOCK=252
+       , pc_BLOCK_SIZE=4096
+       , pc_MIN_PAYLOAD_SIZE=1
+       , pc_MAX_Real_Vanilla_REG=6
+       , pc_MAX_Vanilla_REG=10
+       , pc_MAX_Real_Long_REG=0
+       }
+
+#elif defined (GHC_9_2)
+
+    sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+  , sToolSettings=toolSettings
+  }
+  where
+    fileSettings = FileSettings {
+         fileSettings_tmpDir="."
+       , fileSettings_topDir="."
+       , fileSettings_toolDir=Nothing
+       , fileSettings_ghcUsagePath="."
+       , fileSettings_ghciUsagePath="."
+       , fileSettings_globalPackageDatabase="."
+       }
+
+    toolSettings = ToolSettings {
+         toolSettings_opt_P_fingerprint=fingerprint0
+       }
+
+    platformMisc = PlatformMisc {
+       }
+
+    ghcNameVersion = GhcNameVersion {
+         ghcNameVersion_programName="ghc"
+       , ghcNameVersion_projectVersion=cProjectVersion
+      }
+
+    platform =  genericPlatform
+
+#else
+   {- defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) -}
+
+    sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+  , sToolSettings=toolSettings
+  }
+  where
+    fileSettings = FileSettings {
+         fileSettings_topDir="."
+       , fileSettings_toolDir=Nothing
+       , fileSettings_ghcUsagePath="."
+       , fileSettings_ghciUsagePath="."
+       , fileSettings_globalPackageDatabase="."
+       }
+
+    toolSettings = ToolSettings {
+         toolSettings_opt_P_fingerprint=fingerprint0
+       }
+
+    platformMisc = PlatformMisc {
+       }
+
+    ghcNameVersion = GhcNameVersion{
+         ghcNameVersion_programName="ghc"
+       , ghcNameVersion_projectVersion=cProjectVersion
+      }
+
+    platform =  genericPlatform
+
 #endif

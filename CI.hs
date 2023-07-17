@@ -55,7 +55,7 @@ data StackOptions = StackOptions
 
 data GhcFlavor = Da DaFlavor
                | GhcMaster String
-               | Ghc961 | Ghc962
+               | Ghc962 | Ghc961
                | Ghc945 | Ghc944 | Ghc943 | Ghc942 | Ghc941
                | Ghc927 | Ghc926 | Ghc925 | Ghc924 | Ghc923 | Ghc922 | Ghc921
                | Ghc902 | Ghc901
@@ -74,7 +74,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "b55a8ea70424032c19ef85ef95c5eee8b50d55c3" -- 2023-07-17
+current = "257f1567395be441ebf7ada996e4edf36abbe7e9" -- 2023-07-18
 
 -- Command line argument generators.
 
