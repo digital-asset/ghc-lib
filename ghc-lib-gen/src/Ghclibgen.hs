@@ -65,15 +65,16 @@ import GhclibgenFlavor
 -- Constants.
 
 -- | Cabal files from libraries inside GHC that are merged together.
-cabalFileLibraries :: [FilePath]
-cabalFileLibraries = [
+cabalFileLibraries :: GhcFlavor -> [FilePath]
+cabalFileLibraries ghcFlavor = [
       "libraries/template-haskell/template-haskell.cabal"
     , "libraries/ghc-heap/ghc-heap.cabal"
     , "libraries/ghc-boot-th/ghc-boot-th.cabal"
     , "libraries/ghc-boot/ghc-boot.cabal"
     , "libraries/ghci/ghci.cabal"
     , "compiler/ghc.cabal"
-    ]
+    ] ++
+    [ "libraries/ghc-platform/ghc-platform.cabal" | ghcSeries ghcFlavor >= Ghc98 ]
 
 -- C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: GhcFlavor -> [FilePath]
@@ -104,7 +105,7 @@ allHsSrcDirs forDepends ghcFlavor lib =
   [ stage0Compiler ] ++
   [ dir | forDepends, dir <- [ stage0Ghci, stage0GhcHeap ] ] ++
   [ stage0GhcBoot | ghcSeries ghcFlavor >= Ghc810 ] ++
-  map takeDirectory cabalFileLibraries ++
+  map takeDirectory (cabalFileLibraries ghcFlavor) ++
   map (dropTrailingPathSeparator . normalise) (askFiles lib "hs-source-dirs:")
 
 -- The "hs-source-dirs" for 'ghc-lib-parser'.
@@ -170,7 +171,7 @@ dataFiles ghcFlavor =
 
 cabalFileDependencies :: GhcFlavor -> [FilePath]
 cabalFileDependencies ghcFlavor =
-  [ f | ghcSeries ghcFlavor > Ghc94, f <- cabalFileBinary : cabalFileLibraries ]
+  [ f | ghcSeries ghcFlavor > Ghc94, f <- cabalFileBinary : cabalFileLibraries ghcFlavor ]
 
 rtsDependencies :: GhcFlavor -> [FilePath]
 rtsDependencies ghcFlavor =
@@ -265,7 +266,7 @@ calcParserModules :: GhcFlavor -> IO [String]
 calcParserModules ghcFlavor = do
   let flavor = ghcSeries ghcFlavor
 
-  lib <- mapM readCabalFile cabalFileLibraries
+  lib <- mapM readCabalFile (cabalFileLibraries ghcFlavor)
 
   genPlaceholderModules "compiler"
   genPlaceholderModules "libraries/ghc-heap"
@@ -327,7 +328,7 @@ calcLibModules :: GhcFlavor -> IO [String]
 calcLibModules ghcFlavor = do
   let flavor = ghcSeries ghcFlavor
 
-  lib <- mapM readCabalFile cabalFileLibraries
+  lib <- mapM readCabalFile (cabalFileLibraries ghcFlavor)
 
   let rootModulePath = placeholderModulesDir </> "Main.hs"
   copyFile ("../ghc-lib-gen/ghc-lib" </> show flavor </> "Main.hs") rootModulePath
@@ -1252,7 +1253,7 @@ ghcLibBuildDepends ghcFlavor =
 -- | This utility factored out to avoid repetion.
 libBinParserLibModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String], [String])
 libBinParserLibModules ghcFlavor = do
-    lib <- mapM readCabalFile cabalFileLibraries
+    lib <- mapM readCabalFile (cabalFileLibraries ghcFlavor)
     bin <- readCabalFile cabalFileBinary
     parserModules <- calcParserModules ghcFlavor
     libModules <- calcLibModules ghcFlavor
