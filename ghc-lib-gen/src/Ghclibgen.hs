@@ -115,7 +115,7 @@ ghcLibParserHsSrcDirs forDepends ghcFlavor lib =
       exclusions =
          case ghcSeries ghcFlavor of
               Ghc88 -> [ "compiler/codeGen", "compiler/hieFile", "compile/llvmGen", "compiler/stranal", "compiler/rename", "compiler/stgSyn", "compiler/llvmGen" ]
-              Ghc810 -> [ "compiler/nativeGen", "compiler/deSugar", "compiler/HieFile", "compiler/llvmGen", "compiler/stranal", "compiler/rename", "compiler/stgSyn"  ]
+              Ghc810 -> [ "compiler/nativeGen", "compiler/deSugar", "compiler/hieFile", "compiler/llvmGen", "compiler/stranal", "compiler/rename", "compiler/stgSyn"  ]
               _ -> []
   in sortDiffListByLength all $ Set.fromList [ dir | not forDepends, dir <- exclusions ]
 
@@ -131,7 +131,7 @@ ghcLibHsSrcDirs forDepends ghcFlavor lib =
               Ghc92 -> [ "ghc-lib/stage0/libraries/ghc-boot/build", "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-heap" ]
               Ghc94 -> [ "ghc-lib/stage0/libraries/ghc-boot/build", "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-heap", "libraries/ghci" ]
               Ghc96 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghci" ]
-              Ghc98 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap" ]
+              Ghc98 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform" ]
   in sortDiffListByLength all $ Set.fromList [ dir | not forDepends, dir <- exclusions ]
 
 dataDir :: FilePath
