@@ -187,13 +187,14 @@ steps:
         echo DEBUG: hlint "$@"
         $temp/hlint-${version#v}/hlint "$@"
       )
-
       hlint CI.hs
       hlint ghc-lib-gen
       hlint examples/ghc-lib-test-utils/src
-      hlint examples/ghc-lib-test-mini-hlint/src --cpp-include examples/ghc-lib-test-mini-hlint/extra-source-files
-      hlint examples/ghc-lib-test-mini-hlint/test/Main.hs
-      hlint examples/ghc-lib-test-mini-compile/src --cpp-include examples/ghc-lib-test-mini-compile/extra-source-files
+      series=( GHC_8_8 GHC_8_10 GHC_9_0 GHC_9_2 GHC_9_4 GHC_9_6 GHC_9_8 GHC_9_10 )
+      for s in "${series[@]}"; do
+        hlint examples/ghc-lib-test-mini-hlint/src --cpp-include examples/ghc-lib-test-mini-hlint/extra-source-files --cpp-define "$s"
+        hlint examples/ghc-lib-test-mini-compile/src --cpp-include examples/ghc-lib-test-mini-compile/extra-source-files --cpp-define "$s"
+      done
     displayName: run hlint
     condition: eq( variables['Agent.OS'], 'Linux' )
   - bash: |
