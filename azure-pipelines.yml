@@ -160,7 +160,9 @@ pool: {vmImage: '$(image)'}
 steps:
   # windows
   - bash: |
-      /usr/bin/find patches -name "*.patch" -exec dos2unix {} \;
+      if [ -d patches ]; then
+        /usr/bin/find patches -name "*.patch" -exec dos2unix {} \;
+      fi
     condition: eq( variables['Agent.OS'], 'Windows_NT' )
   # macOS
   - bash: |
