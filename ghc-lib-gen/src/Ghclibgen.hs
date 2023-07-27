@@ -74,7 +74,7 @@ cabalFileLibraries ghcFlavor = [
     , "libraries/ghci/ghci.cabal"
     , "compiler/ghc.cabal"
     ] ++
-    [ "libraries/ghc-platform/ghc-platform.cabal" | ghcSeries ghcFlavor >= Ghc98 ]
+    [ "libraries/ghc-platform/ghc-platform.cabal" | ghcSeries ghcFlavor > Ghc98 ]
 
 -- C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: GhcFlavor -> [FilePath]
@@ -132,6 +132,7 @@ ghcLibHsSrcDirs forDepends ghcFlavor lib =
               Ghc94 -> [ "ghc-lib/stage0/libraries/ghc-boot/build", "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-heap", "libraries/ghci" ]
               Ghc96 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghci" ]
               Ghc98 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform" ]
+              Ghc910 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform" ]
   in sortDiffListByLength all $ Set.fromList [ dir | not forDepends, dir <- exclusions ]
 
 dataDir :: FilePath
@@ -402,23 +403,13 @@ applyPatchSystemSemaphore patches ghcFlavor = do
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-ghc_cabal_in.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_MakeSem_hs.patch")
     system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Pipeline_LogQueue_hs.patch")
-    system_ $ "git apply " ++ (patches </> "9edcb1fb02d799acd4a7d0c145796aecb6e54ea3-GHC_Driver_Make_hs.patch")
+    if ghcSeries ghcFlavor == Ghc98
+      then
+        system_ $ "git apply " ++ (patches </> "4d356ea3049b357b80f82961db076a3e5e8edf6a-GHC_Driver_Make_hs.patch")
+      else
+        system_ $ "git apply " ++ (patches </> "9edcb1fb02d799acd4a7d0c145796aecb6e54ea3-GHC_Driver_Make_hs.patch")
+
     writeFile "compiler/GHC/Driver/Make.hs" .
-     -- patch 0
-     replace
-       "import qualified Data.IntSet as I"
-       "import qualified GHC.Data.Word64Set as W" .
-     replace "I.IntSet" "W.Word64Set" .
-     replace "I.empty" "W.empty" .
-     replace "I.union" "W.union" .
-     replace "I.singleton" "W.singleton" .
-     replace
-       "                                (hsc_tmpfs hsc_env')"
-       (unlines [
-         "                                (hsc_tmpfs hsc_env')"
-       , "                                (hsc_FC hsc_env')"
-       ]) .
-      -- patch 1
       replace
         (unlines [
             "    n_jobs <- case parMakeCount (hsc_dflags hsc_env) of"
@@ -427,7 +418,12 @@ applyPatchSystemSemaphore patches ghcFlavor = do
             ]
         )
         "    n_jobs <- liftIO getNumProcessors" .
-      -- patch 2
+      replace
+        "                                (hsc_tmpfs hsc_env')"
+        (unlines [
+          "                                (hsc_tmpfs hsc_env')"
+        , "                                (hsc_FC hsc_env')"
+        ]) .
       replace
         (unlines [
             "load' :: GhcMonad m => Maybe ModIfaceCache -> LoadHowMuch -> Maybe Messager -> ModuleGraph -> m SuccessFlag"
@@ -440,7 +436,6 @@ applyPatchSystemSemaphore patches ghcFlavor = do
       replace
         "    success <- load' cache how_much (Just msg) mod_graph"
         "    success <- load' cache how_much undefined (Just msg) mod_graph" .
-      -- patch 3
       replace
         "(upsweep_ok, hsc_env1)"
         "(upsweep_ok, new_deps)" .
@@ -464,8 +459,18 @@ applyPatchSystemSemaphore patches ghcFlavor = do
             "          -- Clean up after ourselves"
           , "          liftIO $ cleanCurrentModuleTempFilesMaybe logger (hsc_tmpfs hsc_env1) dflags" ])
         ""
-      -- fini
       =<< readFile' "compiler/GHC/Driver/Make.hs"
+
+    when (ghcSeries ghcFlavor > Ghc98) $ do
+      writeFile "compiler/GHC/Driver/Make.hs" .
+        replace
+          "import qualified Data.IntSet as I"
+          "import qualified GHC.Data.Word64Set as W" .
+        replace "I.IntSet" "W.Word64Set" .
+        replace "I.empty" "W.empty" .
+        replace "I.union" "W.union" .
+        replace "I.singleton" "W.singleton"
+        =<< readFile' "compiler/GHC/Driver/Make.hs"
 
 applyPatchTemplateHaskellLanguageHaskellTHSyntax :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellLanguageHaskellTHSyntax ghcFlavor = do
@@ -1068,8 +1073,8 @@ applyPatchHadrianStackYaml ghcFlavor resolver = do
     -- https://gitlab.haskell.org/ghc/ghc/-/issues/21634.
     --
     -- The idea is to replace the resolver with whatever is prevailing
-    -- (or ghc-9.2.5 if that's not possible).
-      resolverDefault = "lts-20.10" -- ghc-9.2.5
+    -- (or ghc-9.4.5 if that's not possible).
+      resolverDefault = "lts-21.3" -- ghc-9.4.5
       -- The resolver has to curate packages so resolvers of the form
       -- ghc-x.y.z won't do.
       resolver' = case fromMaybe resolverDefault resolver of
@@ -1186,6 +1191,9 @@ baseBounds = \case
     Ghc961   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
     Ghc962   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
 
+    Ghc981 -- e.g. "9.7.20230119"
+              -- (c.f. 'rts/include/ghc-version.h'')
+      -> "base >= 4.17.0.0 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
     GhcMaster -- e.g. "9.7.20230119"
               -- (c.f. 'rts/include/ghc-version.h'')
       -> "base >= 4.17.0.0 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)

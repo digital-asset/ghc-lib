@@ -66,6 +66,29 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
+    # | linux   | ghc-9.8.1       | ghc-9.6.1  |
+    # | macOS   | ghc-9.8.1       | ghc-9.6.1  |
+    # | windows | ghc-9.8.1       | ghc-9.6.1  |
+    # +---------+-----------------+------------+
+    linux-ghc-9.8.1-9.6.1:
+      image: "ubuntu-22.04"
+      mode: "--ghc-flavor ghc-9.8.1"
+      resolver: "ghc-9.6.1"
+      stack-yaml: "stack-exact.yaml"
+    mac-ghc-9.8.1-9.6.1:
+      image: "macOS-latest"
+      mode: "--ghc-flavor ghc-9.8.1"
+      resolver: "ghc-9.6.1"
+      stack-yaml: "stack-exact.yaml"
+    windows-ghc-9.8.1-9.6.1:
+      image: "windows-latest"
+      mode: "--ghc-flavor ghc-9.8.1"
+      resolver: "ghc-9.6.1"
+      stack-yaml: "stack-exact.yaml"
+
+    # +---------+-----------------+------------+
+    # | OS      | ghc-lib flavor  | GHC        |
+    # +=========+=================+============+
     # | linux   | ghc-9.6.2       | ghc-9.4.5  |
     # | macOS   | ghc-9.6.2       | ghc-9.4.5  |
     # | windows | ghc-9.6.2       | ghc-9.4.4  |
@@ -169,8 +192,8 @@ steps:
       hlint ghc-lib-gen
       hlint examples/ghc-lib-test-utils/src
       hlint examples/ghc-lib-test-mini-hlint/src --cpp-include examples/ghc-lib-test-mini-hlint/extra-source-files
-      hlint examples/ghc-lib-test-mini-hlint/test/Main.hs --cpp-include examples/ghc-lib-test-mini-compile/extra-source-files
-      hlint examples/ghc-lib-test-mini-compile/src
+      hlint examples/ghc-lib-test-mini-hlint/test/Main.hs
+      hlint examples/ghc-lib-test-mini-compile/src --cpp-include examples/ghc-lib-test-mini-compile/extra-source-files
     displayName: run hlint
     condition: eq( variables['Agent.OS'], 'Linux' )
   - bash: |
