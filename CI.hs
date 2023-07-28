@@ -75,7 +75,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "af6fdf428be85ce21a25477bb1e705eb354791ef" -- 2023-07-26
+current = "ee93edfded6ef95e911b7d265feebd1c7f542e8d" -- 2023-07-28
 
 -- Command line argument generators.
 
@@ -614,7 +614,7 @@ buildDists
 
       branch :: GhcFlavor -> String
       branch = \case
-          Ghc981  -> "ghc-9.8" --alpha
+          Ghc981  -> "ghc-9.8.1-alpha1"
           Ghc962  -> "ghc-9.6.2-release"
           Ghc961  -> "ghc-9.6.1-release"
           Ghc945  -> "ghc-9.4.5-release"
