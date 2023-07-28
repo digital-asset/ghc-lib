@@ -1108,12 +1108,13 @@ baseBounds = \case
     Ghc961   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
     Ghc962   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
 
-    Ghc981 -- e.g. "9.7.20230119"
-              -- (c.f. 'rts/include/ghc-version.h'')
-      -> "base >= 4.17.0.0 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
-    GhcMaster -- e.g. "9.7.20230119"
-              -- (c.f. 'rts/include/ghc-version.h'')
-      -> "base >= 4.17.0.0 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
+    -- ghc-9.8.1 will ship with base-4.19.0
+    Ghc981 -- e.g. "9.8.0.20230729"
+              -- (c.f. 'rts/include/ghcversion.h'')
+      -> "base >= 4.17.0.0 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
+    GhcMaster -- e.g. "9.10.0.20230729"
+              -- (c.f. 'rts/include/ghcversion.h'')
+      -> "base >= 4.18.0.0 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
 
 -- | Common build dependencies.
 commonBuildDepends :: GhcFlavor -> [String]
