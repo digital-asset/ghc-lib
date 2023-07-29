@@ -733,7 +733,7 @@ applyPatchHaddockHs ghcFlavor = do
     )
 
   -- See https://github.com/digital-asset/ghc-lib/issues/391
-  when (ghcFlavor `elem` [Ghc923, Ghc924, Ghc925, Ghc926, Ghc927]) (
+  when (ghcFlavor `elem` [Ghc923, Ghc924, Ghc925, Ghc926, Ghc927, Ghc928]) (
     writeFile codeGenHs . replace "{- | debugIsOn -}"  ""
     =<< readFile' codeGenHs
     )
@@ -1086,7 +1086,7 @@ baseBounds = \case
     -- ghc-9.2.2, base-4.16.1.0
     -- ghc-9.2.2, base-4.16.2.0
     -- ghc-9.2.4, base-4.16.3.0
-    -- ghc-9.2.5, ghc-9.2.6, ghc-9.2.7 ship with base-4.16.4.0
+    -- ghc-9.2.5, ghc-9.2.6, ghc-9.2.7, ghc-9.2.8 ship with base-4.16.4.0
     Ghc921    -> "base >= 4.14 && < 4.16.1" -- [ghc-8.10.1, ghc-9.2.2)
     Ghc922    -> "base >= 4.14 && < 4.16.2" -- [ghc-8.10.1, ghc-9.2.3)
     Ghc923    -> "base >= 4.14 && < 4.16.3" -- [ghc-8.10.1, ghc-9.2.4)
@@ -1094,7 +1094,7 @@ baseBounds = \case
     Ghc925    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
     Ghc926    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
     Ghc927    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
-
+    Ghc928    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
     -- ghc-9.4.1, ghc-9.4.2, ghc-9.4.3, ghc-9.4.4 all ship with
     -- base-4.17.0.0, ghc-9.4.5 has base-4.17.1.0
     Ghc941   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
@@ -1359,7 +1359,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         indent2 [ "compiler/cbits/genSym.c" ] ++
         indent2 [ "compiler/cbits/cutils.c" | ghcSeries ghcFlavor >= Ghc90 ] ++
         indent2 [ "compiler/parser/cutils.c" | ghcSeries ghcFlavor < Ghc90 ] ++
-        indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor `elem` [Ghc926, Ghc927, Ghc945] || ghcSeries ghcFlavor >= Ghc96 ] ++
+        indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor `elem` [Ghc926, Ghc927, Ghc928, Ghc945] || ghcSeries ghcFlavor >= Ghc96 ] ++
         [ "    hs-source-dirs:" ] ++
         indent2 (ghcLibParserHsSrcDirs False ghcFlavor lib) ++
         [ "    autogen-modules:" ] ++
