@@ -38,6 +38,7 @@ data GhcVersion = DaGhc881
                 | Ghc925
                 | Ghc926
                 | Ghc927
+                | Ghc928
                 | Ghc941
                 | Ghc942
                 | Ghc943
@@ -99,6 +100,7 @@ readFlavor = (GhcFlavor <$>) . \case
     "ghc-9.4.2" -> Just Ghc942
     "ghc-9.4.1" -> Just Ghc941
     -- ghc-9.2
+    "ghc-9.2.8" -> Just Ghc928
     "ghc-9.2.7" -> Just Ghc927
     "ghc-9.2.6" -> Just Ghc926
     "ghc-9.2.5" -> Just Ghc925

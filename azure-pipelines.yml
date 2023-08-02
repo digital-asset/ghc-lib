@@ -112,24 +112,24 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-9.4.5       | ghc-9.2.7  |
-    # | macOS   | ghc-9.4.5       | ghc-9.2.7  |
-    # | windows | ghc-9.4.5       | ghc-9.2.7  |
+    # | linux   | ghc-9.4.5       | ghc-9.2.8  |
+    # | macOS   | ghc-9.4.5       | ghc-9.2.8  |
+    # | windows | ghc-9.4.5       | ghc-9.2.8  |
     # +---------+-----------------+------------+
-    linux-ghc-9.4.5-9.2.7:
+    linux-ghc-9.4.5-9.2.8:
       image: "ubuntu-22.04"
       mode: "--ghc-flavor ghc-9.4.5"
-      resolver: " lts-20.15"
+      resolver: " lts-20.25"
       stack-yaml: "stack.yaml"
-    mac-ghc-9.4.5-9.2.7:
+    mac-ghc-9.4.5-9.2.8:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-9.4.5"
-      resolver: " lts-20.15"
+      resolver: " lts-20.25"
       stack-yaml: "stack.yaml"
-    windows-ghc-9.4.5-9.2.7:
+    windows-ghc-9.4.5-9.2.8:
       image: "windows-latest"
       mode: "--ghc-flavor ghc-9.4.5"
-      resolver: " lts-20.15"
+      resolver: " lts-20.25"
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
@@ -160,7 +160,9 @@ pool: {vmImage: '$(image)'}
 steps:
   # windows
   - bash: |
-      /usr/bin/find patches -name "*.patch" -exec dos2unix {} \;
+      if [ -d patches ]; then
+        /usr/bin/find patches -name "*.patch" -exec dos2unix {} \;
+      fi
     condition: eq( variables['Agent.OS'], 'Windows_NT' )
   # macOS
   - bash: |
