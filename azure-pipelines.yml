@@ -112,24 +112,24 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-9.4.5       | ghc-9.2.7  |
-    # | macOS   | ghc-9.4.5       | ghc-9.2.7  |
-    # | windows | ghc-9.4.5       | ghc-9.2.7  |
+    # | linux   | ghc-9.4.5       | ghc-9.2.8  |
+    # | macOS   | ghc-9.4.5       | ghc-9.2.8  |
+    # | windows | ghc-9.4.5       | ghc-9.2.8  |
     # +---------+-----------------+------------+
-    linux-ghc-9.4.5-9.2.7:
+    linux-ghc-9.4.5-9.2.8:
       image: "ubuntu-22.04"
       mode: "--ghc-flavor ghc-9.4.5"
-      resolver: " lts-20.15"
+      resolver: " lts-20.25"
       stack-yaml: "stack.yaml"
-    mac-ghc-9.4.5-9.2.7:
+    mac-ghc-9.4.5-9.2.8:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-9.4.5"
-      resolver: " lts-20.15"
+      resolver: " lts-20.25"
       stack-yaml: "stack.yaml"
-    windows-ghc-9.4.5-9.2.7:
+    windows-ghc-9.4.5-9.2.8:
       image: "windows-latest"
       mode: "--ghc-flavor ghc-9.4.5"
-      resolver: " lts-20.15"
+      resolver: " lts-20.25"
       stack-yaml: "stack.yaml"
 
     # +---------+-----------------+------------+
@@ -160,7 +160,9 @@ pool: {vmImage: '$(image)'}
 steps:
   # windows
   - bash: |
-      /usr/bin/find patches -name "*.patch" -exec dos2unix {} \;
+      if [ -d patches ]; then
+        /usr/bin/find patches -name "*.patch" -exec dos2unix {} \;
+      fi
     condition: eq( variables['Agent.OS'], 'Windows_NT' )
   # macOS
   - bash: |
@@ -187,13 +189,14 @@ steps:
         echo DEBUG: hlint "$@"
         $temp/hlint-${version#v}/hlint "$@"
       )
-
       hlint CI.hs
       hlint ghc-lib-gen
       hlint examples/ghc-lib-test-utils/src
-      hlint examples/ghc-lib-test-mini-hlint/src --cpp-include examples/ghc-lib-test-mini-hlint/extra-source-files
-      hlint examples/ghc-lib-test-mini-hlint/test/Main.hs
-      hlint examples/ghc-lib-test-mini-compile/src --cpp-include examples/ghc-lib-test-mini-compile/extra-source-files
+      series=( GHC_8_8 GHC_8_10 GHC_9_0 GHC_9_2 GHC_9_4 GHC_9_6 GHC_9_8 GHC_9_10 )
+      for s in "${series[@]}"; do
+        hlint examples/ghc-lib-test-mini-hlint/src --cpp-include examples/ghc-lib-test-mini-hlint/extra-source-files --cpp-define "$s"
+        hlint examples/ghc-lib-test-mini-compile/src --cpp-include examples/ghc-lib-test-mini-compile/extra-source-files --cpp-define "$s"
+      done
     displayName: run hlint
     condition: eq( variables['Agent.OS'], 'Linux' )
   - bash: |

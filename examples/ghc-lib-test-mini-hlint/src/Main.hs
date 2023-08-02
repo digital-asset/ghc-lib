@@ -44,112 +44,59 @@ import qualified Data.Map as Map
 import Data.Generics.Uniplate.Operations
 import Data.Generics.Uniplate.Data
 
-fakeSettings :: Settings
-fakeSettings = Settings
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2) || defined (GHC_9_0) || defined (GHC_8_10)
-  { sGhcNameVersion=ghcNameVersion
-  , sFileSettings=fileSettings
-  , sTargetPlatform=platform
-  , sPlatformMisc=platformMisc
-#if !(defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2))
-  , sPlatformConstants=platformConstants
-#endif
-  , sToolSettings=toolSettings
-  }
-#else
-  { sTargetPlatform=platform
-  , sPlatformConstants=platformConstants
-  , sProjectVersion=cProjectVersion
-  , sProgramName="ghc"
-  , sOpt_P_fingerprint=fingerprint0
-  }
-#endif
-  where
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2) || defined (GHC_9_0) || defined (GHC_8_10)
-    toolSettings = ToolSettings {
-      toolSettings_opt_P_fingerprint=fingerprint0
-      }
-    fileSettings = FileSettings {}
-    platformMisc = PlatformMisc {}
-    ghcNameVersion =
-      GhcNameVersion{ghcNameVersion_programName="ghc"
-                    ,ghcNameVersion_projectVersion=cProjectVersion
-                    }
+#if defined (GHC_8_10)
+import Bag
+#elif defined (GHC_9_0) || defined (GHC_9_2)
+import GHC.Data.Bag
 #endif
 
-    platform =
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2)
-      genericPlatform
-#else
-      Platform{
-#if defined (GHC_9_0)
-    -- It doesn't matter what values we write here as these fields are
-    -- not referenced for our purposes. However the fields are strict
-    -- so we must say something.
-        platformByteOrder=LittleEndian
-      , platformHasGnuNonexecStack=True
-      , platformHasIdentDirective=False
-      , platformHasSubsectionsViaSymbols=False
-      , platformIsCrossCompiling=False
-      , platformLeadingUnderscore=False
-      , platformTablesNextToCode=False
-      ,
-#endif
-#if defined (GHC_8_10) || defined (GHC_9_0)
-        platformWordSize=PW8
-      , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
-#else
-        platformWordSize=8
-      , platformOS=OSUnknown
-#endif
-      , platformUnregisterised=True
-      }
-#endif
-#if !defined (GHC_9_10) && !defined(GHC_9_8) && !defined (GHC_9_6) && !defined(GHC_9_4) && !defined(GHC_9_2)
-    platformConstants = PlatformConstants{ pc_DYNAMIC_BY_DEFAULT=False, pc_WORD_SIZE=8 }
-#endif
+#if defined (GHC_8_8) || defined (GHC_8_10)
 
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6)
--- Intentionally empty
-#elif defined (GHC_9_4) || defined (GHC_9_2) || defined (GHC_9_0) || defined (GHC_8_10)
-fakeLlvmConfig :: LlvmConfig
-fakeLlvmConfig = LlvmConfig [] []
-#else
-fakeLlvmConfig :: (LlvmTargets, LlvmPasses)
-fakeLlvmConfig = ([], [])
-#endif
-
-#if defined (GHC_9_4) || defined (GHC_9_2) || defined (GHC_9_0)
-parse :: String -> DynFlags -> String -> ParseResult (Located HsModule)
-#else
 parse :: String -> DynFlags -> String -> ParseResult (Located (HsModule GhcPs))
-#endif
-parse filename flags str =
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2) || defined (GHC_9_0)
-  unP GHC.Parser.parseModule parseState
-#else
-  unP Parser.parseModule parseState
-#endif
+parse filename flags str = unP Parser.parseModule parseState
   where
     location = mkRealSrcLoc (mkFastString filename) 1 1
     buffer = stringToStringBuffer str
-    parseState =
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2)
-      initParserState (initParserOpts flags) buffer location
+    parseState = mkPState flags buffer location
+
+#elif defined (GHC_9_0)
+
+parse :: String -> DynFlags -> String -> ParseResult (Located HsModule)
+parse filename flags str = unP GHC.Parser.parseModule parseState
+  where
+    location = mkRealSrcLoc (mkFastString filename) 1 1
+    buffer = stringToStringBuffer str
+    parseState = mkPState flags buffer location
+
+#elif defined (GHC_9_2) || defined (GHC_9_4)
+
+parse :: String -> DynFlags -> String -> ParseResult (Located HsModule)
+parse filename flags str = unP GHC.Parser.parseModule parseState
+  where
+    location = mkRealSrcLoc (mkFastString filename) 1 1
+    buffer = stringToStringBuffer str
+    parseState = initParserState (initParserOpts flags) buffer location
+
 #else
-      mkPState flags buffer location
+      {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) -}
+
+parse :: String -> DynFlags -> String -> ParseResult (Located (HsModule GhcPs))
+parse filename flags str = unP GHC.Parser.parseModule parseState
+  where
+    location = mkRealSrcLoc (mkFastString filename) 1 1
+    buffer = stringToStringBuffer str
+    parseState = initParserState (initParserOpts flags) buffer location
+
 #endif
 
 parsePragmasIntoDynFlags :: DynFlags -> FilePath -> String -> IO (Maybe DynFlags)
 parsePragmasIntoDynFlags flags filepath str =
+
+#if defined (GHC_8_8) || defined (GHC_8_10) || defined (GHC_9_0)
+
   catchErrors $ do
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) ||  defined (GHC_9_4)
-    let (_, opts) = getOptions (initParserOpts flags)
-                      (stringToStringBuffer str) filepath
-#else
     let opts = getOptions flags
                       (stringToStringBuffer str) filepath
-#endif
     (flags, _, _) <- parseDynamicFilePragma flags opts
     return $ Just flags
   where
@@ -163,64 +110,170 @@ parsePragmasIntoDynFlags flags filepath str =
     reportSourceErr msgs = do
       putStrLn $ head
              [ showSDoc flags msg
-             | msg <-
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6)
-                      pprMsgEnvelopeBagWithLocDefault . getMessages
-#elif defined (GHC_9_4)
-                      pprMsgEnvelopeBagWithLoc . getMessages
-#elif defined (GHC_9_2)
-                      pprMsgEnvelopeBagWithLoc
-#else
-                      pprErrMsgBagWithLoc
-#endif
-                      $ srcErrorMessages msgs
+             | msg <- pprErrMsgBagWithLoc $ srcErrorMessages msgs
              ]
       return Nothing
+
+#elif defined (GHC_9_2)
+
+  catchErrors $ do
+    let opts = getOptions flags
+                      (stringToStringBuffer str) filepath
+    (flags, _, _) <- parseDynamicFilePragma flags opts
+    return $ Just flags
+  where
+    catchErrors :: IO (Maybe DynFlags) -> IO (Maybe DynFlags)
+    catchErrors act = handleGhcException reportGhcException
+                        (handleSourceError reportSourceErr act)
+
+    reportGhcException e = do
+      print e; return Nothing
+
+    reportSourceErr msgs = do
+      putStrLn $ head
+             [ showSDoc flags msg
+             | msg <- pprMsgEnvelopeBagWithLoc $ srcErrorMessages msgs
+             ]
+      return Nothing
+
+#elif defined (GHC_9_4)
+
+  catchErrors $ do
+    let (_, opts) = getOptions (initParserOpts flags)
+                      (stringToStringBuffer str) filepath
+    (flags, _, _) <- parseDynamicFilePragma flags opts
+    return $ Just flags
+  where
+    catchErrors :: IO (Maybe DynFlags) -> IO (Maybe DynFlags)
+    catchErrors act = handleGhcException reportGhcException
+                        (handleSourceError reportSourceErr act)
+
+    reportGhcException e = do
+      print e; return Nothing
+
+    reportSourceErr msgs = do
+      putStrLn $ head
+             [ showSDoc flags msg
+             | msg <- pprMsgEnvelopeBagWithLoc . getMessages $ srcErrorMessages msgs
+             ]
+      return Nothing
+
+#elif defined (GHC_9_6)
+
+  catchErrors $ do
+    let (_, opts) = getOptions (initParserOpts flags)
+                      (stringToStringBuffer str) filepath
+    (flags, _, _) <- parseDynamicFilePragma flags opts
+    return $ Just flags
+  where
+    catchErrors :: IO (Maybe DynFlags) -> IO (Maybe DynFlags)
+    catchErrors act = handleGhcException reportGhcException
+                        (handleSourceError reportSourceErr act)
+
+    reportGhcException e = do
+      print e; return Nothing
+
+    reportSourceErr msgs = do
+      putStrLn $ head
+             [ showSDoc flags msg
+             | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs
+             ]
+      return Nothing
+
+#else
+    {- defined (GHC_9_8) || defined (GHC_9_10) -}
+
+  catchErrors $ do
+    let (_, opts) = getOptions (initParserOpts flags)
+                      (stringToStringBuffer str) filepath
+    (flags, _, _) <- parseDynamicFilePragma flags opts
+    return $ Just flags
+  where
+    catchErrors :: IO (Maybe DynFlags) -> IO (Maybe DynFlags)
+    catchErrors act = handleGhcException reportGhcException
+                        (handleSourceError reportSourceErr act)
+
+    reportGhcException e = do
+      print e; return Nothing
+
+    reportSourceErr msgs = do
+      putStrLn $ head
+             [ showSDoc flags msg
+             | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs
+             ]
+      return Nothing
+
+#endif
 
 idNot :: RdrName
 idNot = mkVarUnqual (fsLit "not")
 
 isNegated :: HsExpr GhcPs -> Bool
+#if defined (GHC_8_8) || defined (GHC_8_10) || defined (GHC_9_0) || defined (GHC_9_2)
+
 isNegated (HsApp _ (L _ (HsVar _ (L _ id))) _) = id == idNot
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4)
-isNegated (HsPar _ _ (L _ e) _) = isNegated e
-#else
 isNegated (HsPar _ (L _ e)) = isNegated e
-#endif
 isNegated _ = False
 
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2)
-analyzeExpr :: DynFlags -> LocatedA (HsExpr GhcPs) -> IO ()
 #else
-analyzeExpr :: DynFlags -> Located (HsExpr GhcPs) -> IO ()
+   {- defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) -}
+
+isNegated (HsApp _ (L _ (HsVar _ (L _ id))) _) = id == idNot
+isNegated (HsPar _ _ (L _ e) _) = isNegated e
+isNegated _ = False
+
 #endif
+
+#if defined (GHC_8_8) || defined (GHC_8_10) || defined (GHC_9_0)
+
+analyzeExpr :: DynFlags -> Located (HsExpr GhcPs) -> IO ()
 analyzeExpr flags (L loc expr) = do
   case expr of
     HsApp _ (L _ (HsVar _ (L _ id))) (L _ e)
         | id == idNot, isNegated e ->
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2)
-            putStrLn (showSDoc flags (ppr (locA loc))
-#else
             putStrLn (showSDoc flags (ppr loc)
-#endif
                       ++ " : lint : double negation "
                       ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
     _ -> return ()
 
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6)
-analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> IO ()
-#elif defined (GHC_9_4) || defined (GHC_9_2)
-analyzeModule :: DynFlags -> Located HsModule -> IO ()
-#elif defined (GHC_9_0)
-analyzeModule :: DynFlags -> Located HsModule -> ApiAnns -> IO ()
 #else
+   {- defined (GHC_9_2) || defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) -}
+
+analyzeExpr :: DynFlags -> LocatedA (HsExpr GhcPs) -> IO ()
+analyzeExpr flags (L loc expr) = do
+  case expr of
+    HsApp _ (L _ (HsVar _ (L _ id))) (L _ e)
+        | id == idNot, isNegated e ->
+            putStrLn (showSDoc flags (ppr (locA loc))
+                      ++ " : lint : double negation "
+                      ++ "`" ++ showSDoc flags (ppr expr) ++ "'")
+    _ -> return ()
+#endif
+
+#if defined (GHC_8_8) || defined (GHC_8_10)
+
 analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> ApiAnns -> IO ()
+analyzeModule flags (L _ modu) _ = sequence_ [analyzeExpr flags e | e <- universeBi modu]
+
+#elif defined (GHC_9_0)
+
+analyzeModule :: DynFlags -> Located HsModule -> ApiAnns -> IO ()
+analyzeModule flags (L _ modu) _ = sequence_ [analyzeExpr flags e | e <- universeBi modu]
+
+#elif defined (GHC_9_2) || defined (GHC_9_4)
+
+analyzeModule :: DynFlags -> Located HsModule -> IO ()
+analyzeModule flags (L _ modu) = sequence_ [analyzeExpr flags e | e <- universeBi modu]
+
+#else
+   {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10 )-}
+
+analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> IO ()
+analyzeModule flags (L _ modu) = sequence_ [analyzeExpr flags e | e <- universeBi modu]
+
 #endif
-analyzeModule flags (L _ modu)
-#if !(defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2))
-                                _ -- ApiAnns
-#endif
- = sequence_ [analyzeExpr flags e | e <- universeBi modu]
+
+#if defined (GHC_8_8)
 
 main :: IO ()
 main = do
@@ -228,81 +281,376 @@ main = do
   case args of
     [file] -> do
       s <- readFile' file
-      flags <-
-        parsePragmasIntoDynFlags
-#if defined (GHC_9_10) || defined(GHC_9_8) || defined (GHC_9_6)
-          (defaultDynFlags fakeSettings) file s
-#else
-          (defaultDynFlags fakeSettings fakeLlvmConfig) file s
-#endif
+      flags <- parsePragmasIntoDynFlags (defaultDynFlags fakeSettings fakeLlvmConfig) file s
       whenJust flags $ \flags ->
-         case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4)
-            PFailed s -> report flags $ GhcPsMessage <$> snd (getPsMessages s)
-#elif defined (GHC_9_2)
-            PFailed s -> report flags $ fmap pprError (snd (getMessages s))
-#elif defined (GHC_9_0) || defined (GHC_8_10)
-            PFailed s -> report flags $ snd (getMessages s flags)
-#else
+         case parse file (flags `gopt_set` Opt_KeepRawTokenStream) s of
             PFailed _ loc err -> report flags $ unitBag $ mkPlainErrMsg flags loc err
-#endif
             POk s m -> do
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4)
-              let (wrns, errs) = getPsMessages s
-              report flags $ GhcPsMessage <$> wrns
-              report flags $ GhcPsMessage <$> errs
-#elif defined (GHC_9_2)
-              let (wrns, errs) = getMessages s
-              report flags (fmap pprWarning wrns)
-              report flags (fmap pprError errs)
-#else
               let (wrns, errs) = getMessages s flags
               report flags wrns
               report flags errs
-#endif
               when (null errs) $
-                analyzeModule flags m
-#if !(defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined(GHC_9_4) || defined (GHC_9_2))
-                                      (harvestAnns s)
-#endif
+                analyzeModule flags m $ harvestAnns s
     _ -> fail "Exactly one file argument required"
   where
-
-#if defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6)
-    report flags msgs = do
-      let opts = initDiagOpts flags
-          print_config = initPrintConfig flags
-      logger <- initLogger
-      printMessages logger print_config opts msgs
-#elif defined (GHC_9_4)
-    report flags msgs = do
-      logger <- initLogger
-      let opts = initDiagOpts flags
-      printMessages logger opts msgs
-#else
+    report :: DynFlags -> Bag ErrMsg -> IO ()
     report flags msgs =
       sequence_
         [ putStrLn $ showSDoc flags msg
-        | msg <-
-#  if defined (GHC_9_2)
-                  pprMsgEnvelopeBagWithLoc msgs
-#  else
-                  pprErrMsgBagWithLoc msgs
-#  endif
+        | msg <- pprErrMsgBagWithLoc msgs
         ]
-#endif
-#if !(defined (GHC_9_10) || defined(GHC_9_8) || defined (GHC_9_6) || defined(GHC_9_4) || defined (GHC_9_2))
+
+    harvestAnns :: PState -> (Map.Map ApiAnnKey [SrcSpan], Map.Map SrcSpan [Located AnnotationComment])
     harvestAnns pst =
-#  if defined (GHC_9_0)
-        ApiAnns {
+      ( Map.fromListWith (++) $ annotations pst
+      , Map.fromList ((noSrcSpan, comment_q pst) : annotations_comments pst)
+      )
+
+#elif defined (GHC_8_10)
+
+main :: IO ()
+main = do
+  args <- getArgs
+  case args of
+    [file] -> do
+      s <- readFile' file
+      flags <- parsePragmasIntoDynFlags (defaultDynFlags fakeSettings fakeLlvmConfig) file s
+      whenJust flags $ \flags ->
+         case parse file (flags `gopt_set` Opt_KeepRawTokenStream) s of
+            PFailed s -> report flags $ snd (getMessages s flags)
+            POk s m -> do
+              let (wrns, errs) = getMessages s flags
+              report flags wrns
+              report flags errs
+              when (null errs) $
+                analyzeModule flags m $ harvestAnns s
+    _ -> fail "Exactly one file argument required"
+  where
+    report :: DynFlags -> Bag.Bag ErrMsg -> IO ()
+    report flags msgs =
+      sequence_
+        [ putStrLn $ showSDoc flags msg
+        | msg <- pprErrMsgBagWithLoc msgs
+        ]
+
+    harvestAnns :: PState -> (Map.Map ApiAnnKey [SrcSpan], Map.Map SrcSpan [Located AnnotationComment])
+    harvestAnns pst =
+      ( Map.fromListWith (++) $ annotations pst
+      , Map.fromList ((noSrcSpan, comment_q pst) : annotations_comments pst)
+      )
+
+#elif defined (GHC_9_0)
+
+main :: IO ()
+main = do
+  args <- getArgs
+  case args of
+    [file] -> do
+      s <- readFile' file
+      flags <- parsePragmasIntoDynFlags (defaultDynFlags fakeSettings fakeLlvmConfig) file s
+      whenJust flags $ \flags ->
+         case parse file (flags `gopt_set` Opt_KeepRawTokenStream) s of
+            PFailed s -> report flags $ snd (getMessages s flags)
+            POk s m -> do
+              let (wrns, errs) = getMessages s flags
+              report flags wrns
+              report flags errs
+              when (null errs) $
+                analyzeModule flags m $ harvestAnns s
+    _ -> fail "Exactly one file argument required"
+  where
+    report :: DynFlags -> GHC.Data.Bag.Bag ErrMsg -> IO ()
+    report flags msgs =
+      sequence_
+        [ putStrLn $ showSDoc flags msg
+        | msg <- pprErrMsgBagWithLoc msgs
+        ]
+
+    harvestAnns :: PState -> ApiAnns
+    harvestAnns pst = ApiAnns {
               apiAnnItems = Map.fromListWith (++) $ annotations pst
             , apiAnnEofPos = Nothing
             , apiAnnComments = Map.fromListWith (++) $ annotations_comments pst
             , apiAnnRogueComments = comment_q pst
             }
-#  else
-      ( Map.fromListWith (++) $ annotations pst
-      , Map.fromList ((noSrcSpan, comment_q pst) : annotations_comments pst)
-      )
-#  endif
+
+#elif defined (GHC_9_2)
+
+main :: IO ()
+main = do
+  args <- getArgs
+  case args of
+    [file] -> do
+      s <- readFile' file
+      flags <- parsePragmasIntoDynFlags (defaultDynFlags fakeSettings fakeLlvmConfig) file s
+      whenJust flags $ \flags ->
+         case parse file (flags `gopt_set` Opt_KeepRawTokenStream) s of
+            PFailed s -> report flags $ fmap pprError (snd (getMessages s))
+            POk s m -> do
+              let (wrns, errs) = getMessages s
+              report flags $ fmap pprWarning wrns
+              report flags $ fmap pprError errs
+              when (null errs) $ analyzeModule flags m
+    _ -> fail "Exactly one file argument required"
+  where
+    report :: DynFlags -> GHC.Data.Bag.Bag (MsgEnvelope DecoratedSDoc) -> IO ()
+    report flags msgs =
+      sequence_
+        [ putStrLn $ showSDoc flags msg
+        | msg <- pprMsgEnvelopeBagWithLoc msgs
+        ]
+
+#elif defined (GHC_9_4)
+
+main :: IO ()
+main = do
+  args <- getArgs
+  case args of
+    [file] -> do
+      s <- readFile' file
+      flags <- parsePragmasIntoDynFlags (defaultDynFlags fakeSettings fakeLlvmConfig) file s
+      whenJust flags $ \flags ->
+         case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
+            PFailed s -> report flags $ GhcPsMessage <$> snd (getPsMessages s)
+            POk s m -> do
+              let (wrns, errs) = getPsMessages s
+              report flags $ fmap GhcPsMessage wrns
+              report flags $ fmap GhcPsMessage errs
+              when (null errs) $ analyzeModule flags m
+    _ -> fail "Exactly one file argument required"
+  where
+    report :: DynFlags -> Messages GhcMessage -> IO ()
+    report flags msgs = do
+      logger <- initLogger
+      let opts = initDiagOpts flags
+      printMessages logger opts msgs
+
+#else
+   {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_910) -}
+
+main :: IO ()
+main = do
+  args <- getArgs
+  case args of
+    [file] -> do
+      s <- readFile' file
+      flags <- parsePragmasIntoDynFlags (defaultDynFlags fakeSettings) file s
+      whenJust flags $ \flags ->
+         case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
+            PFailed s -> report flags $ GhcPsMessage <$> snd (getPsMessages s)
+            POk s m -> do
+              let (wrns, errs) = getPsMessages s
+              report flags $ fmap GhcPsMessage wrns
+              report flags $ fmap GhcPsMessage errs
+              when (null errs) $ analyzeModule flags m
+    _ -> fail "Exactly one file argument required"
+  where
+    report :: DynFlags -> Messages GhcMessage -> IO ()
+    report flags msgs = do
+      let opts = initDiagOpts flags
+          print_config = initPrintConfig flags
+      logger <- initLogger
+      printMessages logger print_config opts msgs
+
+#endif
+
+#if defined (GHC_8_8)
+
+fakeLlvmConfig :: (LlvmTargets, LlvmPasses)
+fakeLlvmConfig = ([], [])
+
+#elif defined (GHC_8_10) || defined (GHC_9_0) || defined (GHC_9_2) || defined (GHC_9_4)
+
+fakeLlvmConfig :: LlvmConfig
+fakeLlvmConfig = LlvmConfig [] []
+
+#else
+   {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10 )-}
+
+#endif
+
+fakeSettings :: Settings
+fakeSettings = Settings {
+
+#if defined (GHC_8_8)
+
+    sTargetPlatform=platform
+  , sPlatformConstants=platformConstants
+  , sProjectVersion=cProjectVersion
+  , sProgramName="ghc"
+  , sOpt_P_fingerprint=fingerprint0
+  , sTmpDir="."
+  }
+  where
+    platform = Platform {
+        platformWordSize=8
+      , platformOS=OSUnknown
+      , platformUnregisterised=True
+      }
+
+    platformConstants = PlatformConstants {
+         pc_DYNAMIC_BY_DEFAULT=False
+       , pc_WORD_SIZE=8
+       , pc_STD_HDR_SIZE=1
+       , pc_TAG_BITS=3
+       , pc_BLOCKS_PER_MBLOCK=252
+       , pc_BLOCK_SIZE=4096
+       , pc_MIN_PAYLOAD_SIZE=1
+       , pc_MAX_Real_Vanilla_REG=6
+       , pc_MAX_Vanilla_REG=10
+       , pc_MAX_Real_Long_REG=0
+       }
+
+#elif defined (GHC_8_10)
+
+    sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+  , sToolSettings=toolSettings
+  , sPlatformConstants=platformConstants
+  }
+  where
+    fileSettings = FileSettings {
+       }
+
+    toolSettings = ToolSettings {
+         toolSettings_opt_P_fingerprint=fingerprint0
+       }
+
+    platformMisc = PlatformMisc {
+        platformMisc_integerLibraryType=IntegerSimple
+       }
+
+    ghcNameVersion = GhcNameVersion{
+         ghcNameVersion_programName="ghc"
+       , ghcNameVersion_projectVersion=cProjectVersion
+      }
+
+    platform = Platform{
+         platformWordSize=PW8
+       , platformMini=PlatformMini {platformMini_arch=ArchUnknown, platformMini_os=OSUnknown}
+       , platformUnregisterised=True
+      }
+
+    platformConstants = PlatformConstants {
+         pc_DYNAMIC_BY_DEFAULT=False
+       , pc_WORD_SIZE=8
+       , pc_STD_HDR_SIZE=1
+       , pc_TAG_BITS=3
+       , pc_BLOCKS_PER_MBLOCK=252
+       , pc_BLOCK_SIZE=4096
+       , pc_MIN_PAYLOAD_SIZE=1
+       , pc_MAX_Real_Vanilla_REG=6
+       , pc_MAX_Vanilla_REG=10
+       , pc_MAX_Real_Long_REG=0
+       }
+
+#elif defined (GHC_9_0)
+
+    sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+  , sToolSettings=toolSettings
+  , sPlatformConstants=platformConstants
+  }
+  where
+    fileSettings = FileSettings {
+       }
+
+    toolSettings = ToolSettings {
+         toolSettings_opt_P_fingerprint=fingerprint0
+       }
+
+    platformMisc=PlatformMisc {
+       }
+
+    ghcNameVersion = GhcNameVersion {
+         ghcNameVersion_programName="ghc"
+       , ghcNameVersion_projectVersion=cProjectVersion
+      }
+
+    platform = Platform {
+        platformByteOrder=LittleEndian
+      , platformHasGnuNonexecStack=True
+      , platformHasIdentDirective=False
+      , platformHasSubsectionsViaSymbols=False
+      , platformIsCrossCompiling=False
+      , platformLeadingUnderscore=False
+      , platformTablesNextToCode=False
+      , platformWordSize=PW8
+      , platformMini=PlatformMini {
+            platformMini_arch=ArchUnknown
+          , platformMini_os=OSUnknown
+          }
+      , platformUnregisterised=True
+      }
+
+    platformConstants = PlatformConstants {
+         pc_DYNAMIC_BY_DEFAULT=False
+       , pc_WORD_SIZE=8
+       , pc_STD_HDR_SIZE=1
+       , pc_TAG_BITS=3
+       , pc_BLOCKS_PER_MBLOCK=252
+       , pc_BLOCK_SIZE=4096
+       , pc_MIN_PAYLOAD_SIZE=1
+       , pc_MAX_Real_Vanilla_REG=6
+       , pc_MAX_Vanilla_REG=10
+       , pc_MAX_Real_Long_REG=0
+       }
+
+#elif defined (GHC_9_2)
+
+    sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+  , sToolSettings=toolSettings
+  }
+  where
+    fileSettings = FileSettings {
+       }
+
+    toolSettings = ToolSettings {
+         toolSettings_opt_P_fingerprint=fingerprint0
+       }
+
+    platformMisc = PlatformMisc {
+       }
+
+    ghcNameVersion = GhcNameVersion {
+         ghcNameVersion_programName="ghc"
+       , ghcNameVersion_projectVersion=cProjectVersion
+      }
+
+    platform=genericPlatform
+
+#else
+   {- defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) -}
+
+    sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+  , sToolSettings=toolSettings
+  }
+  where
+    fileSettings = FileSettings {
+      }
+
+    toolSettings = ToolSettings {
+        toolSettings_opt_P_fingerprint=fingerprint0
+      }
+
+    platformMisc = PlatformMisc {
+      }
+
+    ghcNameVersion = GhcNameVersion{
+         ghcNameVersion_programName="ghc"
+       , ghcNameVersion_projectVersion=cProjectVersion
+      }
+
+    platform=genericPlatform
+
 #endif

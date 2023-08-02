@@ -28,7 +28,6 @@ module Ghclibgen (
   , applyPatchHadrianStackYaml
   , applyPatchTemplateHaskellLanguageHaskellTHSyntax
   , applyPatchTemplateHaskellCabal
-  , applyPatchSystemSemaphore
   , generatePrerequisites
   , mangleCSymbols
   , generateGhcLibCabal
@@ -340,6 +339,7 @@ calcLibModules ghcFlavor = do
       cmd = unwords $
         [ "stack exec" ] ++
         [ "--package exceptions" | flavor == Ghc90 ] ++
+        [ "--package semaphore-compat" | flavor >= Ghc98 ] ++
         [ "--stack-yaml hadrian/stack.yaml" ] ++
         [ "-- ghc" ] ++
         [ "-optP -DGHCI" | ghcSeries ghcFlavor < Ghc810 ] ++
@@ -381,96 +381,6 @@ calcLibModules ghcFlavor = do
       modules = [ replace "/" "." . dropSuffix ".hs" $ m | m <- strippedModulePaths, m /= "Main.hs" ]
 
   return $ nubSort modules
-
-applyPatchSystemSemaphore :: FilePath -> GhcFlavor -> IO ()
-applyPatchSystemSemaphore patches ghcFlavor = do
-  when (ghcSeries ghcFlavor >= Ghc98) $ do
-    -- Selectively restore some files to revision
-    --   5c8731244bc13a3d813d2a4d53b3188b28dc8355^1
-    -- reverting the changes that result from these two commits:
-    --   https://gitlab.haskell.org/ghc/ghc/-/commit/5c8731244bc13a3d813d2a4d53b3188b28dc8355
-    --   https://gitlab.haskell.org/ghc/ghc/-/commit/18a7d03d46706d2217235d26a72e6f1e82c62192
-    --
-    -- Since Apr 2023 ghc depends on a newly created library -
-    -- semaphore-compat. To keep building ghc-flavor 9.8 with ghc-9.4
-    -- and ghc-9.6 series build compilers on all platforms we do as
-    -- minimal an unwinding of the commits as we can such that ghc-lib
-    -- itself avoids depending on semaphore-compat. Hopefully this
-    -- patch will hold us over until the minimum build compiler
-    -- version is known to ship with semaphore-compat at which point
-    -- semaphore-compat can be added to the ghc-lib build deps and
-    -- this patch removed.
-    system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-ghc_cabal_in.patch")
-    system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_MakeSem_hs.patch")
-    system_ $ "git apply " ++ (patches </> "5c8731244bc13a3d813d2a4d53b3188b28dc835-GHC_Driver_Pipeline_LogQueue_hs.patch")
-    if ghcSeries ghcFlavor == Ghc98
-      then
-        system_ $ "git apply " ++ (patches </> "4d356ea3049b357b80f82961db076a3e5e8edf6a-GHC_Driver_Make_hs.patch")
-      else
-        system_ $ "git apply " ++ (patches </> "9edcb1fb02d799acd4a7d0c145796aecb6e54ea3-GHC_Driver_Make_hs.patch")
-
-    writeFile "compiler/GHC/Driver/Make.hs" .
-      replace
-        (unlines [
-            "    n_jobs <- case parMakeCount (hsc_dflags hsc_env) of"
-            , "                    Nothing -> liftIO getNumProcessors"
-            , "                    Just n  -> return n"
-            ]
-        )
-        "    n_jobs <- liftIO getNumProcessors" .
-      replace
-        "                                (hsc_tmpfs hsc_env')"
-        (unlines [
-          "                                (hsc_tmpfs hsc_env')"
-        , "                                (hsc_FC hsc_env')"
-        ]) .
-      replace
-        (unlines [
-            "load' :: GhcMonad m => Maybe ModIfaceCache -> LoadHowMuch -> Maybe Messager -> ModuleGraph -> m SuccessFlag"
-          , "load' mhmi_cache how_much mHscMessage mod_graph = do"
-           ])
-        (unlines [
-            "load' :: GhcMonad m => Maybe ModIfaceCache -> LoadHowMuch -> (GhcMessage -> a) -> Maybe Messager -> ModuleGraph -> m SuccessFlag"
-          , "load' mhmi_cache how_much  _diag_wrapper mHscMessage mod_graph = do"
-           ]) .
-      replace
-        "    success <- load' cache how_much (Just msg) mod_graph"
-        "    success <- load' cache how_much undefined (Just msg) mod_graph" .
-      replace
-        "(upsweep_ok, hsc_env1)"
-        "(upsweep_ok, new_deps)" .
-      replace
-        "setSession hsc_env1"
-        "modifySession (addDepsToHscEnv new_deps)" .
-      replace
-        "-> IO (SuccessFlag, HscEnv)"
-        "-> IO (SuccessFlag, [HomeModInfo])" .
-      replace
-        "    let hsc_env' = addDepsToHscEnv completed hsc_env"
-        "" .
-      replace
-        "return (Failed, hsc_env)"
-        "return (Failed, [])" .
-      replace
-        "return (success_flag, hsc_env')"
-        "return (success_flag, completed)" .
-      replace
-        (unlines[
-            "          -- Clean up after ourselves"
-          , "          liftIO $ cleanCurrentModuleTempFilesMaybe logger (hsc_tmpfs hsc_env1) dflags" ])
-        ""
-      =<< readFile' "compiler/GHC/Driver/Make.hs"
-
-    when (ghcSeries ghcFlavor > Ghc98) $ do
-      writeFile "compiler/GHC/Driver/Make.hs" .
-        replace
-          "import qualified Data.IntSet as I"
-          "import qualified GHC.Data.Word64Set as W" .
-        replace "I.IntSet" "W.Word64Set" .
-        replace "I.empty" "W.empty" .
-        replace "I.union" "W.union" .
-        replace "I.singleton" "W.singleton"
-        =<< readFile' "compiler/GHC/Driver/Make.hs"
 
 applyPatchTemplateHaskellLanguageHaskellTHSyntax :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellLanguageHaskellTHSyntax ghcFlavor = do
@@ -823,7 +733,7 @@ applyPatchHaddockHs ghcFlavor = do
     )
 
   -- See https://github.com/digital-asset/ghc-lib/issues/391
-  when (ghcFlavor `elem` [Ghc923, Ghc924, Ghc925, Ghc926, Ghc927]) (
+  when (ghcFlavor `elem` [Ghc923, Ghc924, Ghc925, Ghc926, Ghc927, Ghc928]) (
     writeFile codeGenHs . replace "{- | debugIsOn -}"  ""
     =<< readFile' codeGenHs
     )
@@ -1042,12 +952,19 @@ applyPatchHadrianStackYaml :: GhcFlavor -> Maybe String -> IO ()
 applyPatchHadrianStackYaml ghcFlavor resolver = do
   let hadrianStackYaml = "hadrian/stack.yaml"
   config <- Y.decodeFileThrow hadrianStackYaml
-  -- [Note : GHC now depends on exceptions package]
-  -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  -- 'exceptions' is required by flavors >= ghc-9.0.1 but isn't in the
-  -- compiler packages when the build compiler is of the 8.8 series so
-  -- this makes sure it's there in that case.
   let deps = ["exceptions-0.10.4" | ghcSeries ghcFlavor == Ghc90] ++
+        [ file | ghcSeries ghcFlavor >= Ghc98
+          , file <- [
+                "Cabal-3.8.1.0"
+              , "Cabal-syntax-3.8.1.0"
+              , "unix-2.8.1.1"
+              , "directory-1.3.8.1"
+              , "process-1.6.17.0"
+              , "filepath-1.4.100.4"
+              , "Win32-2.13.4.0"
+              , "time-1.12.2"
+              , "semaphore-compat-1.0.0"
+        ] ] ++
         case parse (\cfg -> cfg .:? "extra-deps" .!= []) config of
           Success ls -> ls :: [Y.Value]
           Error msg -> error msg
@@ -1169,7 +1086,7 @@ baseBounds = \case
     -- ghc-9.2.2, base-4.16.1.0
     -- ghc-9.2.2, base-4.16.2.0
     -- ghc-9.2.4, base-4.16.3.0
-    -- ghc-9.2.5, ghc-9.2.6, ghc-9.2.7 ship with base-4.16.4.0
+    -- ghc-9.2.5, ghc-9.2.6, ghc-9.2.7, ghc-9.2.8 ship with base-4.16.4.0
     Ghc921    -> "base >= 4.14 && < 4.16.1" -- [ghc-8.10.1, ghc-9.2.2)
     Ghc922    -> "base >= 4.14 && < 4.16.2" -- [ghc-8.10.1, ghc-9.2.3)
     Ghc923    -> "base >= 4.14 && < 4.16.3" -- [ghc-8.10.1, ghc-9.2.4)
@@ -1177,7 +1094,7 @@ baseBounds = \case
     Ghc925    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
     Ghc926    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
     Ghc927    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
-
+    Ghc928    -> "base >= 4.14 && < 4.17" -- [ghc-8.10.1, ghc-9.4.1)
     -- ghc-9.4.1, ghc-9.4.2, ghc-9.4.3, ghc-9.4.4 all ship with
     -- base-4.17.0.0, ghc-9.4.5 has base-4.17.1.0
     Ghc941   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
@@ -1231,6 +1148,10 @@ commonBuildDepends ghcFlavor =
             "exceptions == 0.10.*"
           , "parsec"
           ]
+        | ghcSeries ghcFlavor >= Ghc98 = [
+            "exceptions == 0.10.*"
+          , "parsec"
+          ]
         | otherwise = []
     -- shared for all flavors
     shared = [
@@ -1252,6 +1173,7 @@ ghcLibBuildDepends :: GhcFlavor -> [String]
 ghcLibBuildDepends ghcFlavor =
   commonBuildDepends ghcFlavor ++
   [ "stm" | ghcSeries ghcFlavor >= Ghc94 ] ++
+  [ "semaphore-compat" | ghcSeries ghcFlavor >= Ghc98 ] ++
   [ "rts"
   , "hpc == 0.6.*"
   , "ghc-lib-parser"  -- we rely on this being last (in CI.hs:
@@ -1437,7 +1359,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         indent2 [ "compiler/cbits/genSym.c" ] ++
         indent2 [ "compiler/cbits/cutils.c" | ghcSeries ghcFlavor >= Ghc90 ] ++
         indent2 [ "compiler/parser/cutils.c" | ghcSeries ghcFlavor < Ghc90 ] ++
-        indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor `elem` [Ghc926, Ghc927, Ghc945] || ghcSeries ghcFlavor >= Ghc96 ] ++
+        indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor `elem` [Ghc926, Ghc927, Ghc928, Ghc945] || ghcSeries ghcFlavor >= Ghc96 ] ++
         [ "    hs-source-dirs:" ] ++
         indent2 (ghcLibParserHsSrcDirs False ghcFlavor lib) ++
         [ "    autogen-modules:" ] ++

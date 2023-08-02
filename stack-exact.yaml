@@ -12,6 +12,9 @@ resolver: ghc-9.6.1
 ghc-options:
   # Try to be quick.
   "$everything": -O0 -j
+  # hpc: -fno-safe-haskell
+
+# allow-newer: true  # For ghc-9.6.2 : Ignoring hpc's bounds on base
 
 extra-deps:
 # Dependencies of ghc-lib-parser & ghc-lib:
@@ -23,6 +26,15 @@ extra-deps:
 - syb-0.7.2.3
 - uniplate-1.6.13
 - unordered-containers-0.2.19.1
+# See https://gitlab.haskell.org/ghc/ghc/-/issues/23683
+- unix-2.8.1.1
+- directory-1.3.7.1
+- process-1.6.17.0
+- filepath-1.4.100.4
+- hpc-0.6.2.0
+- Win32-2.13.4.0
+- time-1.12.2
+- semaphore-compat-1.0.0
 # Additional dependencies for CI.hs & ghc-lib-gen:
 - ansi-terminal-1.0
 - ansi-terminal-types-0.11.5
@@ -94,8 +106,6 @@ extra-deps:
 - wcwidth-0.0.2
 
 flags:
-  # Win32 is a compiler lib, the version with ghc-9.6.1 is 2.13.3.0
-  # (https://www.snoyman.com/base/)
   mintty:
     # True for ghc >= 9.6.1 else False.
     win32-2-13-1: true # Win32 (>=2.13.1)

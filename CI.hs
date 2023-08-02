@@ -58,7 +58,7 @@ data GhcFlavor = Da DaFlavor
                | Ghc981
                | Ghc962 | Ghc961
                | Ghc945 | Ghc944 | Ghc943 | Ghc942 | Ghc941
-               | Ghc927 | Ghc926 | Ghc925 | Ghc924 | Ghc923 | Ghc922 | Ghc921
+               | Ghc928 | Ghc927 | Ghc926 | Ghc925 | Ghc924 | Ghc923 | Ghc922 | Ghc921
                | Ghc902 | Ghc901
                | Ghc8107 | Ghc8106 | Ghc8105 | Ghc8104 | Ghc8103 | Ghc8102 | Ghc8101 | Ghc881
                | Ghc884 | Ghc883  | Ghc882
@@ -75,7 +75,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "9c8fdda3458a72be9ea90d45ab379444ab0cfb30" -- 2023-07-19
+current = "ee93edfded6ef95e911b7d265feebd1c7f542e8d" -- 2023-07-28
 
 -- Command line argument generators.
 
@@ -99,6 +99,7 @@ ghcFlavorOpt = \case
     Ghc943 -> "--ghc-flavor ghc-9.4.3"
     Ghc942 -> "--ghc-flavor ghc-9.4.2"
     Ghc941 -> "--ghc-flavor ghc-9.4.1"
+    Ghc928 -> "--ghc-flavor ghc-9.2.8"
     Ghc927 -> "--ghc-flavor ghc-9.2.7"
     Ghc926 -> "--ghc-flavor ghc-9.2.6"
     Ghc925 -> "--ghc-flavor ghc-9.2.5"
@@ -163,7 +164,7 @@ genVersionStr flavor suffix =
       Ghc943      -> "9.4.3"
       Ghc942      -> "9.4.2"
       Ghc941      -> "9.4.1"
-      Ghc927      -> "9.2.7"
+      Ghc928      -> "9.2.8"
       Ghc926      -> "9.2.6"
       Ghc925      -> "9.2.5"
       Ghc924      -> "9.2.4"
@@ -219,6 +220,7 @@ parseOptions = Options
        "ghc-9.4.3" -> Right Ghc943
        "ghc-9.4.2" -> Right Ghc942
        "ghc-9.4.1" -> Right Ghc941
+       "ghc-9.2.8" -> Right Ghc928
        "ghc-9.2.7" -> Right Ghc927
        "ghc-9.2.6" -> Right Ghc926
        "ghc-9.2.5" -> Right Ghc925
@@ -488,7 +490,7 @@ buildDists
      -- know why it so far only exhibits with 9.2.6. Seems to me it
      -- should be a problem with >= ghc-9.6.1 too (but, "if it ain't
      -- broke don't fix it").
-    unless (ghcFlavor `elem` [Ghc926, Ghc927] && System.Info.Extra.isWindows) $ do
+    unless (ghcFlavor `elem` [Ghc926, Ghc927, Ghc928] && System.Info.Extra.isWindows) $ do
       -- Test everything loads in GHCi, see
       -- https://github.com/digital-asset/ghc-lib/issues/27
       stack "--no-terminal ghc -- -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
@@ -614,7 +616,7 @@ buildDists
 
       branch :: GhcFlavor -> String
       branch = \case
-          Ghc981  -> "ghc-9.8" --alpha
+          Ghc981  -> "ghc-9.8.1-alpha1"
           Ghc962  -> "ghc-9.6.2-release"
           Ghc961  -> "ghc-9.6.1-release"
           Ghc945  -> "ghc-9.4.5-release"
@@ -622,6 +624,7 @@ buildDists
           Ghc943  -> "ghc-9.4.3-release"
           Ghc942  -> "ghc-9.4.2-release"
           Ghc941  -> "ghc-9.4.1-release"
+          Ghc928  -> "ghc-9.2.8-release"
           Ghc927  -> "ghc-9.2.7-release"
           Ghc926  -> "ghc-9.2.6-release"
           Ghc925  -> "ghc-9.2.5-release"
