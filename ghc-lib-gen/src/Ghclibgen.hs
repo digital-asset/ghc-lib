@@ -189,25 +189,36 @@ rtsDependencies ghcFlavor =
 
 compilerDependencies :: GhcFlavor -> [FilePath]
 compilerDependencies ghcFlavor =
-  (stage0Compiler </>) <$> [
-      "primop-can-fail.hs-incl"
-    , "primop-code-size.hs-incl"
-    , "primop-commutable.hs-incl"
-    , "primop-data-decl.hs-incl"
-    , "primop-fixity.hs-incl"
-    , "primop-has-side-effects.hs-incl"
-    , "primop-list.hs-incl"
-    , "primop-out-of-line.hs-incl"
-    , "primop-primop-info.hs-incl"
-    , "primop-strictness.hs-incl"
-    , "primop-tag.hs-incl"
-    , "primop-vector-tycons.hs-incl"
-    , "primop-vector-tys-exports.hs-incl"
-    , "primop-vector-tys.hs-incl"
-    , "primop-vector-uniques.hs-incl"
-    ] ++
-    [ "primop-docs.hs-incl" | ghcSeries ghcFlavor >= Ghc90 ] ++
-    [ "GHC/Platform/Constants.hs" | ghcSeries ghcFlavor >= Ghc92 ]
+  (stage0Compiler </>) <$>
+  [ "primop-can-fail.hs-incl" | series < Ghc910 ] ++
+  [ "primop-code-size.hs-incl"
+  , "primop-commutable.hs-incl"
+  , "primop-data-decl.hs-incl"
+  , "primop-fixity.hs-incl" ] ++
+  [ if series < Ghc910 then
+      "primop-has-side-effects.hs-incl"
+    else
+      "primop-effects.hs-incl"
+  ] ++
+  [ "primop-list.hs-incl"
+  , "primop-out-of-line.hs-incl"
+  , "primop-primop-info.hs-incl"
+  , "primop-strictness.hs-incl"
+  , "primop-tag.hs-incl"
+  , "primop-vector-tycons.hs-incl"
+  , "primop-vector-tys-exports.hs-incl"
+  , "primop-vector-tys.hs-incl"
+  , "primop-vector-uniques.hs-incl"
+  ] ++
+  [ "primop-docs.hs-incl" | series >= Ghc90 ] ++
+  [f | series >= Ghc910
+     , f <- [ "primop-is-work-free.hs-incl"
+            , "primop-is-cheap.hs-incl"
+            ]
+  ] ++
+  [ "GHC/Platform/Constants.hs" | series >= Ghc92 ]
+  where
+    series = ghcSeries ghcFlavor
 
 platformH :: GhcFlavor -> [FilePath]
 platformH ghcFlavor =
