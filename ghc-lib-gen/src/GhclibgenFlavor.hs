@@ -19,28 +19,28 @@ data GhcFlavor = DaGhc881
                | GhcMaster
   deriving (Show, Eq, Ord)
 
-data GhcSeries = Ghc88 | Ghc810 | Ghc90 | Ghc92 | Ghc94 | Ghc96 | Ghc98 | Ghc910
+data GhcSeries = GHC_8_8 | GHC_8_10 | GHC_9_0 | GHC_9_2 | GHC_9_4 | GHC_9_6 | GHC_9_8 | GHC_9_10
   deriving (Eq, Ord)
 
 instance Show GhcSeries where
   show = \case
-    Ghc910  -> "ghc-9.10"
-    Ghc98  -> "ghc-9.8"
-    Ghc96  -> "ghc-9.6"
-    Ghc94  -> "ghc-9.4"
-    Ghc92  -> "ghc-9.2"
-    Ghc90  -> "ghc-9.0"
-    Ghc810 -> "ghc-8.10"
-    Ghc88  -> "ghc-8.8"
+    GHC_9_10  -> "ghc-9.10"
+    GHC_9_8  -> "ghc-9.8"
+    GHC_9_6  -> "ghc-9.6"
+    GHC_9_4  -> "ghc-9.4"
+    GHC_9_2  -> "ghc-9.2"
+    GHC_9_0  -> "ghc-9.0"
+    GHC_8_10 -> "ghc-8.10"
+    GHC_8_8  -> "ghc-8.8"
 
 ghcSeries :: GhcFlavor -> GhcSeries
 ghcSeries = \case
-    f | DaGhc881 <= f && f < Ghc8101 -> Ghc88
-    f | Ghc8101 <= f && f < Ghc901 -> Ghc810
-    f | Ghc901 <= f && f < Ghc921 -> Ghc90
-    f | Ghc921 <= f && f < Ghc941 -> Ghc92
-    f | Ghc941 <= f && f < Ghc961 -> Ghc94
-    f | Ghc961 <= f && f < Ghc981 -> Ghc96
-    f | Ghc981 <= f && f < GhcMaster -> Ghc98
-    GhcMaster -> Ghc910
+    f | DaGhc881 <= f && f < Ghc8101 -> GHC_8_8
+    f | Ghc8101 <= f && f < Ghc901 -> GHC_8_10
+    f | Ghc901 <= f && f < Ghc921 -> GHC_9_0
+    f | Ghc921 <= f && f < Ghc941 -> GHC_9_2
+    f | Ghc941 <= f && f < Ghc961 -> GHC_9_4
+    f | Ghc961 <= f && f < Ghc981 -> GHC_9_6
+    f | Ghc981 <= f && f < GhcMaster -> GHC_9_8
+    GhcMaster -> GHC_9_10
     _ -> error "ghcSeries: impossible case"
