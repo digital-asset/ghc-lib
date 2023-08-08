@@ -57,7 +57,7 @@ data GhcFlavor = Da DaFlavor
                | GhcMaster String
                | Ghc981
                | Ghc962 | Ghc961
-               | Ghc945 | Ghc944 | Ghc943 | Ghc942 | Ghc941
+               | Ghc946 | Ghc945 | Ghc944 | Ghc943 | Ghc942 | Ghc941
                | Ghc928 | Ghc927 | Ghc926 | Ghc925 | Ghc924 | Ghc923 | Ghc922 | Ghc921
                | Ghc902 | Ghc901
                | Ghc8107 | Ghc8106 | Ghc8105 | Ghc8104 | Ghc8103 | Ghc8102 | Ghc8101 | Ghc881
@@ -94,6 +94,7 @@ ghcFlavorOpt = \case
     Ghc981 -> "--ghc-flavor ghc-9.8.1"
     Ghc962 -> "--ghc-flavor ghc-9.6.2"
     Ghc961 -> "--ghc-flavor ghc-9.6.1"
+    Ghc946 -> "--ghc-flavor ghc-9.4.6"
     Ghc945 -> "--ghc-flavor ghc-9.4.5"
     Ghc944 -> "--ghc-flavor ghc-9.4.4"
     Ghc943 -> "--ghc-flavor ghc-9.4.3"
@@ -159,6 +160,7 @@ genVersionStr flavor suffix =
       Ghc981      -> "9.8.1"
       Ghc962      -> "9.6.2"
       Ghc961      -> "9.6.1"
+      Ghc946      -> "9.4.6"
       Ghc945      -> "9.4.5"
       Ghc944      -> "9.4.4"
       Ghc943      -> "9.4.3"
@@ -215,6 +217,7 @@ parseOptions = Options
        "ghc-9.8.1" -> Right Ghc981
        "ghc-9.6.2" -> Right Ghc962
        "ghc-9.6.1" -> Right Ghc961
+       "ghc-9.4.6" -> Right Ghc946
        "ghc-9.4.5" -> Right Ghc945
        "ghc-9.4.4" -> Right Ghc944
        "ghc-9.4.3" -> Right Ghc943
@@ -619,6 +622,7 @@ buildDists
           Ghc981  -> "ghc-9.8.1-alpha1"
           Ghc962  -> "ghc-9.6.2-release"
           Ghc961  -> "ghc-9.6.1-release"
+          Ghc946  -> "ghc-9.4.6-release"
           Ghc945  -> "ghc-9.4.5-release"
           Ghc944  -> "ghc-9.4.4-release"
           Ghc943  -> "ghc-9.4.3-release"
