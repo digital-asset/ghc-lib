@@ -9,6 +9,7 @@
 #if __GLASGOW_HASKELL__ >= 902
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 #endif
+-- {-# OPTIONS_GHC -Wx-partial #-}
 
 module Ghclibgen (
     applyPatchHeapClosures
@@ -1122,6 +1123,7 @@ baseBounds = \case
     Ghc961   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
     Ghc962   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
 
+    -- base-4.19.0.0, ghc-prim-0.11.0
     Ghc981 -- e.g. "9.7.20230119"
               -- (c.f. 'rts/include/ghc-version.h'')
       -> "base >= 4.17.0.0 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
@@ -1137,23 +1139,33 @@ commonBuildDepends ghcFlavor =
     -- base
     base = [ baseBounds ghcFlavor ]
     specific
+       | ghcSeries ghcFlavor >= GHC_9_8  = [
+           "ghc-prim > 0.2 && < 0.12"
+         , "containers >= 0.6.2.1 && < 0.7"
+         , "bytestring >= 0.11.4 && < 0.12"
+         , "time >= 1.4 && < 1.13"
+         ]
        | ghcSeries ghcFlavor >= GHC_9_6  = [
            "ghc-prim > 0.2 && < 0.11"
+         , "containers >= 0.5 && < 0.7"
          , "bytestring >= 0.11.3 && < 0.12"
          , "time >= 1.4 && < 1.13"
          ]
        | ghcSeries ghcFlavor >= GHC_9_4  = [
            "ghc-prim > 0.2 && < 0.10"
+         , "containers >= 0.5 && < 0.7"
          , "bytestring >= 0.10 && < 0.12"
          , "time >= 1.4 && < 1.13"
          ]
         | ghcSeries ghcFlavor >= GHC_9_2 = [
             "ghc-prim > 0.2 && < 0.9"
+          , "containers >= 0.5 && < 0.7"
           , "bytestring >= 0.9 && < 0.12"
           , "time >= 1.4 && < 1.12"
           ]
         | otherwise = [
             "ghc-prim > 0.2 && < 0.8"
+          , "containers >= 0.5 && < 0.7"
           , "bytestring >= 0.9 && < 0.11"
           , "time >= 1.4 && < 1.10"
           ]
@@ -1162,19 +1174,15 @@ commonBuildDepends ghcFlavor =
             "exceptions == 0.10.*"
           , "parsec"
           ]
-        | ghcSeries ghcFlavor >= GHC_9_8 = [
-            "exceptions == 0.10.*"
-          , "parsec"
+        | otherwise = [
           ]
-        | otherwise = []
     -- shared for all flavors
     shared = [
-        "containers >= 0.5 && < 0.7"
-      , "binary == 0.8.*"
+        "binary == 0.8.*"
       , "filepath >= 1 && < 1.5"
       , "directory >= 1 && < 1.4"
       , "array >= 0.1 && < 0.6"
-      , "deepseq >= 1.4 && < 1.5"
+      , "deepseq >= 1.4 && < 1.6"
       , "pretty == 1.1.*"
       , "transformers >= 0.5 && < 0.7"
       , "process >= 1 && < 1.7"
