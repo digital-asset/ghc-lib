@@ -12,8 +12,6 @@ resolver: ghc-9.6.1
 ghc-options:
   # Try to be quick.
   "$everything": -O0 -j
-  # hpc: -fno-safe-haskell
-  ghc-lib-gen: -Wno-unrecognised-warning-flags -Wno-x-partial
 
 allow-newer: true # aeson's bounds on th-abstraction
 
