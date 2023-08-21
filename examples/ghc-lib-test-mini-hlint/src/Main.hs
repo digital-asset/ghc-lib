@@ -4,9 +4,11 @@
 
 -- hlint examples/ghc-lib-test-mini-hlint/src --cpp-include examples/ghc-lib-test-mini-hlint/extra-source-files
 
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-missing-fields #-}
+#if __GLASGOW_HASKELL__ >= 908
+{-# OPTIONS_GHC -Wx-partial #-}
+#endif
 
 module Main (main) where
 
@@ -107,12 +109,11 @@ parsePragmasIntoDynFlags flags filepath str =
     reportGhcException e = do
       print e; return Nothing
 
-    reportSourceErr msgs = do
-      putStrLn $ head
-             [ showSDoc flags msg
-             | msg <- pprErrMsgBagWithLoc $ srcErrorMessages msgs
-             ]
-      return Nothing
+    reportSourceErr msgs = case sDocs of
+        [] -> return Nothing
+        sDoc : _ -> do putStrLn sDoc; return Nothing
+      where
+        sDocs = [ showSDoc flags msg | msg <- pprErrMsgBagWithLoc $ srcErrorMessages msgs ]
 
 #elif defined (GHC_9_2)
 
@@ -129,12 +130,11 @@ parsePragmasIntoDynFlags flags filepath str =
     reportGhcException e = do
       print e; return Nothing
 
-    reportSourceErr msgs = do
-      putStrLn $ head
-             [ showSDoc flags msg
-             | msg <- pprMsgEnvelopeBagWithLoc $ srcErrorMessages msgs
-             ]
-      return Nothing
+    reportSourceErr msgs = case sDocs of
+        [] -> return Nothing
+        sDoc : _ -> do putStrLn sDoc; return Nothing
+      where
+        sDocs = [ showSDoc flags msg | msg <- pprMsgEnvelopeBagWithLoc $ srcErrorMessages msgs ]
 
 #elif defined (GHC_9_4)
 
@@ -148,15 +148,13 @@ parsePragmasIntoDynFlags flags filepath str =
     catchErrors act = handleGhcException reportGhcException
                         (handleSourceError reportSourceErr act)
 
-    reportGhcException e = do
-      print e; return Nothing
+    reportGhcException e = do print e; return Nothing
 
-    reportSourceErr msgs = do
-      putStrLn $ head
-             [ showSDoc flags msg
-             | msg <- pprMsgEnvelopeBagWithLoc . getMessages $ srcErrorMessages msgs
-             ]
-      return Nothing
+    reportSourceErr msgs = case sDocs of
+        [] -> return Nothing
+        sDoc : _ -> do putStrLn sDoc; return Nothing
+      where
+        sDocs = [ showSDoc flags msg | msg <- pprMsgEnvelopeBagWithLoc . getMessages $ srcErrorMessages msgs ]
 
 #elif defined (GHC_9_6)
 
@@ -170,16 +168,13 @@ parsePragmasIntoDynFlags flags filepath str =
     catchErrors act = handleGhcException reportGhcException
                         (handleSourceError reportSourceErr act)
 
-    reportGhcException e = do
-      print e; return Nothing
+    reportGhcException e = do print e; return Nothing
 
-    reportSourceErr msgs = do
-      putStrLn $ head
-             [ showSDoc flags msg
-             | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs
-             ]
-      return Nothing
-
+    reportSourceErr msgs = case sDocs of
+      [] -> return Nothing
+      sDoc : _ -> do putStrLn sDoc; return Nothing
+     where
+       sDocs = [ showSDoc flags msg | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs ]
 #else
     {- defined (GHC_9_8) || defined (GHC_9_10) -}
 
@@ -193,15 +188,13 @@ parsePragmasIntoDynFlags flags filepath str =
     catchErrors act = handleGhcException reportGhcException
                         (handleSourceError reportSourceErr act)
 
-    reportGhcException e = do
-      print e; return Nothing
+    reportGhcException e = do print e; return Nothing
 
-    reportSourceErr msgs = do
-      putStrLn $ head
-             [ showSDoc flags msg
-             | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs
-             ]
-      return Nothing
+    reportSourceErr msgs = case sDocs of
+        [] -> return Nothing
+        sDoc : _ -> do putStrLn sDoc; return Nothing
+      where
+        sDocs = [ showSDoc flags msg | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs ]
 
 #endif
 
