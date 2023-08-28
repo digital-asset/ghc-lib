@@ -112,23 +112,23 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-9.4.6       | ghc-9.2.8  |
-    # | macOS   | ghc-9.4.6       | ghc-9.2.8  |
-    # | windows | ghc-9.4.6       | ghc-9.2.8  |
+    # | linux   | ghc-9.4.7       | ghc-9.2.8  |
+    # | macOS   | ghc-9.4.7       | ghc-9.2.8  |
+    # | windows | ghc-9.4.7       | ghc-9.2.8  |
     # +---------+-----------------+------------+
-    linux-ghc-9.4.6-9.2.8:
+    linux-ghc-9.4.7-9.2.8:
       image: "ubuntu-22.04"
-      mode: "--ghc-flavor ghc-9.4.6"
+      mode: "--ghc-flavor ghc-9.4.7"
       resolver: " lts-20.25"
       stack-yaml: "stack.yaml"
-    mac-ghc-9.4.6-9.2.8:
+    mac-ghc-9.4.7-9.2.8:
       image: "macOS-latest"
-      mode: "--ghc-flavor ghc-9.4.6"
+      mode: "--ghc-flavor ghc-9.4.7"
       resolver: " lts-20.25"
       stack-yaml: "stack.yaml"
-    windows-ghc-9.4.6-9.2.8:
+    windows-ghc-9.4.7-9.2.8:
       image: "windows-latest"
-      mode: "--ghc-flavor ghc-9.4.6"
+      mode: "--ghc-flavor ghc-9.4.7"
       resolver: " lts-20.25"
       stack-yaml: "stack.yaml"
 

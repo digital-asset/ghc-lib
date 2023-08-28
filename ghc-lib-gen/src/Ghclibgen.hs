@@ -1121,6 +1121,7 @@ baseBounds = \case
     Ghc944   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
     Ghc945   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
     Ghc946   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
+    Ghc947   -> "base >= 4.15 && < 4.18" -- [ghc-9.0.1, ghc-9.6.1)
 
     -- require bytestring >= 0.11.3 which rules out ghc-9.2.1
     -- base-4.18.0
@@ -1384,7 +1385,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         indent2 [ "compiler/cbits/genSym.c" ] ++
         indent2 [ "compiler/cbits/cutils.c" | ghcSeries ghcFlavor >= GHC_9_0 ] ++
         indent2 [ "compiler/parser/cutils.c" | ghcSeries ghcFlavor < GHC_9_0 ] ++
-        indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor `elem` [Ghc926, Ghc927, Ghc928, Ghc945, Ghc946] || ghcSeries ghcFlavor >= GHC_9_6 ] ++
+        indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor `elem` [Ghc926, Ghc927, Ghc928, Ghc945, Ghc946, Ghc947] || ghcSeries ghcFlavor >= GHC_9_6 ] ++
         [ "    hs-source-dirs:" ] ++
         indent2 (ghcLibParserHsSrcDirs False ghcFlavor lib) ++
         [ "    autogen-modules:" ] ++

@@ -13,7 +13,7 @@ data GhcFlavor = DaGhc881
                | Ghc8101 | Ghc8102 | Ghc8103 | Ghc8104 | Ghc8105 | Ghc8106 | Ghc8107
                | Ghc901 | Ghc902
                | Ghc921 | Ghc922 | Ghc923 | Ghc924 | Ghc925 | Ghc926 | Ghc927 | Ghc928
-               | Ghc941 | Ghc942 | Ghc943 | Ghc944 | Ghc945 | Ghc946
+               | Ghc941 | Ghc942 | Ghc943 | Ghc944 | Ghc945 | Ghc946 |  Ghc947
                | Ghc961 | Ghc962
                | Ghc981
                | GhcMaster
