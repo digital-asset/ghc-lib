@@ -970,11 +970,14 @@ applyPatchHadrianStackYaml ghcFlavor resolver = do
   let hadrianStackYaml = "hadrian/stack.yaml"
   config <- Y.decodeFileThrow hadrianStackYaml
   let deps = ["exceptions-0.10.4" | ghcSeries ghcFlavor == GHC_9_0] ++
-        [ file | ghcSeries ghcFlavor >= GHC_9_8
-          , file <- [
+        [ file | ghcSeries ghcFlavor == GHC_9_8
+         , file <- [
                 "Cabal-3.8.1.0"
               , "Cabal-syntax-3.8.1.0"
-              , "unix-2.8.1.1"
+              ]] ++
+        [ file | ghcSeries ghcFlavor >= GHC_9_8
+          , file <- [
+                "unix-2.8.1.1"
               , "directory-1.3.8.1"
               , "process-1.6.17.0"
               , "filepath-1.4.100.4"
