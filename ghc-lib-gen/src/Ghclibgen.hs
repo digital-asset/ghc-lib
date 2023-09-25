@@ -977,9 +977,9 @@ applyPatchHadrianStackYaml ghcFlavor resolver = do
               ]] ++
         [ file | ghcSeries ghcFlavor >= GHC_9_8
           , file <- [
-                "unix-2.8.1.1"
+                "unix-2.8.2.1"
               , "directory-1.3.8.1"
-              , "process-1.6.17.0"
+              , "process-1.6.18.0"
               , "filepath-1.4.100.4"
               , "Win32-2.13.4.0"
               , "time-1.12.2"
@@ -1023,8 +1023,8 @@ applyPatchHadrianStackYaml ghcFlavor resolver = do
       config'' = if ghcSeries ghcFlavor < GHC_9_4
                      then config'
                      else
-                         HMS.insert "allow-newer" (toJSON True)
-                           (HMS.update (\_ -> Just (toJSON resolver')) "resolver" config')
+                         -- HMS.insert "allow-newer" (toJSON True) $
+                           HMS.update (\_ -> Just (toJSON resolver')) "resolver" config'
   Y.encodeFile hadrianStackYaml config''
 
 -- Data type representing an approximately parsed Cabal file.

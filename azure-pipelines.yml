@@ -34,8 +34,8 @@ strategy:
     #      | ghc-9.0.*    |  >= 8.8.1   |
     #      | ghc-9.2.*    |  >= 8.10.1  |
     #      | ghc-9.4.1    |  >= 9.0.1   |
-    #      | ghc-9.6.1    |  >= 9.2.2   | (9.2.1 is invalid)
-    #      | > ghc-9.6.1  |  >= 9.2.2   |
+    #      | ghc-9.6.2    |  >= 9.2.2   | (9.2.1 is invalid)
+    #      | > ghc-9.6.2  |  >= 9.2.2   |
     #      +--------------+-------------+
     # (the general rule is only the last two compiler versions are
     # supported).
@@ -43,24 +43,24 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-master      | ghc-9.6.1  |
-    # | macOS   | ghc-master      | ghc-9.6.1  |
-    # | windows | ghc-master      | ghc-9.6.1  |
+    # | linux   | ghc-master      | ghc-9.6.2  |
+    # | macOS   | ghc-master      | ghc-9.6.2  |
+    # | windows | ghc-master      | ghc-9.6.2  |
     # +---------+-----------------+------------+
-    linux-ghc-master-9.6.1:
+    linux-ghc-master-9.6.2:
       image: "ubuntu-22.04"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.6.1"
+      resolver: "ghc-9.6.2"
       stack-yaml: "stack-exact.yaml"
-    mac-ghc-master-9.6.1:
+    mac-ghc-master-9.6.2:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.6.1"
+      resolver: "ghc-9.6.2"
       stack-yaml: "stack-exact.yaml"
-    windows-ghc-master-9.6.1:
+    windows-ghc-master-9.6.2:
       image: "windows-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.6.1"
+      resolver: "ghc-9.6.2"
       stack-yaml: "stack-exact.yaml"
 
     # +---------+-----------------+------------+
