@@ -80,6 +80,7 @@ cabalFileLibraries ghcFlavor = [
 -- C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: GhcFlavor -> [FilePath]
 ghcLibParserIncludeDirs ghcFlavor = (case ghcSeries ghcFlavor of
+  series | series > GHC_9_8 -> [ "rts/include", "rts/include/stg" ]
   series | series >= GHC_9_4 -> [ "rts/include" ] -- ghcconfig.h, ghcversion.h
   series | series < GHC_9_4 -> [ "includes" ] -- ghcconfig.h, MachDeps.h, MachRegs.h, CodeGen.Platform.hs
   _ -> error "ghcLibParserIncludeDirs: impossible case!"
@@ -241,6 +242,7 @@ fingerprint ghcFlavor =
 
 cHeaders :: GhcFlavor -> [String]
 cHeaders ghcFlavor =
+   [ f | ghcSeries ghcFlavor > GHC_9_8, f <- ("rts/include/stg/MachRegs" </>) <$> ["arm32.h", "arm64.h", "loongarch64.h", "ppc.h", "riscv64.h", "s390x.h", "wasm32.h", "x86.h"] ] ++
    [ f | ghcSeries ghcFlavor >= GHC_9_8, f <- [ "libraries/containers/containers/include/containers.h" ] ] ++
    [ f | ghcSeries ghcFlavor >= GHC_9_4, f <- (("rts/include" </>) <$> ["ghcconfig.h", "ghcversion.h" ]) ++ (("compiler" </>) <$>[ "MachRegs.h", "CodeGen.Platform.h", "Bytecodes.h", "ClosureTypes.h", "FunTypes.h", "Unique.h", "ghc-llvm-version.h" ]) ] ++
    [ f | ghcSeries ghcFlavor < GHC_9_4, f <- (("includes" </>)  <$> [ "MachDeps.h", "stg/MachRegs.h", "CodeGen.Platform.hs"]) ++ (("compiler" </>) <$> [ "Unique.h", "HsVersions.h" ]) ] ++
