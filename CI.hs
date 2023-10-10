@@ -622,7 +622,7 @@ buildDists
 
       branch :: GhcFlavor -> String
       branch = \case
-          Ghc981  -> "ghc-9.8" -- track this (not -alpha): it gets backports
+          Ghc981  -> "ghc-9.8.1-release"
           Ghc962  -> "ghc-9.6.2-release"
           Ghc961  -> "ghc-9.6.1-release"
           Ghc947  -> "ghc-9.4.7-release"
