@@ -1025,7 +1025,8 @@ applyPatchHadrianStackYaml ghcFlavor resolver = do
       config'' = if ghcSeries ghcFlavor < GHC_9_4
                      then config'
                      else
-                         -- HMS.insert "allow-newer" (toJSON True) $
+                           -- Ignore 'hadrian.cabal' constraints.
+                           HMS.insert "allow-newer" (toJSON True) $
                            HMS.update (\_ -> Just (toJSON resolver')) "resolver" config'
   Y.encodeFile hadrianStackYaml config''
 
@@ -1071,6 +1072,8 @@ indent :: [String] -> [String]
 indent = map ("    " ++)
 indent2 :: [String] -> [String]
 indent2 = indent . indent
+indent3 :: [String] -> [String]
+indent3 = indent . indent  . indent
 withCommas :: Data.List.NonEmpty.NonEmpty String -> Data.List.NonEmpty.NonEmpty String
 withCommas ms = Data.List.NonEmpty.fromList $ reverse (Data.List.NonEmpty.head ms' : map (++ ",") (Data.List.NonEmpty.tail ms'))
   where
@@ -1134,11 +1137,11 @@ baseBounds = \case
     Ghc962   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
 
     -- base-4.19.0.0, ghc-prim-0.11.0
-    Ghc981 -- e.g. "9.7.20230119"
-              -- (c.f. 'rts/include/ghc-version.h'')
+    Ghc981 -- e.g. "9.8.1.20221009"
+              -- (c.f. 'rts/include/ghc-version.h')
       -> "base >= 4.17.0.0 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
-    GhcMaster -- e.g. "9.7.20230119"
-              -- (c.f. 'rts/include/ghc-version.h'')
+    GhcMaster -- e.g. "9.9.20230119"
+              -- (c.f. 'rts/include/ghc-version.h')
       -> "base >= 4.17.0.0 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
 
 -- Common build dependencies.
@@ -1152,7 +1155,7 @@ commonBuildDepends ghcFlavor =
        | ghcSeries ghcFlavor >= GHC_9_8  = [
            "ghc-prim > 0.2 && < 0.12"
          , "containers >= 0.6.2.1 && < 0.7"
-         , "bytestring >= 0.11.4 && < 0.12"
+         , "bytestring >= 0.11.4 && < 0.13"
          , "time >= 1.4 && < 1.13"
          ]
        | ghcSeries ghcFlavor >= GHC_9_6  = [
@@ -1239,11 +1242,11 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
     -}
     let hsSrcDirs = ghcLibHsSrcDirs False ghcFlavor lib
     writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
-        [ "cabal-version: 2.0"
+        [ "cabal-version: 3.0"
         , "build-type: Simple"
         , "name: ghc-lib"
         , "version: 0.1.0"
-        , "license: BSD3"
+        , "license: BSD-3-Clause"
         , "license-file: LICENSE"
         , "category: Development"
         , "author: The GHC Team and Digital Asset"
@@ -1331,11 +1334,11 @@ generateGhcLibParserCabal :: GhcFlavor -> [String] -> IO ()
 generateGhcLibParserCabal ghcFlavor customCppOpts = do
     (lib, _bin, parserModules, _) <- libBinParserLibModules ghcFlavor
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
-        [ "cabal-version: 2.0"
+        [ "cabal-version: 3.0"
         , "build-type: Simple"
         , "name: ghc-lib-parser"
         , "version: 0.1.0"
-        , "license: BSD3"
+        , "license: BSD-3-Clause"
         , "license-file: LICENSE"
         , "category: Development"
         , "author: The GHC Team and Digital Asset"
@@ -1378,15 +1381,13 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         [ "    build-tool-depends: alex:alex >= 3.1, happy:happy >= 1.19.4"
         , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
-        [ "    c-sources:" ] ++
-        -- List CMM sources here. Go figure! (see
-        -- https://twitter.com/smdiehl/status/1231958702141431808?s=20
-        -- and
-        -- https://gist.github.com/sdiehl/0491596cd7faaf95503e4b7066cffe62).
-        indent2 [ "libraries/ghc-heap/cbits/HeapPrim.cmm" ] ++
-        -- We hardcode these because the inclusion of 'keepCAFsForGHCi'
-        -- causes issues in ghci see
-        -- https://github.com/digital-asset/ghc-lib/issues/27
+        [ "    if impl(ghc >= 9.2.2) "] ++ -- cabal >= 3.6.0
+        [ "      cmm-sources:" ] ++
+        indent3 [ "libraries/ghc-heap/cbits/HeapPrim.cmm" ] ++
+        [ "    else" ] ++
+        [ "      c-sources:" ] ++
+        indent3 [ "libraries/ghc-heap/cbits/HeapPrim.cmm" ] ++
+        [  "    c-sources:" ] ++
         indent2 [ "compiler/cbits/genSym.c" ] ++
         indent2 [ "compiler/cbits/cutils.c" | ghcSeries ghcFlavor >= GHC_9_0 ] ++
         indent2 [ "compiler/parser/cutils.c" | ghcSeries ghcFlavor < GHC_9_0 ] ++
