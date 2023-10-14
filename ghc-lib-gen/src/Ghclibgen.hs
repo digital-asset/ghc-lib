@@ -1135,14 +1135,15 @@ baseBounds = \case
     -- base-4.18.0
     Ghc961   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
     Ghc962   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
+    Ghc963   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
 
     -- base-4.19.0.0, ghc-prim-0.11.0
     Ghc981 -- e.g. "9.8.1.20221009"
               -- (c.f. 'rts/include/ghc-version.h')
-      -> "base >= 4.17.0.0 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
+      -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
     GhcMaster -- e.g. "9.9.20230119"
               -- (c.f. 'rts/include/ghc-version.h')
-      -> "base >= 4.17.0.0 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
+      -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
 
 -- Common build dependencies.
 commonBuildDepends :: GhcFlavor -> Data.List.NonEmpty.NonEmpty String
@@ -1160,7 +1161,7 @@ commonBuildDepends ghcFlavor =
          ]
        | ghcSeries ghcFlavor >= GHC_9_6  = [
            "ghc-prim > 0.2 && < 0.11"
-         , "containers >= 0.5 && < 0.7"
+         , "containers >= 0.6.2.1 && < 0.7"
          , "bytestring >= 0.11.3 && < 0.12"
          , "time >= 1.4 && < 1.13"
          ]
