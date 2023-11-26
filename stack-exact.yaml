@@ -13,7 +13,8 @@ ghc-options:
   # Try to be quick.
   "$everything": -O0 -j
 
-allow-newer: true # aeson's bounds on th-abstraction
+# when you need it you need it
+#   allow-newer: true # e.g aeson's bounds on th-abstraction
 
 extra-deps:
 # Dependencies of ghc-lib-parser & ghc-lib:
@@ -26,11 +27,11 @@ extra-deps:
 - uniplate-1.6.13
 - unordered-containers-0.2.19.1
 # See https://gitlab.haskell.org/ghc/ghc/-/issues/23683
-- unix-2.8.2.1
-- directory-1.3.7.1
+- unix-2.8.3.0
+- directory-1.3.8.1
 - process-1.6.18.0
 - filepath-1.4.100.4
-- hpc-0.6.2.0
+- hpc-0.7.0.0
 - Win32-2.13.4.0
 - time-1.12.2
 - semaphore-compat-1.0.0
@@ -59,26 +60,26 @@ extra-deps:
 - bitvec-1.1.5.0
 - vector-algorithms-0.9.0.1
 - bifunctors-5.6.1
-- splitmix-0.1.0.4
+- splitmix-0.1.0.5
 - distributive-0.6.2.1
 - comonad-5.0.8
-- aeson-2.2.0.0
-- integer-conversion-0.1
+- aeson-2.2.1.0
+- integer-conversion-0.1.0.1
 - network-uri-2.6.4.2
 - th-compat-0.1.4
 - text-iso8601-0.1
-- text-2.0.1
-- parsec-3.1.16.1
+- text-2.1
+- parsec-3.1.17.0
 - attoparsec-0.14.4
 - conduit-1.3.5
 - data-fix-0.3.2
 - dlist-1.0
 - foldable1-classes-compat-0.1
-- indexed-traversable-0.1.2.1
+- indexed-traversable-0.1.3
 - indexed-traversable-instances-0.1.1.2
 - libyaml-0.1.2
 - mono-traversable-1.0.15.3
-- primitive-0.8.0.0
+- primitive-0.9.0.0
 - prettyprinter-1.7.1
 - prettyprinter-ansi-terminal-1.1.3
 - resourcet-1.3.0
@@ -92,8 +93,8 @@ extra-deps:
 - these-1.2
 - time-compat-1.9.6.1
 - unliftio-core-0.2.1.0
-- uuid-types-1.0.5
-- vector-0.13.0.0
+- uuid-types-1.0.5.1
+- vector-0.13.1.0
 - vector-stream-0.1.0.0
 - yaml-0.11.11.2
 - witherable-0.4.2
@@ -102,9 +103,9 @@ extra-deps:
 - call-stack-0.4.0
 - tasty-1.5
 - tasty-hunit-0.10.1
-- typed-process-0.2.11.0
+- typed-process-0.2.11.1
 - utf8-string-1.0.2
-- async-2.2.4
+- async-2.2.5
 - temporary-1.3
 - unbounded-delays-0.1.1.1
 - unix-compat-0.7
