@@ -208,11 +208,17 @@ isNegated (HsApp _ (L _ (HsVar _ (L _ id))) _) = id == idNot
 isNegated (HsPar _ (L _ e)) = isNegated e
 isNegated _ = False
 
-#else
-   {- defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) -}
+#elif defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8)
 
 isNegated (HsApp _ (L _ (HsVar _ (L _ id))) _) = id == idNot
-isNegated (HsPar _ _ (L _ e) _) = isNegated e
+isNegated (HsPar _ _ (L _ e) _ ) = isNegated e
+isNegated _ = False
+
+#else
+{- defined (GHC_9_10) -}
+
+isNegated (HsApp _ (L _ (HsVar _ (L _ id))) _) = id == idNot
+isNegated (HsPar _ (L _ e)) = isNegated e
 isNegated _ = False
 
 #endif
