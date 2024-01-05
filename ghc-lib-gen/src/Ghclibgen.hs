@@ -31,6 +31,7 @@ module Ghclibgen (
   , applyPatchHadrianStackYaml
   , applyPatchTemplateHaskellLanguageHaskellTHSyntax
   , applyPatchTemplateHaskellCabal
+  , applyPatchFptoolsAlex
   , generatePrerequisites
   , mangleCSymbols
   , generateGhcLibCabal
@@ -913,20 +914,24 @@ applyPatchStage ghcFlavor =
       (writeFile file . replace "STAGE >= 2" "0" . replace "STAGE < 2" "1")
       =<< readFile' file
 
--- When autoconf > 1.69 (brew has started installing version 1.71)
--- '_AC_PROG_CC_C99' is invalid but it appears 'AC_PROG_CC_C99' works
--- ok in its place (see
--- https://gitlab.haskell.org/ghc/ghc/-/issues/19189). Warning
--- messages suggest that in fact 'AC_PROG_CC_C99' should now be
--- spelled 'AC_PROG_CC' but I'm not going that far as the former is
--- how it currently is on HEAD.
 applyPatchAclocal :: GhcFlavor -> IO ()
 applyPatchAclocal ghcFlavor =
   when (ghcFlavor <= Ghc901) $
     writeFile aclocalm4 .
-      replace "_AC_PROG_CC_C99" "AC_PROG_CC_C99"
+      replace "_AC_PROG_CC_C99" "AC_PROG_CC_C99" .
+      replace "\"$AlexCmd\" -v" "\"$AlexCmd\" -V"
     =<< readFile' aclocalm4
   where aclocalm4 = "aclocal.m4"
+
+applyPatchFptoolsAlex :: GhcFlavor -> IO ()
+applyPatchFptoolsAlex ghcFlavor = do
+  fptools_alex_exists <- doesFileExist fptools_alex_m4
+  when (fptools_alex_exists && ghcFlavor <= Ghc981) $
+    writeFile fptools_alex_m4 .
+      replace "\"$AlexCmd\" -v" "\"$AlexCmd\" -V"
+    =<< readFile' fptools_alex_m4
+  where
+    fptools_alex_m4 = "m4/fptools_alex.m4"
 
 {- The MonoLocalBinds extension in ghc-cabal.in was default enabled
    02-Sep-2020 in commit
@@ -979,8 +984,8 @@ applyPatchHadrianStackYaml ghcFlavor resolver = do
               ]] ++
         [ file | ghcSeries ghcFlavor >= GHC_9_8
           , file <- [
-                "unix-2.8.2.1"
-              , "directory-1.3.8.1"
+                "unix-2.8.5.0"
+              , "directory-1.3.8.2"
               , "process-1.6.18.0"
               , "filepath-1.4.100.4"
               , "Win32-2.13.4.0"
