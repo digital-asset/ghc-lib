@@ -56,7 +56,7 @@ data StackOptions = StackOptions
 data GhcFlavor = Da DaFlavor
                | GhcMaster String
                | Ghc981
-               | Ghc963 | Ghc962 | Ghc961
+               | Ghc964 | Ghc963 | Ghc962 | Ghc961
                | Ghc948 | Ghc947 | Ghc946 | Ghc945 | Ghc944 | Ghc943 | Ghc942 | Ghc941
                | Ghc928 | Ghc927 | Ghc926 | Ghc925 | Ghc924 | Ghc923 | Ghc922 | Ghc921
                | Ghc902 | Ghc901
@@ -75,7 +75,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "c7be0c680d96ba6209c86e509ab2682e5041a53d" -- 2024-01-04
+current = "c929f02bd0a1ff4c474ca18a03ac011d3394e291" -- 2024-01-09
 
 -- Command line argument generators.
 
@@ -92,6 +92,7 @@ stackResolverOpt = \case
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
     Ghc981 -> "--ghc-flavor ghc-9.8.1"
+    Ghc964 -> "--ghc-flavor ghc-9.6.4"
     Ghc963 -> "--ghc-flavor ghc-9.6.3"
     Ghc962 -> "--ghc-flavor ghc-9.6.2"
     Ghc961 -> "--ghc-flavor ghc-9.6.1"
@@ -161,6 +162,7 @@ genVersionStr flavor suffix =
       Da {}       -> "8.8.1"
       GhcMaster _ -> "0"
       Ghc981      -> "9.8.1"
+      Ghc964      -> "9.6.4"
       Ghc963      -> "9.6.3"
       Ghc962      -> "9.6.2"
       Ghc961      -> "9.6.1"
@@ -221,6 +223,7 @@ parseOptions = Options
    readFlavor :: Opts.ReadM GhcFlavor
    readFlavor = Opts.eitherReader $ \case
        "ghc-9.8.1" -> Right Ghc981
+       "ghc-9.6.4" -> Right Ghc964
        "ghc-9.6.3" -> Right Ghc963
        "ghc-9.6.2" -> Right Ghc962
        "ghc-9.6.1" -> Right Ghc961
@@ -629,6 +632,7 @@ buildDists
       branch :: GhcFlavor -> String
       branch = \case
           Ghc981  -> "ghc-9.8.1-release"
+          Ghc964  -> "ghc-9.6.4-release"
           Ghc963  -> "ghc-9.6.3-release"
           Ghc962  -> "ghc-9.6.2-release"
           Ghc961  -> "ghc-9.6.1-release"
