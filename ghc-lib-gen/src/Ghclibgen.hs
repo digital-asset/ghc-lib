@@ -32,6 +32,7 @@ module Ghclibgen (
   , applyPatchTemplateHaskellLanguageHaskellTHSyntax
   , applyPatchTemplateHaskellCabal
   , applyPatchFptoolsAlex
+  , applyPatchFpFindCxxStdLib
   , generatePrerequisites
   , mangleCSymbols
   , generateGhcLibCabal
@@ -919,7 +920,8 @@ applyPatchAclocal ghcFlavor =
   when (ghcFlavor <= Ghc901) $
     writeFile aclocalm4 .
       replace "_AC_PROG_CC_C99" "AC_PROG_CC_C99" .
-      replace "\"$AlexCmd\" -v" "\"$AlexCmd\" -V"
+      replace "\"$AlexCmd\" -v" "\"$AlexCmd\" -V" .
+      replace "if ! \"$CXX\"" "if ! eval \"$CXX\""
     =<< readFile' aclocalm4
   where aclocalm4 = "aclocal.m4"
 
@@ -932,6 +934,16 @@ applyPatchFptoolsAlex ghcFlavor = do
     =<< readFile' fptools_alex_m4
   where
     fptools_alex_m4 = "m4/fptools_alex.m4"
+
+applyPatchFpFindCxxStdLib :: GhcFlavor -> IO ()
+applyPatchFpFindCxxStdLib _ghcFlavor = do
+  fp_find_cxx_std_lib_exists <- doesFileExist fp_find_cxx_std_lib_m4
+  when fp_find_cxx_std_lib_exists $
+    writeFile fp_find_cxx_std_lib_m4 .
+      replace "if ! \"$CXX\"" "if ! eval \"$CXX\""
+    =<< readFile' fp_find_cxx_std_lib_m4
+  where
+    fp_find_cxx_std_lib_m4 = "m4/fp_find_cxx_std_lib.m4"
 
 {- The MonoLocalBinds extension in ghc-cabal.in was default enabled
    02-Sep-2020 in commit
