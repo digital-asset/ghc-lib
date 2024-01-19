@@ -30,6 +30,7 @@ module Ghclibgen (
   , applyPatchCmmParseNoImplicitPrelude
   , applyPatchHadrianStackYaml
   , applyPatchTemplateHaskellLanguageHaskellTHSyntax
+  , applyPatchTemplateHaskellLanguageHaskellTHSafe
   , applyPatchTemplateHaskellCabal
   , applyPatchFptoolsAlex
   , applyPatchFpFindCxxStdLib
@@ -401,6 +402,22 @@ calcLibModules ghcFlavor = do
       modules = [ replace "/" "." . dropSuffix ".hs" $ m | m <- strippedModulePaths, m /= "Main.hs" ]
 
   return $ nubSort modules
+
+applyPatchTemplateHaskellLanguageHaskellTHSafe :: GhcFlavor -> IO ()
+applyPatchTemplateHaskellLanguageHaskellTHSafe ghcFlavor = do
+  when (ghcSeries ghcFlavor > GHC_9_8) $ do
+    let files =
+          [
+            "libraries/template-haskell/Language/Haskell/TH/Ppr.hs"
+          , "libraries/template-haskell/Language/Haskell/TH.hs"
+          ]
+    forM_ files $
+      \ file ->
+        writeFile file .
+        replace
+          "{-# LANGUAGE Safe #-}"
+          ""
+        =<< readFile' file
 
 applyPatchTemplateHaskellLanguageHaskellTHSyntax :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellLanguageHaskellTHSyntax ghcFlavor = do
@@ -1309,6 +1326,7 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         [ "    build-tool-depends: alex:alex >= 3.1, happy:happy >= 1.19.4"
         , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
+        [ "        GHC2021" | ghcFlavor > Ghc981 ] ++
         [ "    hs-source-dirs:" ] ++
         indent2 hsSrcDirs ++
         [ "    autogen-modules:"
@@ -1401,6 +1419,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         [ "    build-tool-depends: alex:alex >= 3.1, happy:happy >= 1.19.4"
         , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
+        [ "        GHC2021" | ghcFlavor > Ghc981 ] ++
         [ "    if impl(ghc >= 9.2.2) "] ++ -- cabal >= 3.6.0
         [ "      cmm-sources:" ] ++
         indent3 [ "libraries/ghc-heap/cbits/HeapPrim.cmm" ] ++
