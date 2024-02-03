@@ -953,9 +953,9 @@ applyPatchFptoolsAlex ghcFlavor = do
     fptools_alex_m4 = "m4/fptools_alex.m4"
 
 applyPatchFpFindCxxStdLib :: GhcFlavor -> IO ()
-applyPatchFpFindCxxStdLib _ghcFlavor = do
+applyPatchFpFindCxxStdLib ghcFlavor = do
   fp_find_cxx_std_lib_exists <- doesFileExist fp_find_cxx_std_lib_m4
-  when fp_find_cxx_std_lib_exists $
+  when (fp_find_cxx_std_lib_exists && ghcFlavor <= Ghc981) $
     writeFile fp_find_cxx_std_lib_m4 .
       replace "if ! \"$CXX\"" "if ! eval \"$CXX\""
     =<< readFile' fp_find_cxx_std_lib_m4
