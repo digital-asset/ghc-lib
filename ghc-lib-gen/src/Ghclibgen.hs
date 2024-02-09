@@ -245,11 +245,14 @@ fingerprint ghcFlavor =
 
 cHeaders :: GhcFlavor -> [String]
 cHeaders ghcFlavor =
-   [ f | ghcSeries ghcFlavor > GHC_9_8, f <- ("rts/include/stg/MachRegs" </>) <$> ["arm32.h", "arm64.h", "loongarch64.h", "ppc.h", "riscv64.h", "s390x.h", "wasm32.h", "x86.h"] ] ++
-   [ f | ghcSeries ghcFlavor >= GHC_9_8, f <- [ "libraries/containers/containers/include/containers.h" ] ] ++
-   [ f | ghcSeries ghcFlavor >= GHC_9_4, f <- (("rts/include" </>) <$> ["ghcconfig.h", "ghcversion.h" ]) ++ (("compiler" </>) <$>[ "MachRegs.h", "CodeGen.Platform.h", "Bytecodes.h", "ClosureTypes.h", "FunTypes.h", "Unique.h", "ghc-llvm-version.h" ]) ] ++
-   [ f | ghcSeries ghcFlavor < GHC_9_4, f <- (("includes" </>)  <$> [ "MachDeps.h", "stg/MachRegs.h", "CodeGen.Platform.hs"]) ++ (("compiler" </>) <$> [ "Unique.h", "HsVersions.h" ]) ] ++
-   [ f | ghcSeries ghcFlavor < GHC_8_10, f <- ("compiler" </>) <$> [ "nativeGen/NCG.h", "utils/md5.h"] ]
+   [ f | series > GHC_9_8, f <- ("rts/include/stg/MachRegs" </>) <$> ["arm32.h", "arm64.h", "loongarch64.h", "ppc.h", "riscv64.h", "s390x.h", "wasm32.h", "x86.h"] ] ++
+   [ "libraries/containers/containers/include/containers.h" | series >= GHC_9_8 ] ++
+   [ "compiler" </> "ghc-llvm-version.h" | series >= GHC_9_4 && series <= GHC_9_8 ] ++
+   [ f | series >= GHC_9_4, f <- (("rts/include" </>) <$> ["ghcconfig.h", "ghcversion.h" ]) ++ (("compiler" </>) <$>[ "MachRegs.h", "CodeGen.Platform.h", "Bytecodes.h", "ClosureTypes.h", "FunTypes.h", "Unique.h" ]) ] ++
+   [ f | series < GHC_9_4, f <- (("includes" </>)  <$> [ "MachDeps.h", "stg/MachRegs.h", "CodeGen.Platform.hs"]) ++ (("compiler" </>) <$> [ "Unique.h", "HsVersions.h" ]) ] ++
+   [ f | series < GHC_8_10, f <- ("compiler" </>) <$> [ "nativeGen/NCG.h", "utils/md5.h"] ]
+  where
+    series = ghcSeries ghcFlavor
 
 parsersAndLexers :: GhcFlavor -> [FilePath]
 parsersAndLexers ghcFlavor = ("compiler" </>) <$>
