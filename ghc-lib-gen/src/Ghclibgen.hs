@@ -958,7 +958,7 @@ applyPatchFptoolsAlex ghcFlavor = do
 applyPatchFpFindCxxStdLib :: GhcFlavor -> IO ()
 applyPatchFpFindCxxStdLib ghcFlavor = do
   fp_find_cxx_std_lib_exists <- doesFileExist fp_find_cxx_std_lib_m4
-  when (fp_find_cxx_std_lib_exists && ghcFlavor <= Ghc981) $
+  when (fp_find_cxx_std_lib_exists && ghcFlavor <= Ghc982) $
     writeFile fp_find_cxx_std_lib_m4 .
       replace "if ! \"$CXX\"" "if ! eval \"$CXX\""
     =<< readFile' fp_find_cxx_std_lib_m4
@@ -1177,9 +1177,8 @@ baseBounds = \case
     Ghc964   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
 
     -- base-4.19.0.0, ghc-prim-0.11.0
-    Ghc981 -- e.g. "9.8.1.20221009"
-              -- (c.f. 'rts/include/ghc-version.h')
-      -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
+    Ghc981 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
+    Ghc982 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
     GhcMaster -- e.g. "9.9.20230119"
               -- (c.f. 'rts/include/ghc-version.h')
       -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
@@ -1329,7 +1328,7 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         [ "    build-tool-depends: alex:alex >= 3.1, happy:happy >= 1.19.4"
         , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
-        [ "        GHC2021" | ghcFlavor > Ghc981 ] ++
+        [ "        GHC2021" | ghcFlavor > Ghc982 ] ++
         [ "    hs-source-dirs:" ] ++
         indent2 hsSrcDirs ++
         [ "    autogen-modules:"
@@ -1422,7 +1421,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         [ "    build-tool-depends: alex:alex >= 3.1, happy:happy >= 1.19.4"
         , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
-        [ "        GHC2021" | ghcFlavor > Ghc981 ] ++
+        [ "        GHC2021" | ghcFlavor > Ghc982 ] ++
         [ "    if impl(ghc >= 9.2.2) "] ++ -- cabal >= 3.6.0
         [ "      cmm-sources:" ] ++
         indent3 [ "libraries/ghc-heap/cbits/HeapPrim.cmm" ] ++
