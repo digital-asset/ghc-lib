@@ -1049,8 +1049,9 @@ applyPatchHadrianStackYaml ghcFlavor resolver = do
     -- https://gitlab.haskell.org/ghc/ghc/-/issues/21634.
     --
     -- The idea is to replace the resolver with whatever is prevailing
-    -- (or ghc-9.4.5 if that's not possible).
-      resolverDefault = "lts-21.3" -- ghc-9.4.5
+    -- (or ghc-9.6.4 if that's not possible).
+    -- 9.6 since 2024/02/26 d9d69e127a735cfc3dbe8b1f7dc96a06fe654c3e
+      resolverDefault = "lts-22.12" -- ghc-9.6.4
       -- The resolver has to curate packages so resolvers of the form
       -- ghc-x.y.z won't do.
       resolver' = case fromMaybe resolverDefault resolver of
