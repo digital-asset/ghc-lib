@@ -1178,11 +1178,12 @@ baseBounds = \case
     Ghc964   -> "base >= 4.16.1 && < 4.19" -- [ghc-9.2.2, ghc-9.8.1)
 
     -- base-4.19.0.0, ghc-prim-0.11.0
-    Ghc981 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
-    Ghc982 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
+    Ghc981 -> "base >= 4.17 && < 4.19.1" -- [ghc-9.4.1, ghc-9.8.2)
+    -- base-4.19.1.0
+    Ghc982 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
     GhcMaster -- e.g. "9.9.20230119"
-              -- (c.f. 'rts/include/ghc-version.h')
-      -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.8.1)
+              -- (c.f. 'rts/include/ghcversion.h')
+      -> "base >= 4.18 && < 4.20" -- [ghc-9.6.1, ghc-9.10.1)
 
 -- Common build dependencies.
 commonBuildDepends :: GhcFlavor -> Data.List.NonEmpty.NonEmpty String
