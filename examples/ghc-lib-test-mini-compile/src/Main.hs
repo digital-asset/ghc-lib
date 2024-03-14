@@ -1,4 +1,4 @@
--- Copyright (c) 2019 - 2023, Digital Asset (Switzerland) GmbH and/or
+-- Copyright (c) 2019 - 2024, Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
@@ -9,6 +9,10 @@ module Main (main) where
 
 -- We use 0.x for HEAD
 #if !MIN_VERSION_ghc_lib(1,0,0)
+#  define GHC_9_12
+#  include "ghc-lib-parser/ghc-9.12/Main.hs"
+#  include "ghc-lib/ghc-9.12/Main.hs"
+#elif MIN_VERSION_ghc_lib(9,10,0)
 #  define GHC_9_10
 #  include "ghc-lib-parser/ghc-9.10/Main.hs"
 #  include "ghc-lib/ghc-9.10/Main.hs"
@@ -215,7 +219,7 @@ fakeLlvmConfig :: LlvmConfig
 fakeLlvmConfig = LlvmConfig [] []
 
 #else
-   {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10 )-}
+   {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12) -}
 
 #endif
 
@@ -387,7 +391,7 @@ fakeSettings = Settings {
     platform =  genericPlatform
 
 #else
-   {- defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) -}
+   {- defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12) -}
 
     sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
