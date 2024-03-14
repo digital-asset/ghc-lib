@@ -138,6 +138,7 @@ ghcLibHsSrcDirs forDepends ghcFlavor lib =
               GHC_9_6 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghci" ]
               GHC_9_8 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform" ]
               GHC_9_10 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci" ]
+              GHC_9_12 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci" ]
   in sortDiffListByLength all $ Set.fromList [ dir | not forDepends, dir <- exclusions ]
 
 -- File path constants.
@@ -948,7 +949,7 @@ applyPatchAclocal ghcFlavor =
 applyPatchFptoolsAlex :: GhcFlavor -> IO ()
 applyPatchFptoolsAlex ghcFlavor = do
   fptools_alex_exists <- doesFileExist fptools_alex_m4
-  when (fptools_alex_exists && ghcFlavor <= Ghc981) $
+  when (fptools_alex_exists && ghcFlavor <= Ghc982) $
     writeFile fptools_alex_m4 .
       replace "\"$AlexCmd\" -v" "\"$AlexCmd\" -V"
     =<< readFile' fptools_alex_m4
@@ -1181,9 +1182,11 @@ baseBounds = \case
     Ghc981 -> "base >= 4.17 && < 4.19.1" -- [ghc-9.4.1, ghc-9.8.2)
     -- base-4.19.1.0
     Ghc982 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
-    GhcMaster -- e.g. "9.9.20230119"
+    -- base-4.20.0.0
+    Ghc9101 -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
+    GhcMaster -- e.g. "9.11.20230119"
               -- (c.f. 'rts/include/ghcversion.h')
-      -> "base >= 4.18 && < 4.20" -- [ghc-9.6.1, ghc-9.10.1)
+      -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
 
 -- Common build dependencies.
 commonBuildDepends :: GhcFlavor -> Data.List.NonEmpty.NonEmpty String
@@ -1193,6 +1196,12 @@ commonBuildDepends ghcFlavor =
     -- base
     base = [ baseBounds ghcFlavor ]
     specific
+       | ghcSeries ghcFlavor >= GHC_9_10  = [
+           "ghc-prim > 0.2 && < 0.12"
+         , "containers >= 0.6.2.1 && < 0.7"
+         , "bytestring >= 0.11.4 && < 0.13"
+         , "time >= 1.4 && < 1.13"
+         ]
        | ghcSeries ghcFlavor >= GHC_9_8  = [
            "ghc-prim > 0.2 && < 0.12"
          , "containers >= 0.6.2.1 && < 0.7"

@@ -1,4 +1,4 @@
--- Copyright (c) 2019 - 2023, Digital Asset (Switzerland) GmbH and/or
+-- Copyright (c) 2019 - 2024, Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
@@ -14,6 +14,9 @@ module Main (main) where
 
 -- We use 0.x for HEAD
 #if !MIN_VERSION_ghc_lib_parser(1,0,0)
+#  define GHC_9_12
+#  include "ghc-9.12/Main.hs"
+#elif MIN_VERSION_ghc_lib_parser(9,10,0)
 #  define GHC_9_10
 #  include "ghc-9.10/Main.hs"
 #elif MIN_VERSION_ghc_lib_parser(9,8,0)
@@ -80,7 +83,7 @@ parse filename flags str = unP GHC.Parser.parseModule parseState
     parseState = initParserState (initParserOpts flags) buffer location
 
 #else
-      {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) -}
+{- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12) -}
 
 parse :: String -> DynFlags -> String -> ParseResult (Located (HsModule GhcPs))
 parse filename flags str = unP GHC.Parser.parseModule parseState
@@ -176,7 +179,7 @@ parsePragmasIntoDynFlags flags filepath str =
      where
        sDocs = [ showSDoc flags msg | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs ]
 #else
-    {- defined (GHC_9_8) || defined (GHC_9_10) -}
+    {- defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12) -}
 
   catchErrors $ do
     let (_, opts) = getOptions (initParserOpts flags)
@@ -215,7 +218,7 @@ isNegated (HsPar _ _ (L _ e) _ ) = isNegated e
 isNegated _ = False
 
 #else
-{- defined (GHC_9_10) -}
+{- defined (GHC_9_10) || defined (GHC_9_12) -}
 
 isNegated (HsApp _ (L _ (HsVar _ (L _ id))) _) = id == idNot
 isNegated (HsPar _ (L _ e)) = isNegated e
@@ -236,7 +239,7 @@ analyzeExpr flags (L loc expr) = do
     _ -> return ()
 
 #else
-   {- defined (GHC_9_2) || defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) -}
+   {- defined (GHC_9_2) || defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12) -}
 
 analyzeExpr :: DynFlags -> LocatedA (HsExpr GhcPs) -> IO ()
 analyzeExpr flags (L loc expr) = do
@@ -265,7 +268,7 @@ analyzeModule :: DynFlags -> Located HsModule -> IO ()
 analyzeModule flags (L _ modu) = sequence_ [analyzeExpr flags e | e <- universeBi modu]
 
 #else
-   {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10 )-}
+  {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10 ) || defined (GHC_9_12) -}
 
 analyzeModule :: DynFlags -> Located (HsModule GhcPs) -> IO ()
 analyzeModule flags (L _ modu) = sequence_ [analyzeExpr flags e | e <- universeBi modu]
@@ -425,7 +428,7 @@ main = do
       printMessages logger opts msgs
 
 #else
-   {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_910) -}
+   {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12) -}
 
 main :: IO ()
 main = do
@@ -464,7 +467,7 @@ fakeLlvmConfig :: LlvmConfig
 fakeLlvmConfig = LlvmConfig [] []
 
 #else
-   {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10 )-}
+   {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10 ) || defined (GHC_9_12) -}
 
 #endif
 
@@ -626,7 +629,7 @@ fakeSettings = Settings {
     platform=genericPlatform
 
 #else
-   {- defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) -}
+   {- defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12) -}
 
     sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings

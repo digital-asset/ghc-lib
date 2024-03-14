@@ -53,6 +53,7 @@ data GhcVersion = DaGhc881
                 | Ghc963
                 | Ghc981
                 | Ghc982
+                | Ghc9101
                 | GhcMaster
   deriving (Eq, Ord, Typeable)
 
@@ -61,6 +62,7 @@ instance Show GhcVersion where
 
 showGhcVersion :: GhcVersion -> String
 showGhcVersion = \case
+    Ghc9101 -> "ghc-9.10.1"
     Ghc982 -> "ghc-9.8.2"
     Ghc981 -> "ghc-9.8.1"
     Ghc961 -> "ghc-9.6.1"
@@ -98,6 +100,8 @@ readFlavor :: String -> Maybe GhcFlavor
 readFlavor = (GhcFlavor <$>) . \case
     -- HEAD
     "ghc-master" -> Just GhcMaster
+    -- ghc-9.10
+    "ghc-9.10.1" -> Just Ghc9101
     -- ghc-9.8
     "ghc-9.8.2" -> Just Ghc982
     "ghc-9.8.1" -> Just Ghc981
