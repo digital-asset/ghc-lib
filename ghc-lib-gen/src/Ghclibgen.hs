@@ -1336,8 +1336,8 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         , "        build-depends: Win32"
         , "    build-depends:" ] ++
         indent2 (Data.List.NonEmpty.toList (withCommas (ghcLibBuildDepends ghcFlavor)))++
-        [ "    build-tool-depends: alex:alex >= 3.1 && < 3.5.1.0, happy:happy >= 1.19.4"
-        , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
+        [ "    build-tool-depends: alex:alex >= 3.1, " ++ "happy:happy > " ++ if ghcSeries ghcFlavor < GHC_8_10 then "1.19" else "1.20" ] ++
+        [ "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
         [ "        GHC2021" | ghcFlavor > Ghc982 ] ++
         [ "    hs-source-dirs:" ] ++
@@ -1429,8 +1429,8 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         , "        build-depends: Win32"
         , "    build-depends:" ] ++
         indent2 (Data.List.NonEmpty.toList (withCommas (ghcLibParserBuildDepends ghcFlavor))) ++
-        [ "    build-tool-depends: alex:alex >= 3.1 && < 3.5.1.0, happy:happy >= 1.19.4"
-        , "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
+        [ "    build-tool-depends: alex:alex >= 3.1, " ++ "happy:happy > " ++ if ghcSeries ghcFlavor < GHC_8_10 then "1.19" else "1.20" ] ++
+        [ "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
         [ "        GHC2021" | ghcFlavor > Ghc982 ] ++
         [ "    if impl(ghc >= 9.2.2) "] ++ -- cabal >= 3.6.0
