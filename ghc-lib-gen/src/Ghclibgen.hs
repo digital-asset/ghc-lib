@@ -1198,40 +1198,46 @@ commonBuildDepends ghcFlavor =
     specific
        | ghcSeries ghcFlavor >= GHC_9_10  = [
            "ghc-prim > 0.2 && < 0.12"
-         , "containers >= 0.6.2.1 && < 0.7"
+         , "containers >= 0.6.2.1 && < 0.8"
          , "bytestring >= 0.11.4 && < 0.13"
          , "time >= 1.4 && < 1.13"
+         , "filepath >= 1 && < 1.6"
          ]
        | ghcSeries ghcFlavor >= GHC_9_8  = [
            "ghc-prim > 0.2 && < 0.12"
          , "containers >= 0.6.2.1 && < 0.7"
          , "bytestring >= 0.11.4 && < 0.13"
          , "time >= 1.4 && < 1.13"
+         , "filepath >= 1 && < 1.5"
          ]
        | ghcSeries ghcFlavor >= GHC_9_6  = [
            "ghc-prim > 0.2 && < 0.11"
          , "containers >= 0.6.2.1 && < 0.7"
          , "bytestring >= 0.11.3 && < 0.12"
          , "time >= 1.4 && < 1.13"
+         , "filepath >= 1 && < 1.5"
          ]
        | ghcSeries ghcFlavor >= GHC_9_4  = [
            "ghc-prim > 0.2 && < 0.10"
          , "containers >= 0.5 && < 0.7"
          , "bytestring >= 0.10 && < 0.12"
          , "time >= 1.4 && < 1.13"
+         , "filepath >= 1 && < 1.5"
          ]
         | ghcSeries ghcFlavor >= GHC_9_2 = [
-            "ghc-prim > 0.2 && < 0.9"
-          , "containers >= 0.5 && < 0.7"
-          , "bytestring >= 0.9 && < 0.12"
-          , "time >= 1.4 && < 1.12"
-          ]
+           "ghc-prim > 0.2 && < 0.9"
+         , "containers >= 0.5 && < 0.7"
+         , "bytestring >= 0.9 && < 0.12"
+         , "time >= 1.4 && < 1.12"
+         , "filepath >= 1 && < 1.5"
+         ]
         | otherwise = [
-            "ghc-prim > 0.2 && < 0.8"
-          , "containers >= 0.5 && < 0.7"
-          , "bytestring >= 0.9 && < 0.11"
-          , "time >= 1.4 && < 1.10"
-          ]
+           "ghc-prim > 0.2 && < 0.8"
+         , "containers >= 0.5 && < 0.7"
+         , "bytestring >= 0.9 && < 0.11"
+         , "time >= 1.4 && < 1.10"
+         , "filepath >= 1 && < 1.5"
+         ]
     conditional
         | ghcSeries ghcFlavor >= GHC_9_0 = [
             "exceptions == 0.10.*"
@@ -1242,7 +1248,6 @@ commonBuildDepends ghcFlavor =
     -- shared for all flavors
     shared = [
         "binary == 0.8.*"
-      , "filepath >= 1 && < 1.5"
       , "directory >= 1 && < 1.4"
       , "array >= 0.1 && < 0.6"
       , "deepseq >= 1.4 && < 1.6"
