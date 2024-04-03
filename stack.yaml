@@ -1,5 +1,10 @@
 resolver: nightly-2023-09-21 # ghc-9.6.2
 
+extra-deps:
+  - Cabal-3.4.0.0
+allow-newer: true
+allow-newer-deps: [ghc-lib-gen]
+
 ghc-options:
   # try and speed up recompilation on the CI server
   "$everything": -O0 -j
