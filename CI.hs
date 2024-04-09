@@ -76,7 +76,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "237194ceb4f227e9f69e8e6f913afa0496d2a583" -- 2024-03-26
+current = "1324b8626aeb4dc2d6a04f7605d307ef13d1e0e9" -- 2024-04-05
 
 -- Command line argument generators.
 
@@ -443,10 +443,10 @@ buildDists
     verifyConstraint "ghc-lib-parser == " version "examples/ghc-lib-test-mini-compile/ghc-lib-test-mini-compile.cabal"
     verifyConstraint "ghc-lib == " version "examples/ghc-lib-test-mini-compile/ghc-lib-test-mini-compile.cabal"
 
-    stack "sdist . --ignore-check --tar-dir=."
-    stack "sdist examples/ghc-lib-test-utils --tar-dir=."
-    stack "sdist examples/ghc-lib-test-mini-hlint --tar-dir=."
-    stack "sdist examples/ghc-lib-test-mini-compile --tar-dir=."
+    cmd "cabal sdist -o ."
+    cmd "(cd examples/ghc-lib-test-utils && cabal sdist -o ../..)"
+    cmd "(cd examples/ghc-lib-test-mini-hlint && cabal sdist -o ../..)"
+    cmd "(cd examples/ghc-lib-test-mini-compile && cabal sdist -o ../..)"
 
     when noBuilds exitSuccess
 

@@ -1,47 +1,46 @@
-cabal-version:       2.0
-name:                ghc-lib-gen
-version:             0.1.0.0
-synopsis:            Cabal file generator for GHC as a library
-description:         Generate a cabal file for a subset of GHC for use as a library.
-homepage:            https://github.com/digital-asset/ghc-lib
-license:             BSD3
-x-license:           BSD-3-Clause OR Apache-2.0
-license-file:        LICENSE
-author:              Shayne Fletcher (shayne.fletcher@digitalasset.com)
-maintainer:          Shayne Fletcher (shayne.fletcher@digitalasset.com)
-copyright:           Digital Asset 2018-2019
-category:            Development
-build-type:          Simple
+cabal-version: 3.4
+name: ghc-lib-gen
+version: 0.1.0.0
+synopsis: Cabal file generator for GHC as a library
+description: Generate a cabal file for a subset of GHC for use as a library.
+homepage:https://github.com/digital-asset/ghc-lib
+license: BSD-3-Clause
+x-license: BSD-3-Clause OR Apache-2.0
+license-file: LICENSE
+author: Shayne Fletcher (shayne@shaynefletcher.org)
+maintainer: Shayne Fletcher (shayne@shaynefletcher.org)
+copyright: Digital Asset 2018-2024
+category: Development
+build-type: Simple
+
+common base
+  default-language: Haskell2010
+  ghc-options:
+    -Wall -Wincomplete-record-updates
+    -Wredundant-constraints -Widentities
+    -Wno-simplifiable-class-constraints
+  build-depends: base >= 4.10 && < 5
+
+common lib
+  import: base
+  build-depends:
+    extra >=1.6, optparse-applicative,
+    filepath >=1.4, containers, directory,
+    yaml, aeson, text, unordered-containers
 
 library
-  build-depends:     base >=4.10
-                     , process >=1.6
-                     , filepath >=1.4
-                     , containers
-                     , directory
-                     , optparse-applicative
-                     , bytestring
-                     , yaml
-                     , aeson
-                     , text
-                     , unordered-containers
-                     , extra >=1.6
-  hs-source-dirs:    ghc-lib-gen/src
-  exposed-modules:   Ghclibgen
-                     GhclibgenFlavor
-                     GhclibgenOpts
-  other-modules:     Paths_ghc_lib_gen
-  autogen-modules:   Paths_ghc_lib_gen
-  default-language:  Haskell2010
+  import: lib
+  hs-source-dirs: ghc-lib-gen/src
+  exposed-modules: Ghclibgen
+                   GhclibgenFlavor
+                   GhclibgenOpts
+  other-modules: Paths_ghc_lib_gen
+  autogen-modules: Paths_ghc_lib_gen
+
+common cli
+  import: base
+  build-depends: directory, optparse-applicative, ghc-lib-gen
 
 executable ghc-lib-gen
-  main-is:           ghc-lib-gen/src/Main.hs
-  build-depends:     base >=4.10
-                     , process >=1.6
-                     , filepath >=1.4
-                     , containers
-                     , directory
-                     , optparse-applicative
-                     , extra >=1.6
-                     , ghc-lib-gen
-  default-language:  Haskell2010
+  import: cli
+  main-is: ghc-lib-gen/src/Main.hs
