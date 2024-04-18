@@ -431,7 +431,8 @@ applyPatchTemplateHaskellLanguageHaskellTHSyntax ghcFlavor = do
   -- Doing that produces values of type `Name` from the
   -- template-haskell package rather than values of type `Name` as
   -- defined in `Language.Haskell.TH.Syntax`.
-  when (ghcSeries ghcFlavor >= GHC_9_8) $ do
+  let series = ghcSeries ghcFlavor
+  when (series >= GHC_9_8 && series <= GHC_9_10) $ do
     writeFile "libraries/template-haskell/Language/Haskell/TH/Syntax.hs" .
       replace
         "{-# LANGUAGE TemplateHaskellQuotes #-}"
@@ -475,7 +476,7 @@ applyPatchTemplateHaskellLanguageHaskellTHSyntax ghcFlavor = do
 
 applyPatchTemplateHaskellCabal :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellCabal ghcFlavor = do
-  when (ghcSeries ghcFlavor == GHC_9_4) $ do
+  when (series == GHC_9_4) $ do
     -- In
     -- https://gitlab.haskell.org/ghc/ghc/-/commit/b151b65ec469405dcf25f9358e7e99bcc8c2b3ac
     -- (2022/7/05) a temporary change is made to provide for vendoring
@@ -514,7 +515,27 @@ applyPatchTemplateHaskellCabal ghcFlavor = do
           "        filepath"
       =<< readFile' "libraries/template-haskell/template-haskell.cabal.in"
 
-  when (ghcSeries ghcFlavor >= GHC_9_6) $ do
+
+  when (series > GHC_9_10) $ do
+    writeFile "libraries/template-haskell/template-haskell.cabal.in" .
+      replace
+        (unlines [
+          "    other-modules:"
+        , "      System.FilePath"
+        , "      System.FilePath.Posix"
+        , "      System.FilePath.Windows"
+        , "    hs-source-dirs: @SourceRoot@/vendored-filepath @SourceRoot@"
+        , "    default-extensions:"
+        , "      ImplicitPrelude"
+        ])
+        (unlines[
+            "  build-depends:"
+          , "    filepath"
+          , "  hs-source-dirs: ."
+        ])
+      =<< readFile' "libraries/template-haskell/template-haskell.cabal.in"
+
+  when (series >= GHC_9_6 && series <= GHC_9_10) $ do
     -- As of
     -- https://gitlab.haskell.org/ghc/ghc/-/commit/9034fadaf641c3821db6e066faaf1a62ed236c13
     -- GHC always relies on vendored filepath sources
@@ -540,6 +561,9 @@ applyPatchTemplateHaskellCabal ghcFlavor = do
           , "    hs-source-dirs: ."
         ])
         =<< readFile' "libraries/template-haskell/template-haskell.cabal.in"
+
+  where
+    series = ghcSeries ghcFlavor
 
 -- Avoid duplicate symbols with HSghc-heap (see issue
 -- https://github.com/digital-asset/ghc-lib/issues/210).
@@ -1364,6 +1388,7 @@ generateCppOpts ghcFlavor customCppOpts =
       ghcStageDef ghcFlavor
     , ghciDef ghcFlavor
     , ghcInGhciDef ghcFlavor
+    , bootstrapTh ghcFlavor
     ] ++
   customCppOpts
   where
@@ -1371,6 +1396,7 @@ generateCppOpts ghcFlavor customCppOpts =
     ghciDef ghcFlavor = if ghcSeries ghcFlavor > GHC_8_10 then "" else "-DGHCI"
     ghcInGhciDef = \case f | ghcSeries f >= GHC_9_2 -> ""; _ -> "-DGHC_IN_GHCI"
     ghcStageDef = \case f | ghcSeries f >= GHC_8_10 -> ""; _ -> "-DSTAGE=2"
+    bootstrapTh = \case f | ghcSeries f <= GHC_9_10 -> ""; _ -> "-DBOOTSTRAP_TH"
 
 -- Perform a set of specific substitutions on the given list of files.
 performExtraFilesSubstitutions :: GhcFlavor -> (GhcFlavor -> [FilePath]) -> [FilePath]
