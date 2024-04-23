@@ -57,7 +57,7 @@ data GhcFlavor = Da DaFlavor
                | GhcMaster String
                | Ghc9101
                | Ghc982 | Ghc981
-               | Ghc964 | Ghc963 | Ghc962 | Ghc961
+               | Ghc965 | Ghc964 | Ghc963 | Ghc962 | Ghc961
                | Ghc948 | Ghc947 | Ghc946 | Ghc945 | Ghc944 | Ghc943 | Ghc942 | Ghc941
                | Ghc928 | Ghc927 | Ghc926 | Ghc925 | Ghc924 | Ghc923 | Ghc922 | Ghc921
                | Ghc902 | Ghc901
@@ -95,6 +95,7 @@ ghcFlavorOpt = \case
     Ghc9101 -> "--ghc-flavor ghc-9.10.1"
     Ghc982 -> "--ghc-flavor ghc-9.8.2"
     Ghc981 -> "--ghc-flavor ghc-9.8.1"
+    Ghc965 -> "--ghc-flavor ghc-9.6.5"
     Ghc964 -> "--ghc-flavor ghc-9.6.4"
     Ghc963 -> "--ghc-flavor ghc-9.6.3"
     Ghc962 -> "--ghc-flavor ghc-9.6.2"
@@ -167,6 +168,7 @@ genVersionStr flavor suffix =
       Ghc9101     -> "9.10.1"
       Ghc982      -> "9.8.2"
       Ghc981      -> "9.8.1"
+      Ghc965      -> "9.6.5"
       Ghc964      -> "9.6.4"
       Ghc963      -> "9.6.3"
       Ghc962      -> "9.6.2"
@@ -230,6 +232,7 @@ parseOptions = Options
        "ghc-9.10.1" -> Right Ghc9101
        "ghc-9.8.2" -> Right Ghc982
        "ghc-9.8.1" -> Right Ghc981
+       "ghc-9.6.5" -> Right Ghc965
        "ghc-9.6.4" -> Right Ghc964
        "ghc-9.6.3" -> Right Ghc963
        "ghc-9.6.2" -> Right Ghc962
@@ -641,6 +644,7 @@ buildDists
           Ghc9101  -> "ghc-9.10" -- track this (not -alpha): it gets backports
           Ghc982  -> "ghc-9.8.2-release"
           Ghc981  -> "ghc-9.8.1-release"
+          Ghc965  -> "ghc-9.6.5-release"
           Ghc964  -> "ghc-9.6.4-release"
           Ghc963  -> "ghc-9.6.3-release"
           Ghc962  -> "ghc-9.6.2-release"
