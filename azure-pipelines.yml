@@ -43,24 +43,24 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-master      | ghc-9.6.4  |
-    # | macOS   | ghc-master      | ghc-9.6.4  |
-    # | windows | ghc-master      | ghc-9.6.4  |
+    # | linux   | ghc-master      | ghc-9.6.5  |
+    # | macOS   | ghc-master      | ghc-9.6.5  |
+    # | windows | ghc-master      | ghc-9.6.5  |
     # +---------+-----------------+------------+
-    linux-ghc-master-9.6.4:
+    linux-ghc-master-9.6.5:
       image: "ubuntu-22.04"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.6.4"
+      resolver: "ghc-9.6.5"
       stack-yaml: "stack-exact.yaml"
-    mac-ghc-master-9.6.4:
+    mac-ghc-master-9.6.5:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.6.4"
+      resolver: "ghc-9.6.5"
       stack-yaml: "stack-exact.yaml"
-    windows-ghc-master-9.6.4:
+    windows-ghc-master-9.6.5:
       image: "windows-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.6.4"
+      resolver: "ghc-9.6.5"
       stack-yaml: "stack-exact.yaml"
 
     # +---------+-----------------+------------+
