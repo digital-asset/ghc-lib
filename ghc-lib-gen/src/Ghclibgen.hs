@@ -30,7 +30,6 @@ module Ghclibgen (
   , applyPatchCmmParseNoImplicitPrelude
   , applyPatchHadrianStackYaml
   , applyPatchTemplateHaskellLanguageHaskellTHSyntax
-  , applyPatchTemplateHaskellLanguageHaskellTHSafe
   , applyPatchTemplateHaskellCabal
   , applyPatchFptoolsAlex
   , applyPatchFpFindCxxStdLib
@@ -406,22 +405,6 @@ calcLibModules ghcFlavor = do
       modules = [ replace "/" "." . dropSuffix ".hs" $ m | m <- strippedModulePaths, m /= "Main.hs" ]
 
   return $ nubSort modules
-
-applyPatchTemplateHaskellLanguageHaskellTHSafe :: GhcFlavor -> IO ()
-applyPatchTemplateHaskellLanguageHaskellTHSafe ghcFlavor = do
-  when (ghcSeries ghcFlavor > GHC_9_8) $ do
-    let files =
-          [
-            "libraries/template-haskell/Language/Haskell/TH/Ppr.hs"
-          , "libraries/template-haskell/Language/Haskell/TH.hs"
-          ]
-    forM_ files $
-      \ file ->
-        writeFile file .
-        replace
-          "{-# LANGUAGE Safe #-}"
-          ""
-        =<< readFile' file
 
 applyPatchTemplateHaskellLanguageHaskellTHSyntax :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellLanguageHaskellTHSyntax ghcFlavor = do
@@ -1352,6 +1335,7 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         , "    exposed: False"
         , "    include-dirs:"
         ] ++ indent2 (ghcLibIncludeDirs ghcFlavor) ++
+        [ "    ghc-options: -fno-safe-haskell" ] ++
         [ "    if flag(threaded-rts)"
         , "        ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "        cc-options: -DTHREADED_RTS"
@@ -1447,6 +1431,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         , "    default-language:   Haskell2010"
         , "    exposed: False"
         , "    include-dirs:"] ++ indent2 (ghcLibParserIncludeDirs ghcFlavor) ++
+        [ "    ghc-options: -fno-safe-haskell" ] ++
         [ "    if flag(threaded-rts)"
         , "        ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "        cc-options: -DTHREADED_RTS"
