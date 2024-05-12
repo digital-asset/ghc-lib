@@ -1,0 +1,34 @@
+name: ghc-lib-runhaskell-ghc-9.10.1
+on:
+  push:
+jobs:
+  ghc-9-10:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macos, windows]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: haskell-actions/setup@v2
+        with:
+          enable-stack: true
+          stack-version: 'latest'
+      - name: Upgrade stack from git
+        shell: bash
+        run: |-
+          stack upgrade --git
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          which stack
+          stack --version
+      - name: Install build tools
+        run: brew install automake
+        if: matrix.os == 'macos'
+      - name: Configure
+        shell: bash
+        # e.g. Don't recursively delete '.stack-work' (`stack clean --full`)
+        run: echo "GHCLIB_AZURE='1'" >> $GITHUB_ENV
+      - name: Run CI.hs
+        shell: bash
+        run: stack runhaskell --stack-yaml stack-exact.yaml --resolver ghc-9.8.2 --package extra --package optparse-applicative CI.hs -- --stack-yaml stack-exact.yaml --resolver ghc-9.8.2 --ghc-flavor "ghc-9.10.1"

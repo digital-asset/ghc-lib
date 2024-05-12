@@ -14,7 +14,8 @@ ghc-options:
   "$everything": -O0 -j
 
 # when you need it you need it
-#   allow-newer: true # e.g aeson's bounds on th-abstraction
+allow-newer: true # e.g aeson's bounds on th-abstraction
+# right now it's enabled because of testing with ghc-9.10
 
 extra-deps:
 # Dependencies of ghc-lib-parser & ghc-lib:
@@ -41,7 +42,7 @@ extra-deps:
 - ansi-wl-pprint-1.0.2
 - clock-0.8.4
 - colour-2.3.6
-- extra-1.7.14
+- extra-1.7.16
 - mintty-0.1.4
 - optparse-applicative-0.18.1.0
 - transformers-compat-0.7.2
@@ -89,14 +90,20 @@ extra-deps:
 - semigroupoids-6.0.0.1
 - strict-0.5
 - tagged-0.8.8
-- text-short-0.1.5
+# - text-short-0.1.5
+- github: shayne-fletcher/text-short
+  commit: "qualify-foldl"
 - th-abstraction-0.6.0.0
 - these-1.2
 - time-compat-1.9.6.1
 - unliftio-core-0.2.1.0
 - uuid-types-1.0.5.1
 - vector-0.13.1.0
-- vector-stream-0.1.0.0
+# - vector-stream-0.1.0.0
+- github: shayne-fletcher/vector
+  commit: "qualify-foldl"
+  subdirs:
+  - vector-stream
 - yaml-0.11.11.2
 - witherable-0.4.2
 - QuickCheck-2.14.3
