@@ -1,4 +1,4 @@
--- Copyright (c) 2019-2023, Digital Asset (Switzerland) GmbH and/or
+-- Copyright (c) 2019-20234 Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
@@ -76,7 +76,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "167a56a003106ed84742e3970cc2189ffb98b0c7" -- 2024-05-02
+current = "1012e8aae57d1e61ea2f3b39ebe7bfa1ebe2dc0e" -- 2024-05-10
 
 -- Command line argument generators.
 
@@ -641,7 +641,7 @@ buildDists
 
       branch :: GhcFlavor -> String
       branch = \case
-          Ghc9101  -> "ghc-9.10" -- track this (not -alpha): it gets backports
+          Ghc9101 -> "ghc-9.10.1-release"
           Ghc982  -> "ghc-9.8.2-release"
           Ghc981  -> "ghc-9.8.1-release"
           Ghc965  -> "ghc-9.6.5-release"

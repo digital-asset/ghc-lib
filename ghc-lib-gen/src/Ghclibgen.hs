@@ -1,4 +1,4 @@
--- Copyright (c) 2019-2023, Digital Asset (Switzerland) GmbH and/or
+-- Copyright (c) 2019-2024, Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
@@ -1330,9 +1330,10 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         , "    manual: True"
         , "    description: Pass -DTHREADED_RTS to the C toolchain"
         ] ++
-        [ "library"
-        , "    default-language:   Haskell2010"
-        , "    exposed: False"
+        [ "library" ] ++
+        [ "    default-language: Haskell2010" | ghcFlavor < Ghc9101 ] ++
+        [ "    default-language: GHC2021" | ghcFlavor >= Ghc9101 ] ++
+        [ "    exposed: False"
         , "    include-dirs:"
         ] ++ indent2 (ghcLibIncludeDirs ghcFlavor) ++
         [ "    ghc-options: -fno-safe-haskell" ] ++
@@ -1353,7 +1354,6 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         [ "    build-tool-depends: alex:alex >= 3.1, " ++ "happy:happy > " ++ if ghcSeries ghcFlavor < GHC_8_10 then "1.19" else "1.20" ] ++
         [ "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
-        [ "        GHC2021" | ghcFlavor > Ghc982 ] ++
         [ "    hs-source-dirs:" ] ++
         indent2 hsSrcDirs ++
         [ "    autogen-modules:"
@@ -1427,9 +1427,10 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         , "  manual: True"
         , "  description: Pass -DTHREADED_RTS to the C toolchain"
         ] ++
-        [ "library"
-        , "    default-language:   Haskell2010"
-        , "    exposed: False"
+        [ "library" ] ++
+        [ "    default-language: Haskell2010" | ghcFlavor < Ghc9101 ] ++
+        [ "    default-language: GHC2021" | ghcFlavor >= Ghc9101 ] ++
+        [ "    exposed: False"
         , "    include-dirs:"] ++ indent2 (ghcLibParserIncludeDirs ghcFlavor) ++
         [ "    ghc-options: -fno-safe-haskell" ] ++
         [ "    if flag(threaded-rts)"
@@ -1451,7 +1452,6 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         [ "    build-tool-depends: alex:alex >= 3.1, " ++ "happy:happy > " ++ if ghcSeries ghcFlavor < GHC_8_10 then "1.19" else "1.20" ] ++
         [ "    other-extensions:" ] ++ indent2 (askField lib "other-extensions:") ++
         [ "    default-extensions:" ] ++ indent2 (askField lib "default-extensions:") ++
-        [ "        GHC2021" | ghcFlavor > Ghc982 ] ++
         [ "    if impl(ghc >= 9.2.2) "] ++ -- cabal >= 3.6.0
         [ "      cmm-sources:" ] ++
         indent3 [ "libraries/ghc-heap/cbits/HeapPrim.cmm" ] ++
