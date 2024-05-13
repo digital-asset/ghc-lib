@@ -1,4 +1,4 @@
--- Copyright (c) 2019-20234 Digital Asset (Switzerland) GmbH and/or
+-- Copyright (c) 2019-2024 Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
@@ -76,7 +76,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "1012e8aae57d1e61ea2f3b39ebe7bfa1ebe2dc0e" -- 2024-05-10
+current = "413217ba04b999313949b570a9386ca36e8ac82c" -- 2024-05-13
 
 -- Command line argument generators.
 
