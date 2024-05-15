@@ -15,13 +15,25 @@ jobs:
         with:
           enable-stack: true
           stack-version: 'latest'
+      - name: Configure PATH (unix)
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+        shell: bash
+        if: matrix.os == 'ubuntu' || matrix.os == 'macos'
+      - name: Configure PATH (windows)
+        run: echo "C:\\Users\\runneradmin\\AppData\\Roaming\\local\\bin" >> $GITHUB_PATH
+        shell: bash
+        if: matrix.os == 'windows'
+      - name: Print diagnostic PATH
+        shell: bash
+        run: echo "$PATH"
       - name: Upgrade stack from git
         shell: bash
+        run: stack upgrade --git
+      - name: Print diagnostic stack
+        shell: bash
         run: |-
-          stack upgrade --git
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          which stack
-          stack --version
+          echo "wich stack: $(which stack)"
+          echo "stack-version: $(stack --version)"
       - name: Install build tools
         run: brew install automake
         if: matrix.os == 'macos'
@@ -31,4 +43,4 @@ jobs:
         run: echo "GHCLIB_AZURE='1'" >> $GITHUB_ENV
       - name: Run CI.hs
         shell: bash
-        run: stack runhaskell --stack-yaml stack-exact.yaml --resolver ghc-9.8.2 --package extra --package optparse-applicative CI.hs -- --stack-yaml stack-exact.yaml --resolver ghc-9.8.2 --ghc-flavor "ghc-9.10.1"
+        run: stack runhaskell --stack-yaml stack-exact.yaml --resolver ghc-9.10.1 --package extra --package optparse-applicative CI.hs -- --stack-yaml stack-exact.yaml --resolver ghc-9.10.1 --ghc-flavor "ghc-9.10.1"
