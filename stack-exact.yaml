@@ -65,6 +65,7 @@ extra-deps:
 - distributive-0.6.2.1
 - comonad-5.0.8
 - aeson-2.2.1.0
+- th-abstraction-0.6.0.0
 - integer-conversion-0.1.0.1
 - network-uri-2.6.4.2
 - th-compat-0.1.5
@@ -90,20 +91,13 @@ extra-deps:
 - semigroupoids-6.0.0.1
 - strict-0.5
 - tagged-0.8.8
-# - text-short-0.1.5
-- github: shayne-fletcher/text-short
-  commit: "qualify-foldl"
-- th-abstraction-0.6.0.0
+- text-short-0.1.6
 - these-1.2
 - time-compat-1.9.6.1
 - unliftio-core-0.2.1.0
 - uuid-types-1.0.5.1
 - vector-0.13.1.0
-# - vector-stream-0.1.0.0
-- github: shayne-fletcher/vector
-  commit: "qualify-foldl"
-  subdirs:
-  - vector-stream
+- vector-stream-0.1.0.1
 - yaml-0.11.11.2
 - witherable-0.4.2
 - QuickCheck-2.14.3
