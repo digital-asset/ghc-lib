@@ -29,6 +29,7 @@ module Ghclibgen (
   , applyPatchNoMonoLocalBinds
   , applyPatchCmmParseNoImplicitPrelude
   , applyPatchHadrianStackYaml
+  , applyPatchGhcInternalEventWindowsHsc
   , applyPatchTemplateHaskellLanguageHaskellTHSyntax
   , applyPatchTemplateHaskellCabal
   , applyPatchFptoolsAlex
@@ -82,6 +83,7 @@ cabalFileLibraries ghcFlavor = [
 -- C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: GhcFlavor -> [FilePath]
 ghcLibParserIncludeDirs ghcFlavor = (case ghcSeries ghcFlavor of
+  series | series > GHC_9_10 -> [ "libraries/ghc-internal/include", "rts/include", "rts/include/stg" ]
   series | series > GHC_9_8 -> [ "rts/include", "rts/include/stg" ]
   series | series >= GHC_9_4 -> [ "rts/include" ] -- ghcconfig.h, ghcversion.h
   series | series < GHC_9_4 -> [ "includes" ] -- ghcconfig.h, MachDeps.h, MachRegs.h, CodeGen.Platform.hs
@@ -137,7 +139,7 @@ ghcLibHsSrcDirs forDepends ghcFlavor lib =
               GHC_9_6 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghci" ]
               GHC_9_8 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform" ]
               GHC_9_10 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci" ]
-              GHC_9_12 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci" ]
+              GHC_9_12 -> [ "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src" ]
   in sortDiffListByLength all $ Set.fromList [ dir | not forDepends, dir <- exclusions ]
 
 -- File path constants.
@@ -294,6 +296,7 @@ calcParserModules ghcFlavor = do
 
   genPlaceholderModules "compiler"
   genPlaceholderModules "libraries/ghc-heap"
+  genPlaceholderModules "libraries/ghc-internal"
   genPlaceholderModules "libraries/ghci"
   when (flavor >= GHC_9_4) $ do
     copyFile "compiler/GHC/Parser.hs-boot" (placeholderModulesDir </> "GHC/Parser.hs-boot")
@@ -406,6 +409,29 @@ calcLibModules ghcFlavor = do
 
   return $ nubSort modules
 
+applyPatchGhcInternalEventWindowsHsc :: GhcFlavor -> IO ()
+applyPatchGhcInternalEventWindowsHsc ghcFlavor = do
+  let series = ghcSeries ghcFlavor
+  when (series > GHC_9_10) $ do
+    writeFile "libraries/ghc-internal/src/GHC/Internal/Event/Windows.hsc" .
+      replace
+        (unlines [
+            "#if defined(DEBUG_TRACE)"
+          , "import {-# SOURCE #-} GHC.Internal.Debug.Trace (traceEventIO)"
+          , "#endif" ]
+        )
+        "" .
+      replace
+        (unlines [
+              "#if defined(DEBUG)"
+            , "import GHC.Internal.Foreign.C"
+            , "import GHC.Internal.System.Posix.Internals (c_write)"
+            , "import GHC.Internal.Conc.Sync (myThreadId)"
+            , "#endif" ]
+        )
+        ""
+      =<< readFile' "libraries/ghc-internal/src/GHC/Internal/Event/Windows.hsc"
+
 applyPatchTemplateHaskellLanguageHaskellTHSyntax :: GhcFlavor -> IO ()
 applyPatchTemplateHaskellLanguageHaskellTHSyntax ghcFlavor = do
   -- Revert the changes that result from the commit:
@@ -507,14 +533,14 @@ applyPatchTemplateHaskellCabal ghcFlavor = do
         , "      System.FilePath"
         , "      System.FilePath.Posix"
         , "      System.FilePath.Windows"
-        , "    hs-source-dirs: @SourceRoot@/vendored-filepath @SourceRoot@"
+        , "    hs-source-dirs: ./vendored-filepath ."
         , "    default-extensions:"
         , "      ImplicitPrelude"
         ])
         (unlines[
-            "  build-depends:"
-          , "    filepath"
-          , "  hs-source-dirs: ."
+            "    build-depends:"
+          , "      filepath"
+          , "    hs-source-dirs: ."
         ])
       =<< readFile' "libraries/template-haskell/template-haskell.cabal.in"
 
@@ -1282,10 +1308,16 @@ libBinParserLibModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String], [String])
 libBinParserLibModules ghcFlavor = do
     lib <- mapM readCabalFile (cabalFileLibraries ghcFlavor)
     bin <- readCabalFile cabalFileBinary
-    parserModules <- calcParserModules ghcFlavor
-    libModules <- calcLibModules ghcFlavor
-
+    parserModules <- filterGhcInternalModules <$> calcParserModules ghcFlavor
+    libModules <- filterGhcInternalModules <$> calcLibModules ghcFlavor
     return (lib, [bin], parserModules, libModules)
+    where
+      keptGhcInternalModules :: [String]
+      keptGhcInternalModules = [ "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax", "GHC.Internal.TH.Ppr", "GHC.Internal.TH.PprLib", "GHC.Internal.TH.Lib.Map" ]
+
+      filterGhcInternalModules :: [String] -> [String]
+      filterGhcInternalModules mods =
+        [ f | f <- mods, not ("GHC.Internal" `isPrefixOf` f) || (f `elem` keptGhcInternalModules) ]
 
 -- Produces a ghc-lib Cabal file.
 generateGhcLibCabal :: GhcFlavor -> [String] -> IO ()
@@ -1303,7 +1335,8 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
               (Set.fromList parserModules))
         ```
     -}
-    let hsSrcDirs = ghcLibHsSrcDirs False ghcFlavor lib
+    let hsSrcDirs = replace ["libraries/ghc-boot-th/../ghc-internal/src"] [] (ghcLibHsSrcDirs False ghcFlavor lib)
+    let includeDirs = replace ["libraries/ghc-internal/include"] [] (ghcLibIncludeDirs ghcFlavor)
     writeFile "ghc-lib.cabal" $ unlines $ map trimEnd $
         [ "cabal-version: 3.0"
         , "build-type: Simple"
@@ -1335,7 +1368,7 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         [ "    default-language: GHC2021" | ghcFlavor >= Ghc9101 ] ++
         [ "    exposed: False"
         , "    include-dirs:"
-        ] ++ indent2 (ghcLibIncludeDirs ghcFlavor) ++
+        ] ++ indent2 includeDirs ++
         [ "    ghc-options: -fno-safe-haskell" ] ++
         [ "    if flag(threaded-rts)"
         , "        ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
@@ -1400,6 +1433,8 @@ performExtraFilesSubstitutions ghcFlavor files =
 generateGhcLibParserCabal :: GhcFlavor -> [String] -> IO ()
 generateGhcLibParserCabal ghcFlavor customCppOpts = do
     (lib, _bin, parserModules, _) <- libBinParserLibModules ghcFlavor
+    let hsSrcDirs = replace ["libraries/ghc-boot-th/../ghc-internal/src"] ["libraries/ghc-internal/src"] (ghcLibParserHsSrcDirs False ghcFlavor lib)
+    let includeDirs = replace ["libraries/ghc-internal/include"] [] (ghcLibParserIncludeDirs ghcFlavor)
     writeFile "ghc-lib-parser.cabal" $ unlines $ map trimEnd $
         [ "cabal-version: 3.0"
         , "build-type: Simple"
@@ -1431,7 +1466,8 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         [ "    default-language: Haskell2010" | ghcFlavor < Ghc9101 ] ++
         [ "    default-language: GHC2021" | ghcFlavor >= Ghc9101 ] ++
         [ "    exposed: False"
-        , "    include-dirs:"] ++ indent2 (ghcLibParserIncludeDirs ghcFlavor) ++
+        , "    include-dirs:"
+        ] ++ indent2 includeDirs ++
         [ "    ghc-options: -fno-safe-haskell" ] ++
         [ "    if flag(threaded-rts)"
         , "        ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
@@ -1464,7 +1500,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         indent2 [ "compiler/parser/cutils.c" | ghcSeries ghcFlavor < GHC_9_0 ] ++
         indent2 [ "compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor `elem` [Ghc926, Ghc927, Ghc928, Ghc945, Ghc946, Ghc947, Ghc948] || ghcSeries ghcFlavor >= GHC_9_6 ] ++
         [ "    hs-source-dirs:" ] ++
-        indent2 (ghcLibParserHsSrcDirs False ghcFlavor lib) ++
+        indent2 hsSrcDirs ++
         [ "    autogen-modules:" ] ++
         indent2 [ x | ghcSeries ghcFlavor >= GHC_9_0, x <- [ "GHC.Parser.Lexer", "GHC.Parser" ] ] ++
         indent2 [ x |  ghcSeries ghcFlavor < GHC_9_0, x <- [ "Lexer", "Parser" ] ] ++
