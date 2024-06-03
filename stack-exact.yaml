@@ -13,8 +13,6 @@ ghc-options:
   # Try to be quick.
   "$everything": -O0 -j
 
-allow-newer: true # for unliftio-core => base<4.20
-
 extra-deps:
 # Dependencies of ghc-lib-parser & ghc-lib:
 - alex-3.5.1.0
