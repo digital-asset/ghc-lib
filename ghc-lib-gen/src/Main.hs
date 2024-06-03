@@ -32,6 +32,7 @@ ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts resolve
         applyPatchStage ghcFlavor
         applyPatchHaddockHs ghcFlavor
         applyPatchNoMonoLocalBinds ghcFlavor
+        applyPatchGhcInternalEventWindowsHsc ghcFlavor
         applyPatchTemplateHaskellLanguageHaskellTHSyntax ghcFlavor
         generateGhcLibParserCabal ghcFlavor cppOpts
       Ghclib -> do
