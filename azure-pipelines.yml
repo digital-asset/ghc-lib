@@ -112,29 +112,6 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-9.8.2       | ghc-9.6.4  |
-    # | macOS   | ghc-9.8.2       | ghc-9.6.4  |
-    # | windows | ghc-9.8.2       | ghc-9.6.4  |
-    # +---------+-----------------+------------+
-    linux-ghc-9.8.2-9.6.4:
-      image: "ubuntu-22.04"
-      mode: "--ghc-flavor ghc-9.8.2"
-      resolver: "ghc-9.6.4"
-      stack-yaml: "stack-exact.yaml"
-    mac-ghc-9.8.2-9.6.4:
-      image: "macOS-latest"
-      mode: "--ghc-flavor ghc-9.8.2"
-      resolver: "ghc-9.6.4"
-      stack-yaml: "stack-exact.yaml"
-    windows-ghc-9.8.2-9.6.4:
-      image: "windows-latest"
-      mode: "--ghc-flavor ghc-9.8.2"
-      resolver: "ghc-9.6.4"
-      stack-yaml: "stack-exact.yaml"
-
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavor  | GHC        |
-    # +=========+=================+============+
     # | linux   | da-ghc-8.8.1    | ghc-8.8.1  |
     # | windows | da-ghc-8.8.1    | ghc-8.8.1  |
     # | macOS   | da-ghc-8.8.1    | ghc-8.8.1  |
