@@ -14,7 +14,7 @@ jobs:
       - uses: haskell-actions/setup@v2
         with:
           enable-stack: true
-          stack-version: 'latest'
+          stack-version: '2.15.7'
       - name: Configure PATH (unix)
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
         shell: bash
@@ -26,9 +26,9 @@ jobs:
       - name: Print diagnostic PATH
         shell: bash
         run: echo "$PATH"
-      - name: Upgrade stack from git
-        shell: bash
-        run: stack upgrade --git
+      # - name: Upgrade stack from git
+      #   shell: bash
+      #   run: stack upgrade --git
       - name: Print diagnostic stack
         shell: bash
         run: |-
