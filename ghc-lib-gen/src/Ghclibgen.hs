@@ -1531,21 +1531,36 @@ generatePrerequisites ghcFlavor = do
   -- If building happy in the next step, the configure it does
   -- requires some versions of alex and happy pre-exist. We make sure
   -- of this in CI.hs.
-  system_ "stack --stack-yaml hadrian/stack.yaml build --only-dependencies"
-  system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./boot"
-  system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c \"./configure --enable-tarballs-autodownload\""
+  -- system_ "stack --stack-yaml hadrian/stack.yaml build --only-dependencies"
+  -- system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./boot"
+  -- system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c \"./configure --enable-tarballs-autodownload\""
+  -- withCurrentDirectory "hadrian" $ do
+  --   -- No need to specify a stack.yaml here, we are in the hadrian
+  --   -- directory itself.
+  --   system_ "stack build --no-library-profiling"
+  --   system_ $ unwords $ [
+  --           "stack exec hadrian --"
+  --         , "--directory=.."
+  --         , "--build-root=ghc-lib"
+  --       ] ++
+  --       [ "--bignum=native" | ghcSeries ghcFlavor >= GHC_9_0 ] ++
+  --       [ "--integer-simple" | ghcSeries ghcFlavor < GHC_9_0 ] ++
+  --       ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) (dataFiles ghcFlavor)
+
+  system_ "bash -c ./boot"
+  system_ "bash -c \"./configure --enable-tarballs-autodownload\""
   withCurrentDirectory "hadrian" $ do
-    -- No need to specify a stack.yaml here, we are in the hadrian
-    -- directory itself.
-    system_ "stack build --no-library-profiling"
+    system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal update\""
+    system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal build exe:hadrian\""
     system_ $ unwords $ [
-            "stack exec hadrian --"
+            "bash -c \"unset GHC_PACKAGE_PATH && cabal run exe:hadrian --"
           , "--directory=.."
           , "--build-root=ghc-lib"
         ] ++
         [ "--bignum=native" | ghcSeries ghcFlavor >= GHC_9_0 ] ++
         [ "--integer-simple" | ghcSeries ghcFlavor < GHC_9_0 ] ++
-        ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) (dataFiles ghcFlavor)
+        ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) (dataFiles ghcFlavor) ++
+        ["\""]
 
 -- Given an Hsc, Alex, or Happy file, generate a placeholder module
 -- with the same module imports.
