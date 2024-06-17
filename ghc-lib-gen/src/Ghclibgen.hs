@@ -28,7 +28,7 @@ module Ghclibgen (
   , applyPatchStage
   , applyPatchNoMonoLocalBinds
   , applyPatchCmmParseNoImplicitPrelude
-  , applyPatchHadrianStackYaml
+  , applyPatchHadrianCabalProject
   , applyPatchGhcInternalEventWindowsHsc
   , applyPatchTemplateHaskellLanguageHaskellTHSyntax
   , applyPatchTemplateHaskellCabal
@@ -41,12 +41,14 @@ module Ghclibgen (
 ) where
 
 import Control.Exception (handle)
-import Control.Monad
+import Control.Monad.Extra
+import System.Exit (ExitCode(..))
 import System.Process.Extra
 import System.FilePath hiding ((</>), normalise, dropTrailingPathSeparator)
 import System.FilePath.Posix ((</>), normalise, dropTrailingPathSeparator) -- Make sure we generate / on all platforms.
 import System.Directory
 import System.Directory.Extra
+import System.Info.Extra (isWindows)
 import System.IO.Error (isEOFError)
 import System.IO.Extra
 import Data.List.Extra hiding (find)
@@ -58,13 +60,6 @@ import qualified Data.List.NonEmpty
 
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Data.Aeson.Types (parse, Result(..))
-#if MIN_VERSION_aeson(2, 0, 2)
-import Data.Aeson.KeyMap (toHashMap)
-#endif
-import qualified Data.Yaml as Y
-import Data.Yaml (ToJSON(..), (.:?), (.!=))
-import qualified Data.HashMap.Strict as HMS
 
 import GhclibgenFlavor
 
@@ -298,19 +293,44 @@ calcParserModules ghcFlavor = do
   genPlaceholderModules "libraries/ghc-heap"
   genPlaceholderModules "libraries/ghc-internal"
   genPlaceholderModules "libraries/ghci"
-  when (flavor >= GHC_9_4) $ do
-    copyFile "compiler/GHC/Parser.hs-boot" (placeholderModulesDir </> "GHC/Parser.hs-boot")
+
+  whenM (doesDirectoryExist "compiler/") $ do
+    files <- filter ((`elem` [".hs-boot"]) . takeExtension) <$> listFilesRecursive "compiler/"
+    forM_ files $ \file -> do
+      let p = fromJust (stripPrefix "compiler/" file)
+          new_p =  placeholderModulesDir </> p
+          dir = System.FilePath.takeDirectory new_p
+      createDirectoryIfMissing True dir
+      copyFile file new_p
+  whenM (doesDirectoryExist "libraries/ghc-internal/src/") $ do
+    files <- filter ((`elem` [".hs-boot"]) . takeExtension) <$> listFilesRecursive "libraries/ghc-internal/src/"
+    forM_ files $ \file -> do
+      let p = fromJust (stripPrefix "libraries/ghc-internal/src/" file)
+          new_p =  placeholderModulesDir </> p
+          dir = System.FilePath.takeDirectory new_p
+      createDirectoryIfMissing True dir
+      copyFile file new_p
+
   let rootModulePath = placeholderModulesDir </> "Main.hs"
   copyFile ("../ghc-lib-gen/ghc-lib-parser" </> show flavor </> "Main.hs") rootModulePath
+
+  semaphoreCompatBootExists <- (== ExitSuccess) . fst <$> systemOutput "bash -c \"ghc-pkg list | grep semaphore\""
+  when (not semaphoreCompatBootExists && flavor >= GHC_9_8) $
+    system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal install --lib semaphore-compat-1.0.0 --force-reinstalls\""
+
+  ghcVersion <- ("ghc-" ++) <$> systemOutput_ "bash -c \"echo -n $(ghc --numeric-version)\""
+  home <- systemOutput_ "bash -c \"echo -n $HOME\""
+  let cabalPackageDb =
+        if isWindows then
+          "/c/cabal/store" </> ghcVersion </> "package.db"
+        else
+          home </> ".cabal/store" </> ghcVersion </> "package.db"
 
   let includeDirs = map ("-I" ++ ) (ghcLibParserIncludeDirs ghcFlavor)
       hsSrcDirs = ghcLibParserHsSrcDirs True ghcFlavor lib
       hsSrcIncludes = map ("-i" ++ ) (placeholderModulesDir : hsSrcDirs)
       cmd = unwords $
-        [ "stack exec" ] ++
-        [ "--package exceptions" | flavor == GHC_9_0 ] ++
-        [ "--stack-yaml hadrian/stack.yaml" ] ++
-        [ "-- ghc" ] ++
+        [ "ghc" ] ++
         [ "-optP -DGHCI" | ghcSeries ghcFlavor < GHC_8_10 ] ++
         [ "-optP -DSTAGE=2" | ghcSeries ghcFlavor < GHC_8_10 ] ++
         [ "-optP -DGHC_IN_GHCI" | ghcSeries ghcFlavor < GHC_9_2 ] ++
@@ -324,11 +344,26 @@ calcParserModules ghcFlavor = do
         , "-package base"
         ] ++
         [ "-package exceptions" | flavor == GHC_9_0 ] ++
+        [ flag |
+          flavor >= GHC_9_8,
+          not (semaphoreCompatBootExists || isWindows),
+          flag <-  [
+              "-ignore-package os-string"
+            , "-package filepath"
+            , "-package unix"
+            ]
+        ] ++
+        ["-package semaphore-compat" | flavor >= GHC_9_8] ++
         hsSrcIncludes ++
         [ rootModulePath ]
+      cmd' =
+        if semaphoreCompatBootExists || isWindows then
+          cmd
+        else
+          "bash -c \"GHC_PACKAGE_PATH=" ++ cabalPackageDb ++ ": " ++ cmd ++ "\""
   putStrLn "# Generating 'ghc/.parser-depends'..."
-  putStrLn $ "\n\n# Running: " ++ cmd
-  system_ cmd
+  putStrLn $ "\n\n# Running: " ++ cmd'
+  system_ cmd'
 
   buf <- readFile' ".parser-depends"
   -- The idea here is harvest from lines like
@@ -360,15 +395,21 @@ calcLibModules ghcFlavor = do
   let rootModulePath = placeholderModulesDir </> "Main.hs"
   copyFile ("../ghc-lib-gen/ghc-lib" </> show flavor </> "Main.hs") rootModulePath
 
+  semaphoreCompatBootExists <- (== ExitSuccess) . fst <$> systemOutput "bash -c \"ghc-pkg list | grep semaphore\""
+
+  ghcVersion <- ("ghc-" ++) <$> systemOutput_ "bash -c \"echo -n $(ghc --numeric-version)\""
+  home <- systemOutput_ "bash -c \"echo -n $HOME\""
+  let cabalPackageDb =
+        if isWindows then
+          "/c/cabal/store" </> ghcVersion </> "package.db"
+        else
+          home </> ".cabal/store" </> ghcVersion </> "package.db"
+
   let hsSrcDirs = ghcLibHsSrcDirs True ghcFlavor lib
       hsSrcIncludes = map ("-i" ++ ) (placeholderModulesDir : hsSrcDirs)
       includeDirs = map ("-I" ++ ) (ghcLibIncludeDirs ghcFlavor)
       cmd = unwords $
-        [ "stack exec" ] ++
-        [ "--package exceptions" | flavor == GHC_9_0 ] ++
-        [ "--package semaphore-compat" | flavor >= GHC_9_8 ] ++
-        [ "--stack-yaml hadrian/stack.yaml" ] ++
-        [ "-- ghc" ] ++
+        [ "ghc" ] ++
         [ "-optP -DGHCI" | ghcSeries ghcFlavor < GHC_8_10 ] ++
         [ "-optP -DSTAGE=2" | ghcSeries ghcFlavor < GHC_8_10 ] ++
         [ "-optP -DGHC_IN_GHCI" | ghcSeries ghcFlavor < GHC_9_2 ] ++
@@ -382,11 +423,26 @@ calcLibModules ghcFlavor = do
         , "-package base"
         ] ++
         [ "-package exceptions" | flavor == GHC_9_0 ] ++
+        [ flag |
+          flavor >= GHC_9_8,
+          not (semaphoreCompatBootExists || isWindows),
+          flag <-  [
+              "-ignore-package os-string"
+            , "-package filepath"
+            , "-package unix"
+            ]
+        ] ++
+        ["-package semaphore-compat" | flavor >= GHC_9_8] ++
         hsSrcIncludes ++
         [ rootModulePath ]
+      cmd' =
+        if semaphoreCompatBootExists || isWindows then
+          cmd
+        else
+          "bash -c \"GHC_PACKAGE_PATH=" ++ cabalPackageDb ++ ": " ++ cmd ++ "\""
   putStrLn "# Generating 'ghc/.lib-depends'..."
-  putStrLn $ "\n\n# Running: " ++ cmd
-  system_ cmd
+  putStrLn $ "\n\n# Running: " ++ cmd'
+  system_ cmd'
 
   buf <- readFile' ".lib-depends"
   -- The idea here is harvest from lines like
@@ -1037,70 +1093,20 @@ applyPatchCmmParseNoImplicitPrelude _ = do
         "import GhcPrelude\nimport qualified Prelude"
     =<< readFile' cmmParse
 
--- Patch Hadrian's 'stack.yaml'.
-applyPatchHadrianStackYaml :: GhcFlavor -> Maybe String -> IO ()
-applyPatchHadrianStackYaml ghcFlavor resolver = do
-  let hadrianStackYaml = "hadrian/stack.yaml"
-  config <- Y.decodeFileThrow hadrianStackYaml
-  let deps = ["exceptions-0.10.4" | ghcSeries ghcFlavor == GHC_9_0] ++
-        [ file | ghcSeries ghcFlavor == GHC_9_8
-         , file <- [
-                "Cabal-3.8.1.0"
-              , "Cabal-syntax-3.8.1.0"
-              ]] ++
-        [ file | ghcSeries ghcFlavor >= GHC_9_8
-          , file <- [
-                "unix-2.8.5.0"
-              , "directory-1.3.8.2"
-              , "process-1.6.18.0"
-              , "filepath-1.4.100.4"
-              , "Win32-2.13.4.0"
-              , "time-1.12.2"
-              , "semaphore-compat-1.0.0"
-        ] ] ++
-        case parse (\cfg -> cfg .:? "extra-deps" .!= []) config of
-          Success ls -> ls :: [Y.Value]
-          Error msg -> error msg
-  -- Build hadrian (and any artifacts we generate via hadrian e.g.
-  -- Parser.hs) as quickly as possible.
-  let opts = HMS.insert "$everything" "-O0 -j" $
-        case parse (\cfg -> cfg .:? "ghc-options" .!= HMS.empty) config of
-          Success os -> os :: HMS.HashMap T.Text Y.Value
-          Error msg -> error msg
-  let config' =
-        HMS.insert "extra-deps" (toJSON deps)
-          (HMS.insert "ghc-options" (toJSON opts)
-#if !MIN_VERSION_aeson(2, 0, 2)
-                                     config
-#else
-                                     (toHashMap config)
-#endif
-          )
-    -- [Note: Hack "ghc-X.X.X does not compile with ghc XXX"]
-    -- ------------------------------------------------------
-    -- See for example
-    -- https://gitlab.haskell.org/ghc/ghc/-/issues/21633 &
-    -- https://gitlab.haskell.org/ghc/ghc/-/issues/21634.
-    --
-    -- The idea is to replace the resolver with whatever is prevailing
-    -- (or ghc-9.6.4 if that's not possible).
-    -- 9.6 since 2024/02/26 d9d69e127a735cfc3dbe8b1f7dc96a06fe654c3e
-      resolverDefault = "lts-22.12" -- ghc-9.6.4
-      -- The resolver has to curate packages so resolvers of the form
-      -- ghc-x.y.z won't do.
-      resolver' = case fromMaybe resolverDefault resolver of
-        r | "ghc-" `isPrefixOf` r -> resolverDefault
-        r -> r
-      -- This is still an issue with 9.6.1 (resolver in
-      -- hadrian/stack.yaml is a 9.0.2 resolver i.e. not recent enough
-      -- to build GHC so causes a configure error).
-      config'' = if ghcSeries ghcFlavor < GHC_9_4
-                     then config'
-                     else
-                           -- Ignore 'hadrian.cabal' constraints.
-                           HMS.insert "allow-newer" (toJSON True) $
-                           HMS.update (\_ -> Just (toJSON resolver')) "resolver" config'
-  Y.encodeFile hadrianStackYaml config''
+applyPatchHadrianCabalProject :: GhcFlavor -> IO ()
+applyPatchHadrianCabalProject ghcFlavor = do
+    cabalProjectContents <- lines' <$> readFile' cabalProject
+    writeFile cabalProject $ unlines (
+      cabalProjectContents ++
+      ["flags:-selftest -with-bazel"] ++
+      ["allow-newer:Cabal,QuickCheck" | ghcApi < GHC_9_0]
+      )
+    whenM (doesPathExist cabalProjectFreeze) $ removePathForcibly cabalProjectFreeze
+    where
+      lines' s = [ l | l <- lines s , not $ "index-state" `isPrefixOf` l ]
+      cabalProject = "hadrian" </> "cabal.project"
+      cabalProjectFreeze = cabalProject ++ ".freeze"
+      ghcApi = ghcSeries ghcFlavor
 
 -- Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
@@ -1528,24 +1534,21 @@ generatePrerequisites ghcFlavor = do
       =<< readFile' "./mk/get-win32-tarballs.sh"
     )
 
-  -- If building happy in the next step, the configure it does
-  -- requires some versions of alex and happy pre-exist. We make sure
-  -- of this in CI.hs.
-  system_ "stack --stack-yaml hadrian/stack.yaml build --only-dependencies"
-  system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c ./boot"
-  system_ "stack --stack-yaml hadrian/stack.yaml exec -- bash -c \"./configure --enable-tarballs-autodownload\""
+  system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal update\""
+  system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal install alex happy --overwrite-policy=always\""
+  system_ "bash -c ./boot"
+  system_ "bash -c \"./configure --enable-tarballs-autodownload\""
   withCurrentDirectory "hadrian" $ do
-    -- No need to specify a stack.yaml here, we are in the hadrian
-    -- directory itself.
-    system_ "stack build --no-library-profiling"
+    system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal build exe:hadrian --ghc-option=-j\""
     system_ $ unwords $ [
-            "stack exec hadrian --"
+            "bash -c \"unset GHC_PACKAGE_PATH && cabal run exe:hadrian --"
           , "--directory=.."
           , "--build-root=ghc-lib"
         ] ++
         [ "--bignum=native" | ghcSeries ghcFlavor >= GHC_9_0 ] ++
         [ "--integer-simple" | ghcSeries ghcFlavor < GHC_9_0 ] ++
-        ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) (dataFiles ghcFlavor)
+        ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) (dataFiles ghcFlavor) ++
+        ["\""]
 
 -- Given an Hsc, Alex, or Happy file, generate a placeholder module
 -- with the same module imports.

@@ -26,7 +26,7 @@ common lib
   build-depends:
     extra >=1.6, optparse-applicative,
     filepath >=1.4, containers, directory,
-    yaml, aeson, text, unordered-containers
+    text, unordered-containers
 
 library
   import: lib

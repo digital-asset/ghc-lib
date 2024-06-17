@@ -23,7 +23,7 @@ main = ghclibgen =<< execParser opts
       )
 
 ghclibgen :: GhclibgenOpts -> IO ()
-ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts resolver) = do
+ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts _resolver) = do
   withCurrentDirectory root $
     case target of
       GhclibParser -> do
@@ -48,7 +48,7 @@ ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts resolve
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do
         applyPatchTemplateHaskellCabal ghcFlavor
-        applyPatchHadrianStackYaml ghcFlavor resolver
+        applyPatchHadrianCabalProject ghcFlavor
         applyPatchHeapClosures ghcFlavor
         applyPatchRtsIncludePaths ghcFlavor
         applyPatchGhcPrim ghcFlavor
@@ -57,9 +57,6 @@ ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts resolve
         applyPatchAclocal ghcFlavor -- Do before ./boot && ./configure
         applyPatchFptoolsAlex ghcFlavor
         applyPatchFpFindCxxStdLib ghcFlavor
-        -- This invokes 'stack' strictly configured by
-        -- 'hadrian/stack.yaml' (which may be influenced by
-        -- `applyPatchHadrianStackYaml`).
         generatePrerequisites ghcFlavor
         -- Renamings come after 'generatePrerequisites':
         applyPatchDerivedConstants ghcFlavor -- Needs DerivedConstants.h
