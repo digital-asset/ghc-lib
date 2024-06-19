@@ -48,7 +48,7 @@ import System.FilePath hiding ((</>), normalise, dropTrailingPathSeparator)
 import System.FilePath.Posix ((</>), normalise, dropTrailingPathSeparator) -- Make sure we generate / on all platforms.
 import System.Directory
 import System.Directory.Extra
-import System.Info.Extra (isWindows)
+import System.Info.Extra
 import System.IO.Error (isEOFError)
 import System.IO.Extra
 import Data.List.Extra hiding (find)
@@ -281,6 +281,30 @@ ghcLibExtraFiles ghcFlavor =
 placeholderModulesDir :: FilePath
 placeholderModulesDir = "placeholder_modules"
 
+ghcNumericVersion :: IO String
+ghcNumericVersion = do
+  systemOutput_ "bash -c \"echo -n $(ghc --numeric-version)\""
+
+cabalPackageDb :: String -> IO String
+cabalPackageDb ghcNumericVersion = do
+  let ghcVersion = "ghc-" ++ ghcNumericVersion
+  home <- systemOutput_ "bash -c \"echo -n $HOME\""
+  let cabalPackageDb =
+        if isWindows then
+          "/c/cabal/store" </> ghcVersion </> "package.db"
+        else
+          home </> ".cabal/store" </> ghcVersion </> "package.db"
+  pure cabalPackageDb
+
+ghcPackagePath :: String -> String -> String
+ghcPackagePath cabalPackageDb ghcNumericVersion =
+  "GHC_PACKAGE_PATH=" ++ cabalPackageDb ++
+    (if not isWindows then
+        ":"
+      else
+       ":/c/ghcup/ghc/" ++ ghcNumericVersion ++ "/lib/package.conf.d"
+    )
+
 -- Calculate via `ghc -M` the list of modules that are required for
 -- 'ghc-lib-parser'.
 calcParserModules :: GhcFlavor -> IO [String]
@@ -314,17 +338,13 @@ calcParserModules ghcFlavor = do
   let rootModulePath = placeholderModulesDir </> "Main.hs"
   copyFile ("../ghc-lib-gen/ghc-lib-parser" </> show flavor </> "Main.hs") rootModulePath
 
+  ghcNumericVersion <- ghcNumericVersion
+  cabalPackageDb <- cabalPackageDb ghcNumericVersion
+  ghcPackagePath <- pure $ ghcPackagePath cabalPackageDb ghcNumericVersion
   semaphoreCompatBootExists <- (== ExitSuccess) . fst <$> systemOutput "bash -c \"ghc-pkg list | grep semaphore\""
-  when (not semaphoreCompatBootExists && flavor >= GHC_9_8) $
-    system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal install --lib semaphore-compat-1.0.0 --force-reinstalls\""
 
-  ghcVersion <- ("ghc-" ++) <$> systemOutput_ "bash -c \"echo -n $(ghc --numeric-version)\""
-  home <- systemOutput_ "bash -c \"echo -n $HOME\""
-  let cabalPackageDb =
-        if isWindows then
-          "/c/cabal/store" </> ghcVersion </> "package.db"
-        else
-          home </> ".cabal/store" </> ghcVersion </> "package.db"
+  when (not semaphoreCompatBootExists && flavor >= GHC_9_8) $ do
+    system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal install --lib semaphore-compat --force-reinstalls\""
 
   let includeDirs = map ("-I" ++ ) (ghcLibParserIncludeDirs ghcFlavor)
       hsSrcDirs = ghcLibParserHsSrcDirs True ghcFlavor lib
@@ -346,21 +366,20 @@ calcParserModules ghcFlavor = do
         [ "-package exceptions" | flavor == GHC_9_0 ] ++
         [ flag |
           flavor >= GHC_9_8,
-          not (semaphoreCompatBootExists || isWindows),
-          flag <-  [
-              "-ignore-package os-string"
-            , "-package filepath"
-            , "-package unix"
-            ]
+          not semaphoreCompatBootExists,
+          flag <-
+          [ "-ignore-package os-string" ] ++
+          [ "-package filepath" ]++
+          [ "-package " ++ if not isWindows then "unix" else "Win32" ]
         ] ++
         ["-package semaphore-compat" | flavor >= GHC_9_8] ++
         hsSrcIncludes ++
         [ rootModulePath ]
       cmd' =
-        if semaphoreCompatBootExists || isWindows then
+        if semaphoreCompatBootExists then
           cmd
         else
-          "bash -c \"GHC_PACKAGE_PATH=" ++ cabalPackageDb ++ ": " ++ cmd ++ "\""
+          "bash -c \"" ++ ghcPackagePath ++ " " ++ cmd ++ "\""
   putStrLn "# Generating 'ghc/.parser-depends'..."
   putStrLn $ "\n\n# Running: " ++ cmd'
   system_ cmd'
@@ -395,15 +414,10 @@ calcLibModules ghcFlavor = do
   let rootModulePath = placeholderModulesDir </> "Main.hs"
   copyFile ("../ghc-lib-gen/ghc-lib" </> show flavor </> "Main.hs") rootModulePath
 
+  ghcNumericVersion <- ghcNumericVersion
+  cabalPackageDb <- cabalPackageDb ghcNumericVersion
+  ghcPackagePath <- pure $ ghcPackagePath cabalPackageDb ghcNumericVersion
   semaphoreCompatBootExists <- (== ExitSuccess) . fst <$> systemOutput "bash -c \"ghc-pkg list | grep semaphore\""
-
-  ghcVersion <- ("ghc-" ++) <$> systemOutput_ "bash -c \"echo -n $(ghc --numeric-version)\""
-  home <- systemOutput_ "bash -c \"echo -n $HOME\""
-  let cabalPackageDb =
-        if isWindows then
-          "/c/cabal/store" </> ghcVersion </> "package.db"
-        else
-          home </> ".cabal/store" </> ghcVersion </> "package.db"
 
   let hsSrcDirs = ghcLibHsSrcDirs True ghcFlavor lib
       hsSrcIncludes = map ("-i" ++ ) (placeholderModulesDir : hsSrcDirs)
@@ -425,21 +439,21 @@ calcLibModules ghcFlavor = do
         [ "-package exceptions" | flavor == GHC_9_0 ] ++
         [ flag |
           flavor >= GHC_9_8,
-          not (semaphoreCompatBootExists || isWindows),
-          flag <-  [
-              "-ignore-package os-string"
-            , "-package filepath"
-            , "-package unix"
-            ]
+          not semaphoreCompatBootExists,
+          flag <-
+          [ "-ignore-package os-string" ] ++
+          [ "-package filepath" ]++
+          [ "-package " ++ if not isWindows then "unix" else "Win32" ]
         ] ++
         ["-package semaphore-compat" | flavor >= GHC_9_8] ++
         hsSrcIncludes ++
         [ rootModulePath ]
       cmd' =
-        if semaphoreCompatBootExists || isWindows then
+        if semaphoreCompatBootExists then
           cmd
         else
-          "bash -c \"GHC_PACKAGE_PATH=" ++ cabalPackageDb ++ ": " ++ cmd ++ "\""
+          "bash -c \"" ++ ghcPackagePath ++ " " ++ cmd ++ "\""
+
   putStrLn "# Generating 'ghc/.lib-depends'..."
   putStrLn $ "\n\n# Running: " ++ cmd'
   system_ cmd'
