@@ -352,10 +352,6 @@ buildDists
     -- Get packages missing on Windows needed by hadrian.
     when isWindows $
         stack "exec -- pacman -S autoconf automake-wrapper make patch python tar mintty --noconfirm"
-    -- Building of hadrian dependencies that result from the
-    -- invocations of ghc-lib-gen can require some versions of these
-    -- have been installed.
-    stack "build alex happy"
 
     -- If '--no-checkout' is given, it's on the caller to get the GHC
     -- clone with e.g.
