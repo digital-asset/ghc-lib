@@ -296,9 +296,9 @@ cabalPackageDb ghcNumericVersion = do
           home </> ".cabal/store" </> ghcVersion </> "package.db"
   pure cabalPackageDb
 
-ghcPackagePath :: String -> String -> String
+ghcPackagePath :: String -> String -> IO String
 ghcPackagePath cabalPackageDb ghcNumericVersion =
-  "GHC_PACKAGE_PATH=" ++ cabalPackageDb ++
+  pure $ "GHC_PACKAGE_PATH=" ++ cabalPackageDb ++
     (if not isWindows then
         ":"
       else
@@ -340,11 +340,11 @@ calcParserModules ghcFlavor = do
 
   ghcNumericVersion <- ghcNumericVersion
   cabalPackageDb <- cabalPackageDb ghcNumericVersion
-  ghcPackagePath <- pure $ ghcPackagePath cabalPackageDb ghcNumericVersion
+  ghcPackagePath <- ghcPackagePath cabalPackageDb ghcNumericVersion
   semaphoreCompatBootExists <- (== ExitSuccess) . fst <$> systemOutput "bash -c \"ghc-pkg list | grep semaphore\""
 
   when (not semaphoreCompatBootExists && flavor >= GHC_9_8) $ do
-    system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal install --lib semaphore-compat --force-reinstalls\""
+    system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal install --lib semaphore-compat --force-reinstalls -v3\""
 
   let includeDirs = map ("-I" ++ ) (ghcLibParserIncludeDirs ghcFlavor)
       hsSrcDirs = ghcLibParserHsSrcDirs True ghcFlavor lib
@@ -416,7 +416,7 @@ calcLibModules ghcFlavor = do
 
   ghcNumericVersion <- ghcNumericVersion
   cabalPackageDb <- cabalPackageDb ghcNumericVersion
-  ghcPackagePath <- pure $ ghcPackagePath cabalPackageDb ghcNumericVersion
+  ghcPackagePath <- ghcPackagePath cabalPackageDb ghcNumericVersion
   semaphoreCompatBootExists <- (== ExitSuccess) . fst <$> systemOutput "bash -c \"ghc-pkg list | grep semaphore\""
 
   let hsSrcDirs = ghcLibHsSrcDirs True ghcFlavor lib
