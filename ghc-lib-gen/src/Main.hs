@@ -32,7 +32,6 @@ ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts _resolv
         applyPatchStage ghcFlavor
         applyPatchHaddockHs ghcFlavor
         applyPatchNoMonoLocalBinds ghcFlavor
-        applyPatchGhcInternalEventWindowsHsc ghcFlavor
         applyPatchTemplateHaskellLanguageHaskellTHSyntax ghcFlavor
         generateGhcLibParserCabal ghcFlavor cppOpts
       Ghclib -> do
@@ -62,3 +61,7 @@ ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts _resolv
         applyPatchDerivedConstants ghcFlavor -- Needs DerivedConstants.h
         applyPatchHsVersions ghcFlavor
         applyPatchGHCiMessage ghcFlavor -- Needs ghcversion.h
+        -- Before placeholder module generation
+        applyPatchGhcInternalEventWindowsHsc ghcFlavor
+        setupModuleDepsPlaceholders ghcFlavor
+        setupModuleDepsExtraDeps ghcFlavor
