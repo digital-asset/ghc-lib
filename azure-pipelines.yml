@@ -59,11 +59,12 @@ strategy:
       resolver: "ghc-9.6.5"
       cabal-with-ghc: "9.6.5"
       stack-yaml: "stack-exact.yaml"
-    # windows-ghc-master-9.6.5:
-    #   image: "windows-latest"
-    #   mode: "--ghc-flavor ghc-master"
-    #   resolver: "ghc-9.6.5"
-    #   stack-yaml: "stack-exact.yaml"
+    windows-ghc-master-9.6.5:
+      image: "windows-latest"
+      mode: "--ghc-flavor ghc-master"
+      resolver: "ghc-9.6.5"
+      cabal-with-ghc: "9.6.5"
+      stack-yaml: "stack-exact.yaml"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
