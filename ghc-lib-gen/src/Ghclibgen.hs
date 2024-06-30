@@ -224,6 +224,7 @@ compilerDependencies ghcFlavor =
            , "primop-is-cheap.hs-incl"
          ]
   ] ++
+  [ "primop-deprecations.hs-incl" | series > GHC_9_10 ] ++
   [ "GHC/Platform/Constants.hs" | series >= GHC_9_2 ]
   where
     series = ghcSeries ghcFlavor
