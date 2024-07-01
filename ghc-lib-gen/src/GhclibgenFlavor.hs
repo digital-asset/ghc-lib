@@ -14,7 +14,7 @@ data GhcFlavor = DaGhc881
                | Ghc901 | Ghc902
                | Ghc921 | Ghc922 | Ghc923 | Ghc924 | Ghc925 | Ghc926 | Ghc927 | Ghc928
                | Ghc941 | Ghc942 | Ghc943 | Ghc944 | Ghc945 | Ghc946 |  Ghc947 | Ghc948
-               | Ghc961 | Ghc962 | Ghc963 | Ghc964 | Ghc965
+               | Ghc961 | Ghc962 | Ghc963 | Ghc964 | Ghc965 | Ghc966
                | Ghc981 | Ghc982
                | Ghc9101
                | GhcMaster
@@ -42,7 +42,7 @@ ghcSeries = \case
     f | Ghc901 <= f && f < Ghc921 -> GHC_9_0
     f | Ghc921 <= f && f < Ghc941 -> GHC_9_2
     f | Ghc941 <= f && f < Ghc961 -> GHC_9_4
-    f | Ghc961 <= f && f < Ghc982 -> GHC_9_6
+    f | Ghc961 <= f && f < Ghc981 -> GHC_9_6
     f | Ghc981 <= f && f < Ghc9101 -> GHC_9_8
     f | Ghc9101 <= f && f < GhcMaster -> GHC_9_10
     GhcMaster -> GHC_9_12
