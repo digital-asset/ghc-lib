@@ -76,7 +76,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "bc1d435e399d8376b4e33d5d936424ff76cb686a" -- 2024-06-30
+current = "41f1354dafe35aa6023d6c2553793208afa3fc31" -- 2024-07-14
 
 -- Command line argument generators.
 
@@ -337,24 +337,14 @@ buildDists
   versionSuffix
   =
   do
-    let stackConfig = fromMaybe "stack.yaml" stackYaml
-
-    -- Clean up old state.
-    isCi <- isJust <$> lookupEnv "GHCLIB_AZURE"
-    -- Avoid https://github.com/commercialhaskell/stack/issues/5866.
-    unless isCi $ stack "clean --full" -- Recursively delete '.stack-work'
     filesInDot <- getDirectoryContents "."
     let lockFiles = filter (isExtensionOf ".lock") filesInDot
         tarBalls  = filter (isExtensionOf ".tar.gz") filesInDot
         ghcDirs   = ["ghc" | not noGhcCheckout] ++ [ "ghc-lib", "ghc-lib-parser" ]
         toDelete  = ghcDirs ++ tarBalls ++ lockFiles
     forM_ toDelete removePath
-    cmd $ "git checkout " ++ stackConfig
-    cmd "git checkout ghc-lib-gen.cabal examples"
-
-    -- Get packages missing on Windows needed by hadrian.
-    when isWindows $
-        stack "exec -- pacman -S autoconf automake-wrapper make patch python tar mintty --noconfirm"
+    system_ "rm -f cabal.project"
+    system_ "git checkout ghc-lib-gen.cabal examples"
 
     -- If '--no-checkout' is given, it's on the caller to get the GHC
     -- clone with e.g.
@@ -362,64 +352,32 @@ buildDists
     --      git fetch --tags && git submodule update --init --recursive
     -- and it won't be deleted between runs.
     if noGhcCheckout then do
-      cmd "{ cd ghc; git remote remove upstream || true; }"
-      cmd "cd ghc && git clean -xdf && git submodule foreach git clean -xdf && git submodule foreach git checkout . && git checkout ."
+      system_ "{ cd ghc; git remote remove upstream || true; }"
+      system_ "cd ghc && git clean -xdf && git submodule foreach git clean -xdf && git submodule foreach git checkout . && git checkout ."
     else do
-      if isWindows then do
-        cmd "git clone https://github.com/ghc/ghc.git"
-        cmd "git config --global url.\"git://github.com/ghc/packages-\".insteadOf     git://github.com/ghc/packages/"
-        cmd "git config --global url.\"http://github.com/ghc/packages-\".insteadOf    http://github.com/ghc/packages/"
-        cmd "git config --global url.\"https://github.com/ghc/packages-\".insteadOf   https://github.com/ghc/packages/"
-        cmd "git config --global url.\"git\\@github.com:/ghc/packages-\".insteadOf    git\\@github.com:/ghc/packages/"
-      else
-        cmd "git clone https://gitlab.haskell.org/ghc/ghc.git"
-      cmd "cd ghc && git fetch --tags"
+      system_ "git clone https://gitlab.haskell.org/ghc/ghc.git"
+      system_ "cd ghc && git fetch --tags"
     gitCheckout ghcFlavor
+    system_ "cd ghc && git checkout ."
 
-    -- Doing this avoids "Prelude.chr:bad argument" errors
-    -- (https://gitlab.haskell.org/ghc/ghc/-/issues/19452) testing
-    -- locally when later steps try to certain install older versions
-    -- of GHC which enables local testing with `stack runhaskell --stack-yaml stack.yaml --resolver nightly-2020-01-08 --package extra --package optparse-applicative CI.hs -- --da --stack-yaml stack.yaml --resolver nightly-2020-01-08`.
-    stack "exec -- bash -c \"rm -f $HOME/.stack/setup-exe-src/*\""
-
-    -- Feedback on the compiler used for ghc-lib-gen.
-    stack "exec -- ghc --version"
-
-    -- Build ghc-lib-gen. Do this here rather than in the Azure script
-    -- so that it's not forgotten when testing this program locally.
-    stack "build --no-terminal --ghc-options \"-Wall -Wno-name-shadowing -Werror\""
-
-    -- Any invocations of GHC in the sdist steps that follow use the
-    -- hadrian/stack.yaml resolver (which can and we should expect
-    -- to be, different to our resolver).
-
-    -- Calculate version and package names.
     version <- tag
     let pkg_ghclib = "ghc-lib-" ++ version
         pkg_ghclib_parser = "ghc-lib-parser-" ++ version
+        ghcFlavorArg = ghcFlavorOpt ghcFlavor
 
-    -- Make and extract an sdist of ghc-lib-parser.
-    cmd "cd ghc && git checkout ."
-    -- Make and extract an sdist of ghc-lib. The first argument is a
-    -- ghc repo dir relative to '.' ('root'), 'patches' needs to be
-    -- provided relative to 'root' (i.e. 'ghc') hence '../patches'.
-    stack $ "exec -- ghc-lib-gen ghc ../patches --ghc-lib-parser " ++ ghcFlavorOpt ghcFlavor ++ " " ++ cppOpts ghcFlavor ++ " " ++ stackResolverOpt resolver
+    system_ "cabal update"
+    system_ "cabal build exe:ghc-lib-gen"
+    system_ $ "cabal run exe:ghc-lib-gen -- ghc ../patches --ghc-lib-parser " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " " ++ stackResolverOpt resolver
     patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser
     renameDirectory pkg_ghclib_parser "ghc-lib-parser"
     removeFile "ghc/ghc-lib-parser.cabal"
-    cmd "git checkout stack.yaml"
-
-    -- Make and extract an sdist of ghc-lib. The first argument is a
-    -- ghc repo dir relative to '.' ('root'), 'patches' needs to be
-    -- provided relative to 'root' (i.e. 'ghc') hence '../patches'.
-    stack $ "exec -- ghc-lib-gen ghc ../patches --ghc-lib " ++ ghcFlavorOpt ghcFlavor ++ " " ++ cppOpts ghcFlavor ++ " " ++ stackResolverOpt resolver ++ " " ++ "--skip-init"
+    system_ $ "cabal run exe:ghc-lib-gen -- ghc ../patches --ghc-lib " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " " ++ stackResolverOpt resolver ++ " " ++ "--skip-init"
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraints version "ghc/ghc-lib.cabal"
     mkTarball pkg_ghclib
     renameDirectory pkg_ghclib "ghc-lib"
     removeFile "ghc/ghc-lib.cabal"
-    cmd "git checkout stack.yaml"
 
     copyDirectoryRecursive
       "ghc-lib-gen/ghc-lib-parser"
@@ -445,115 +403,49 @@ buildDists
     verifyConstraint "ghc-lib-parser == " version "examples/ghc-lib-test-mini-compile/ghc-lib-test-mini-compile.cabal"
     verifyConstraint "ghc-lib == " version "examples/ghc-lib-test-mini-compile/ghc-lib-test-mini-compile.cabal"
 
-    cmd "cabal sdist -o ."
-    cmd "(cd examples/ghc-lib-test-utils && cabal sdist -o ../..)"
-    cmd "(cd examples/ghc-lib-test-mini-hlint && cabal sdist -o ../..)"
-    cmd "(cd examples/ghc-lib-test-mini-compile && cabal sdist -o ../..)"
+    system_ "cabal sdist -o ."
+    system_ "(cd examples/ghc-lib-test-utils && cabal sdist -o ../..)"
+    system_ "(cd examples/ghc-lib-test-mini-hlint && cabal sdist -o ../..)"
+    system_ "(cd examples/ghc-lib-test-mini-compile && cabal sdist -o ../..)"
 
     when noBuilds exitSuccess
 
-    -- Append the libraries and examples to the prevailing stack
-    -- configuration file.
-    stackYamlFileContents <- readFile' stackConfig
-    writeFile stackConfig $
-      stackYamlFileContents ++
-      unlines [ "- ghc-lib-parser"
-              , "- ghc-lib"
-              , "- examples/ghc-lib-test-utils"
-              , "- examples/ghc-lib-test-mini-hlint"
-              , "- examples/ghc-lib-test-mini-compile"
-              ] ++
-      case ghcFlavor of
-#if __GLASGOW_HASKELL__ == 804 && __GLASGOW_HASKELL_PATCHLEVEL1__ == 4
-        GhcMaster _ ->
-          -- Resolver 'lts-12.26' serves 'transformers-0.5.5.0' which
-          -- lacks 'Control.Monad.Trans.RWS.CPS'. The need for that
-          -- module came in around around 09/20/2019. Putting this
-          -- here keeps the CI ghc-8.4.4 builds going (for 8.8.*
-          -- ghc-libs, there is no support for bootstrapping ghc-8.10
-          -- builds with ghc-8.4.4; see azure-pipelines.yml for an
-          -- explanation)
-          unlines ["extra-deps: [transformers-0.5.6.2]"]
-#endif
-        Da {} ->
-          unlines ["flags: {ghc-lib-test-mini-compile: {daml-unit-ids: true}}"]
-        _ -> ""
+    writeFile "cabal.project" (
+      unlines $
+        [ "packages: " 
+        , "  ghc-lib-parser/ghc-lib-parser.cabal"
+        , "  ghc-lib/ghc-lib.cabal"
+        , "  examples/ghc-lib-test-utils/ghc-lib-test-utils.cabal"
+        , "  examples/ghc-lib-test-mini-hlint/ghc-lib-test-mini-hlint.cabal"
+        , "  examples/ghc-lib-test-mini-compile/ghc-lib-test-mini-compile.cabal"
+        ] ++
+        [ "constraints: ghc-lib-test-mini-compile +daml-unit-ids" | Da {} <- [ghcFlavor] ]
+      )
+    miniHlintCmdFile <- writeCabalCmdFile "ghc-lib-test-mini-hlint"
+    miniCompileCmdFile <- writeCabalCmdFile "ghc-lib-test-mini-compile"
 
-    -- All invocations of GHC from here on are using our resolver.
+    cmd "cabal build --ghc-options=-j all"
 
-    -- Feedback on what compiler has been selected for building
-    -- ghc-lib packages and tests.
-    stack "ghc -- --version"
-
-    -- Separate the two library build commands so they are
-    -- independently timed. Note that optimizations in these builds
-    -- are disabled in stack.yaml via `ghc-options: -O0`.
-    -- `-haddock` makes the parser stricter about Haddock comments (see
-    -- https://gitlab.haskell.org/ghc/ghc/-/commit/c35c545d3f32f092c52052349f741739a844ec0f).
-    -- TODO: https://github.com/digital-asset/ghc/issues/97
-    let ghcOpts = case ghcFlavor of Da {} -> ghcOptionsOpt ghcOptions;  _ -> ghcOptionsWithHaddock ghcOptions
-    stack $ "--no-terminal --interleaved-output build " ++ ghcOpts ++ " ghc-lib-parser"
-    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions ++ " ghc-lib"
-    stack $ "--no-terminal --interleaved-output build " ++ ghcOptionsOpt ghcOptions ++ " ghc-lib-test-mini-hlint ghc-lib-test-mini-compile"
-
-    miniHlintCmdFile <- writeCmdFile "ghc-lib-test-mini-hlint" stackConfig resolver
-    stack $ "test ghc-lib-test-mini-hlint --no-terminal " ++ testArguments miniHlintCmdFile stackConfig resolver ghcFlavor
-
-    miniCompileCmdFile <- writeCmdFile "ghc-lib-test-mini-compile" stackConfig resolver
-    stack $ "test ghc-lib-test-mini-compile --no-terminal " ++ testArguments miniCompileCmdFile stackConfig resolver ghcFlavor
-
-#if __GLASGOW_HASKELL__ == 808 && \
-    (__GLASGOW_HASKELL_PATCHLEVEL1__ == 1 || __GLASGOW_HASKELL_PATCHLEVEL1__ == 2) && \
-    defined (mingw32_HOST_OS)
-    -- Skip these tests on ghc-8.8.1 and ghc-8.8.2. See
-    -- https://gitlab.haskell.org/ghc/ghc/issues/17599.
-#else
-     -- Missing `SymI_HasProto(setKeepCAFs)` in 'rts/RtsSymbols.c'
-     -- prevents loading in GHCi on Windows (see
-     -- https://gitlab.haskell.org/ghc/ghc/-/issues/22961). I don't
-     -- know why it so far only exhibits with 9.2.6. Seems to me it
-     -- should be a problem with >= ghc-9.6.1 too (but, "if it ain't
-     -- broke don't fix it").
-    unless (ghcFlavor `elem` [Ghc926, Ghc927, Ghc928] && System.Info.Extra.isWindows) $ do
-      -- Test everything loads in GHCi, see
-      -- https://github.com/digital-asset/ghc-lib/issues/27
-      stack "--no-terminal ghc -- -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
-      stack "--no-terminal ghc -- -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
-#endif
+    system_ $ "cd examples/ghc-lib-test-mini-hlint && cabal test --project-dir ../.. --test-show-details direct --test-options \"--color always --test-command ../../ghc-lib-test-mini-hlint " ++ ghcFlavorArg ++ "\""
+    system_ $ "cd examples/ghc-lib-test-mini-compile && cabal test --project-dir ../.. --test-show-details direct --test-options \"--color always --test-command ../../ghc-lib-test-mini-compile " ++ ghcFlavorArg ++ "\""
+    system_ "cabal exec -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
+    system_ "cabal exec -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
 
     -- Something like, "8.8.1.20190828".
     tag -- The return value of type 'IO string'.
 
     where
 
-      writeCmdFile :: String -> FilePath -> Maybe String -> IO FilePath
-      writeCmdFile exe stackConfig resolver = do
+      writeCabalCmdFile :: String -> IO FilePath
+      writeCabalCmdFile exe = do
         let filename = exe
-        let cmd = "stack --silent " ++ stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++ stackResolverOpt resolver ++ " " ++ "exec -- " ++ exe ++ " "
-        writeFile filename cmd
+            cmd = "cabal run exe:" ++ exe ++ " --project-dir ../.. -- "
+        writeFile filename cmd 
         pure filename
 
-      testArguments :: FilePath -> FilePath -> Maybe String -> GhcFlavor -> String
-      testArguments cmdFile stackConfig resolver ghcFlavor =
-        "--test-arguments " ++
-        "\"" ++
-        "--test-command " ++ "../../" </> cmdFile ++ " " ++
-        stackYamlOpt (Just $ "../.." </> stackConfig) ++ " " ++
-        stackResolverOpt resolver ++ " " ++ ghcFlavorOpt ghcFlavor ++ " " ++
-        "\""
-
       ghcOptionsWithHaddock :: Maybe String -> String
-      -- Enabling strict haddock mode with -haddock (and for some
-      -- build compilers -Winvalid-haddock) has become too tedious.
-      -- See 20935, 20924 and now 21269. The good news is that MR#
-      -- 7762 means this shouldn't be an issue anymore going forward.
       ghcOptionsWithHaddock = ghcOptionsOpt
 
-      -- Mitigate against macOS/ghc-9.2.2 failures for lack of this
-      -- c-include path. See
-      -- https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266.
-      -- There are reports that this exhibits with 9.0.2 and 9.2.1 as
-      -- well but I haven't observed that.
       prelude :: (String, String) -> String
 #if __GLASGOW_HASKELL__ == 902 && __GLASGOW_HASKELL_PATCHLEVEL1__ == 2
       prelude ("darwin", _) = "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi"
@@ -580,9 +472,8 @@ buildDists
 
       mkTarball :: String -> IO ()
       mkTarball target = do
-        writeFile "stack.yaml" . (++ "- ghc\n") =<< readFile' "stack.yaml"
-        stack "sdist ghc --tar-dir=."
-        cmd $ "tar -xvf " ++ target ++ ".tar.gz"
+        system_ "(cd ghc && cabal sdist -o ..)"
+        system_ $ "tar -xvf " ++ target ++ ".tar.gz"
 
       tag :: IO String
       tag = do
@@ -629,14 +520,14 @@ buildDists
 
       gitCheckout :: GhcFlavor -> IO ()
       gitCheckout ghcFlavor = do
-        cmd $ "cd ghc && git checkout -f " <> branch ghcFlavor
+        system_ $ "cd ghc && git checkout -f " <> branch ghcFlavor
         case ghcFlavor of
           Da DaFlavor { patches, upstream } -> do
-            cmd $ "cd ghc && git remote add upstream " <> upstream
-            cmd   "cd ghc && git fetch upstream"
-            cmd $ "cd ghc && git -c user.name=\"Cookie Monster\" -c user.email=cookie.monster@seasame-street.com merge --no-edit " <> unwords patches
+            system_ $ "cd ghc && git remote add upstream " <> upstream
+            system_   "cd ghc && git fetch upstream"
+            system_ $ "cd ghc && git -c user.name=\"Cookie Monster\" -c user.email=cookie.monster@seasame-street.com merge --no-edit " <> unwords patches
           _ -> pure ()
-        cmd "cd ghc && git submodule update --init --recursive"
+        system_ "cd ghc && git submodule update --init --recursive"
 
       branch :: GhcFlavor -> String
       branch = \case
