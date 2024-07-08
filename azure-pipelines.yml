@@ -43,54 +43,25 @@ strategy:
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | ghc-master      | ghc-9.6.5  |
-    # | macOS   | ghc-master      | ghc-9.6.5  |
-    # | windows | ghc-master      | ghc-9.6.5  |
+    # | linux   | ghc-master     | ghc-9.10.1  |
+    # | macOS   | ghc-master     | ghc-9.10.1  |
+    # | windows | ghc-master     | ghc-9.10.1  |
     # +---------+-----------------+------------+
-    linux-ghc-master-9.6.5:
+    linux-ghc-master-9.10.1:
       image: "ubuntu-22.04"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.6.5"
-      cabal-with-ghc: "9.6.5"
-      stack-yaml: "stack-exact.yaml"
-    mac-ghc-master-9.6.5:
+      cabal-with-ghc: "9.10.1"
+      runghc-libs: "extra-1.7.16 optparse-applicative-0.18.1.0 semaphore-compat-1.0.0"
+    mac-ghc-master-9.10.1:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.6.5"
-      cabal-with-ghc: "9.6.5"
-      stack-yaml: "stack-exact.yaml"
-    windows-ghc-master-9.6.5:
+      cabal-with-ghc: "9.10.1"
+      runghc-libs: "extra-1.7.16 optparse-applicative-0.18.1.0 semaphore-compat-1.0.0"
+    windows-ghc-master-9.10.1:
       image: "windows-latest"
       mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.6.5"
-      cabal-with-ghc: "9.6.5"
-      stack-yaml: "stack-exact.yaml"
-
-    # +---------+-----------------+------------+
-    # | OS      | ghc-lib flavor  | GHC        |
-    # +=========+=================+============+
-    # | linux   | ghc-master      | ghc-9.8.2  |
-    # | macOS   | ghc-master      | ghc-9.8.2  |
-    # | windows | ghc-master      | ghc-9.8.2  |
-    # +---------+-----------------+------------+
-    linux-ghc-master-9.8.2:
-      image: "ubuntu-22.04"
-      mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.8.2"
-      cabal-with-ghc: "9.8.2"
-      stack-yaml: "stack-exact.yaml"
-    mac-ghc-master-9.8.2:
-      image: "macOS-latest"
-      mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.8.2"
-      cabal-with-ghc: "9.8.2"
-      stack-yaml: "stack-exact.yaml"
-    windows-ghc-master-9.8.2:
-      image: "windows-latest"
-      mode: "--ghc-flavor ghc-master"
-      resolver: "ghc-9.8.2"
-      cabal-with-ghc: "9.8.2"
-      stack-yaml: "stack-exact.yaml"
+      cabal-with-ghc: "9.10.1"
+      runghc-libs: "extra-1.7.16 optparse-applicative-0.18.1.0 semaphore-compat-1.0.0"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
@@ -102,66 +73,90 @@ strategy:
     linux-ghc-9.10.1-9.8.2:
       image: "ubuntu-22.04"
       mode: "--ghc-flavor ghc-9.10.1"
-      resolver: "ghc-9.8.2"
       cabal-with-ghc: "9.8.2"
-      stack-yaml: "stack-exact.yaml"
+      runghc-libs: "extra-1.7.16 optparse-applicative-0.18.1.0"
     mac-ghc-9.10.1-9.8.2:
       image: "macOS-latest"
       mode: "--ghc-flavor ghc-9.10.1"
-      resolver: "ghc-9.8.2"
       cabal-with-ghc: "9.8.2"
-      stack-yaml: "stack-exact.yaml"
+      runghc-libs: "extra-1.7.16 optparse-applicative-0.18.1.0"
     windows-ghc-9.10.1-9.8.2:
       image: "windows-latest"
       mode: "--ghc-flavor ghc-9.10.1"
-      resolver: "ghc-9.8.2"
       cabal-with-ghc: "9.8.2"
-      stack-yaml: "stack-exact.yaml"
+      runghc-libs: "extra-1.7.16 optparse-applicative-0.18.1.0"
 
     # +---------+-----------------+------------+
     # | OS      | ghc-lib flavor  | GHC        |
     # +=========+=================+============+
-    # | linux   | da-ghc-8.8.1    | ghc-8.8.1  |
-    # | windows | da-ghc-8.8.1    | ghc-8.8.1  |
-    # | macOS   | da-ghc-8.8.1    | ghc-8.8.1  |
+    # | linux   | ghc-9.8.2      | ghc-9.6.5  |
+    # | macOS   | ghc-9.8.2      | ghc-9.6.5  |
+    # | windows | ghc-9.8.2      | ghc-9.6.5  |
     # +---------+-----------------+------------+
-    linux-da-ghc-8.8.1-8.8.1:
+    linux-ghc-9.8.2-9.6.5:
+      image: "ubuntu-22.04"
+      mode: "--ghc-flavor ghc-9.8.2"
+      cabal-with-ghc: "9.6.5"
+      runghc-libs: "extra-1.7.16 optparse-applicative-0.18.1.0 semaphore-compat-1.0.0"
+    mac-ghc-9.8.2-9.6.5:
+      image: "macOS-latest"
+      mode: "--ghc-flavor ghc-9.8.2"
+      cabal-with-ghc: "9.6.5"
+      runghc-libs: "extra-1.7.16 optparse-applicative-0.18.1.0 semaphore-compat-1.0.0"
+    windows-ghc-9.8.2-9.6.5:
+      image: "windows-latest"
+      mode: "--ghc-flavor ghc-9.8.2"
+      cabal-with-ghc: "9.6.5"
+      runghc-libs: "extra-1.7.16 optparse-applicative-0.18.1.0 semaphore-compat-1.0.0"
+
+    # +---------+-----------------+------------+
+    # | OS      | ghc-lib flavor  | GHC        |
+    # +=========+=================+============+
+    # | linux   | da-ghc-8.8.1    | ghc-8.4.3  |
+    # | windows | da-ghc-8.8.1    | ghc-8.4.3  |
+    # | macOS   | da-ghc-8.8.1    | ghc-8.4.3  |
+    # +---------+-----------------+------------+
+    linux-da-ghc-8.8.1-8.4.3:
       image: "ubuntu-22.04"
       mode: "--da"
-      resolver: "nightly-2020-01-08"
-      cabal-with-ghc: "8.8.1"
-      stack-yaml: "stack.yaml"
-    windows-da-ghc-8.8.1-8.8.1:
+      cabal-with-ghc: "8.4.3"
+      runghc-libs: "extra-1.6.13 optparse-applicative-0.14.3.0"
+    windows-da-ghc-8.8.1-8.4.3:
       image: "windows-latest"
       mode: "--da"
-      resolver: "nightly-2020-01-08"
-      cabal-with-ghc: "8.8.1"
-      stack-yaml: "stack.yaml"
-    mac-da-ghc-8.8.1-8.8.1:
+      cabal-with-ghc: "8.4.3"
+      runghc-libs: "extra-1.6.13 optparse-applicative-0.14.3.0"
+    mac-da-ghc-8.8.1-8.4.3:
       image: "macOS-latest"
       mode: "--da"
-      resolver: "nightly-2020-01-08"
-      cabal-with-ghc: "8.8.1"
-      stack-yaml: "stack.yaml"
+      cabal-with-ghc: "8.4.3"
+      runghc-libs: "extra-1.6.13 optparse-applicative-0.14.3.0"
 
 pool: {vmImage: '$(image)'}
 
 steps:
-  # windows
   - bash: |
       if [ -d patches ]; then
         /usr/bin/find patches -name "*.patch" -exec dos2unix {} \;
       fi
     condition: eq( variables['Agent.OS'], 'Windows_NT' )
-  # macOS
   - bash: |
       /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       brew install automake
     condition: eq( variables['Agent.OS'], 'Darwin' )
-    displayName: Install brew
+    displayName: install automate (macos)
   - bash: |
-      curl -sSL https://get.haskellstack.org/ | sh -s - -f
-    displayName: install Stack
+      curl -L https://github.com/commercialhaskell/stackage-content/releases/download/msys2-20230526/msys2-20230526-x86_64.tar.xz -o msys2-20230526-x86_64.tar.xz
+      tar xvf msys2-20230526-x86_64.tar.xz > /dev/null
+      GHCUP_MSYS2=$(pwd)/msys64
+      PATH="$GHCUP_MSYS2"/usr/bin:/c/mingw64/bin:"/c/program files/git/bin":"$PATH"
+      export PATH
+      $GHCUP_MSYS2/usr/bin/bash --noprofile --norc -e -o pipefail -c "pacman -S autoconf automake-wrapper make patch python tar mintty --noconfirm"
+    condition: eq( variables['Agent.OS'], 'Windows_NT' )
+    displayName: install msys2
+  - bash: |
+      curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_GHC_VERSION=$(cabal-with-ghc) BOOTSTRAP_HASKELL_CABAL_VERSION=latest BOOTSTRAP_HASKELL_INSTALL_NO_STACK=1 BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=1 BOOTSTRAP_HASKELL_ADJUST_BASHRC=N sh
+    displayName: install ghcup
   - bash: |
       set -euo pipefail
 
@@ -189,9 +184,29 @@ steps:
     displayName: run hlint
     condition: eq( variables['Agent.OS'], 'Linux' )
   - bash: |
-      GHCLIB_AZURE=1;export GHCLIB_AZURE
-      curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_GHC_VERSION=$(cabal-with-ghc) BOOTSTRAP_HASKELL_CABAL_VERSION=latest BOOTSTRAP_HASKELL_INSTALL_STACK=0 BOOTSTRAP_HASKELL_INSTALL_HLS=0 BOOTSTRAP_HASKELL_ADJUST_BASHRC=P sh
-      PATH="$HOME"/.ghcup/ghc/$(cabal-with-ghc)/bin:"$PATH"; export PATH
-      PATH="$HOME"/.cabal/bin:"$PATH"; export PATH
-      stack runhaskell --stack-yaml $(stack-yaml) --resolver $(resolver) --package extra --package optparse-applicative -- CI.hs $(mode)  --stack-yaml $(stack-yaml) --resolver $(resolver)
-    displayName: build
+      PATH=/c/cabal/bin:/c/.ghcup/ghc-$(cabal-with-ghc)/bin:/c/.ghcup/bin:$PATH
+      export PATH
+      cabal install alex happy
+      cabal --store-dir="c:\\cabal\\store" --lib --force-reinstalls --package-env=- install $(runghc-libs)
+    condition: eq( variables['Agent.OS'], 'Windows_NT' )
+    displayName: setup cabal (windows)
+  - bash: |
+      PATH=$HOME/.cabal/bin:$HOME/.ghcup/ghc/9.6.5/bin:$HOME/.ghcup/bin:"$GHCUP_MSYS2"/usr/bin:/c/mingw64/bin:"/c/program files/git/bin":"$PATH"
+      export PATH
+      cabal install alex happy
+      cabal --store-dir=$HOME/.cabal/store --lib --force-reinstalls --package-env=- install $(runghc-libs)
+    condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
+    displayName: setup cabal (unix)
+  - bash: |
+      GHCUP_MSYS2=$(pwd)/msys64;
+      PATH=/c/cabal/bin:/c/ghcup/ghc/$(cabal-with-ghc)/bin:/c/ghcup/bin:"$GHCUP_MSYS2"/usr/bin:/c/mingw64/bin:"/c/program files/git/bin":"$PATH"
+      export PATH
+      $GHCUP_MSYS2/usr/bin/bash --noprofile --norc -e -o pipefail -c "runghc --ghc-arg=-clear-package-db --ghc-arg=-global-package-db --ghc-arg=-user-package-db --ghc-arg=-package-db --ghc-arg=/c/cabal/store/$(ls /c/cabal/store)/package.db CI.hs $(mode)"
+    condition: eq( variables['Agent.OS'], 'Windows_NT' )
+    displayName: run CI.hs (windows)
+  - bash: |
+      PATH="$HOME/.cabal/bin":"$HOME/.ghcup/ghc/$(cabal-with-ghc)/bin":"$HOME/.ghcup/bin":"$PATH"
+      export PATH
+      runghc --ghc-arg=-clear-package-db --ghc-arg=-global-package-db --ghc-arg=-user-package-db --ghc-arg=-package-db --ghc-arg=$HOME/.cabal/store/$(ls $HOME/.cabal/store)/package.db CI.hs $(mode)
+    condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
+    displayName: run CI.hs (unix)
