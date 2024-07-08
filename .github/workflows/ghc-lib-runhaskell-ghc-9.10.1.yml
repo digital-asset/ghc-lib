@@ -40,13 +40,18 @@ jobs:
           echo "ghc-version: $(ghc --version)"
           echo "wich cabal: $(which cabal)"
           echo "cabal: $(cabal --version)"
-      - name: Install build tools
+      - name: Install build tools (macOS)
         run: brew install automake
         if: matrix.os == 'macos'
+      - name: Install build tools (windows)
+        run: pacman -S autoconf automake-wrapper make patch python tar mintty --noconfirm
+        if: matrix.os == 'windows'
       - name: Configure
         shell: bash
         # e.g. Don't recursively delete '.stack-work' (`stack clean --full`)
-        run: echo "GHCLIB_AZURE='1'" >> $GITHUB_ENV
+        run: |-
+          echo "GHCLIB_AZURE='1'" >> $GITHUB_ENV
+          echo "PATH_NO_STACK=$PATH" >> $GITHUB_ENV
       - name: Run CI.hs
         shell: bash
-        run: stack runhaskell --stack-yaml stack-exact.yaml --resolver ghc-9.10.1 --package extra --package optparse-applicative CI.hs -- --stack-yaml stack-exact.yaml --resolver ghc-9.10.1 --ghc-flavor "ghc-9.10.1"
+        run: stack runhaskell --package extra --package optparse-applicative CI.hs -- --ghc-flavor "ghc-9.10.1"

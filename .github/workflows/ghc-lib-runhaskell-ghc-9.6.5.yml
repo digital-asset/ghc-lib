@@ -12,6 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: |-
+          curl -L https://github.com/commercialhaskell/stackage-content/releases/download/msys2-20230526/msys2-20230526-x86_64.tar.xz -o msys2-20230526-x86_64.tar.xz
+          tar xvf msys2-20230526-x86_64.tar.xz > /dev/null
+          echo "installing msys2 into $(pwd)/msys64"
+          echo "prepending $(pwd)/msys64/usr/bin to path"
+          echo "$(pwd)/msys64/usr/bin:$PATH" >> $GITHUB_PATH
+          echo  "GHCUP_MSYS2=$(pwd)/msys64" >> $GITHUB_ENV
+        shell: bash
+        if: matrix.os == 'windows'
+      - run: |-
           curl -sSL https://get.haskellstack.org/ | sh -s - -f
           curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_GHC_VERSION=9.6.5 BOOTSTRAP_HASKELL_CABAL_VERSION=latest BOOTSTRAP_HASKELL_INSTALL_NO_STACK=1 BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=1 BOOTSTRAP_HASKELL_ADJUST_BASHRC=P sh
         shell: bash
@@ -34,19 +43,36 @@ jobs:
       - name: Print diagnostics
         shell: bash
         run: |-
-          echo "wich stack: $(which stack)"
+          echo "which bash: $(which bash)"
           echo "stack-version: $(stack --version)"
           echo "wich ghc: $(which ghc)"
           echo "ghc-version: $(ghc --version)"
           echo "wich cabal: $(which cabal)"
           echo "cabal: $(cabal --version)"
-      - name: Install build tools
+      - name: Install build tools (macOS)
         run: brew install automake
         if: matrix.os == 'macos'
+      - name: Install build tools (windows)
+        shell: bash
+        run: pacman -S autoconf automake-wrapper make patch python tar mintty --noconfirm
+        if: matrix.os == 'windows'
       - name: Configure
         shell: bash
         # e.g. Don't recursively delete '.stack-work' (`stack clean --full`)
-        run: echo "GHCLIB_AZURE='1'" >> $GITHUB_ENV
+        run: |-
+          echo "GHCLIB_AZURE='1'" >> $GITHUB_ENV
+          echo "PATH_NO_STACK=$PATH" >> $GITHUB_ENV
+      - name: Run CI.hs (windows)
+        shell: bash
+        run: |-
+          echo "GHCUP_MSYS2: $GHCUP_MSYS2"
+          echo "PATH: $PATH"
+          echo "PATH_NO_STACK: $PATH_NO_STACK"
+          echo "git: $(which git)"
+          echo "shell: $SHELL"
+          stack runhaskell --package extra --package optparse-applicative CI.hs -- --ghc-flavor ghc-master
+        if: matrix.os == 'windows'
       - name: Run CI.hs
         shell: bash
-        run: stack runhaskell --stack-yaml stack-exact.yaml --resolver ghc-9.6.5 --package extra --package optparse-applicative CI.hs -- --stack-yaml stack-exact.yaml --resolver ghc-9.6.5 --ghc-flavor "ghc-master"
+        run: stack runhaskell --package extra --package optparse-applicative CI.hs -- --ghc-flavor ghc-master
+        if: matrix.os == 'ubuntu' || matrix.os ==  'macos'
