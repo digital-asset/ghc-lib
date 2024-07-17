@@ -76,7 +76,7 @@ cabal run exe:ghc-lib-build-tool -- \
   --patch=upstream/da-master-8.8.1 \
   --patch=upstream/da-unit-ids-8.8.1 \
   --gen-flavor=da-ghc-8.8.1 \
-  --upstream=https://github.com/digital-asset/ghc.git
+     --upstream=https://github.com/digital-asset/ghc.git
 ```
 
 The DAML-specific process only differs from the normal one in that it patches
