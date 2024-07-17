@@ -39,7 +39,6 @@ module Ghclibgen (
   , generateGhcLibCabal
   , generateGhcLibParserCabal
   , setupModuleDepsPlaceholders
-  , setupModuleDepsExtraDeps
 ) where
 
 import Control.Exception (handle)
@@ -289,15 +288,11 @@ ghcNumericVersion = do
   systemOutput_ "bash -c \"echo -n $(ghc --numeric-version)\""
 
 cabalPackageDb :: String -> IO String
-cabalPackageDb ghcNumericVersion = do
-  let ghcVersion = "ghc-" ++ ghcNumericVersion
-  home <- systemOutput_ "bash -c \"echo -n $HOME\""
-  let cabalPackageDb =
-        if isWindows then
-          "/c/cabal/store" </> ghcVersion </> "package.db"
-        else
-          home </> ".cabal/store" </> ghcVersion </> "package.db"
-  pure cabalPackageDb
+cabalPackageDb _ghcNumericVersion = do
+  if isWindows then
+    systemOutput_ "bash -c \"echo -n /c/cabal/store/$(ls /c/cabal/store | grep $(ghc --numeric-version))/package.db\""
+  else
+    systemOutput_ "bash -c \"echo -n $HOME/.cabal/store/$(ls $HOME/.cabal/store | grep $(ghc --numeric-version))/package.db\""
 
 ghcPackagePath :: String -> String -> IO String
 ghcPackagePath cabalPackageDb ghcNumericVersion =
@@ -334,13 +329,6 @@ setupModuleDepsPlaceholders _ = do
                   dir = System.FilePath.takeDirectory new_p
               createDirectoryIfMissing True dir
               copyFile file new_p
-
-setupModuleDepsExtraDeps :: GhcFlavor -> IO ()
-setupModuleDepsExtraDeps ghcFlavor = do
-  let s = ghcSeries ghcFlavor
-  semaphoreCompatBootExists >>= \exists ->
-    when (not exists && s >= GHC_9_8) $
-      system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal install --lib semaphore-compat --force-reinstalls -v3\""
 
 calcModuleDeps :: [FilePath] -> [FilePath] -> [FilePath] -> GhcFlavor -> String -> Bool -> String -> String
 calcModuleDeps includeDirs _hsSrcDirs hsSrcIncludes ghcFlavor ghcPackagePath semaphoreCompatBootExists ghcMakeModeOutputFile = do
@@ -1074,11 +1062,8 @@ applyPatchCmmParseNoImplicitPrelude _ = do
 applyPatchHadrianCabalProject :: GhcFlavor -> IO ()
 applyPatchHadrianCabalProject ghcFlavor = do
     cabalProjectContents <- lines' <$> readFile' cabalProject
-    writeFile cabalProject $ unlines (
-      cabalProjectContents ++
-      ["flags:-selftest -with-bazel"] ++
-      ["allow-newer:Cabal,QuickCheck" | ghcApi < GHC_9_0]
-      )
+    cabalProjectContents <- pure (unlines (cabalProjectContents ++ [ "flags:-selftest -with_bazel" ]))
+    writeFile cabalProject cabalProjectContents
     whenM (doesPathExist cabalProjectFreeze) $ removePathForcibly cabalProjectFreeze
     where
       lines' s = [ l | l <- lines s , not $ "index-state" `isPrefixOf` l ]
@@ -1362,7 +1347,8 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         [ "    exposed: False"
         , "    include-dirs:"
         ] ++ indent2 includeDirs ++
-        [ "    ghc-options: -fno-safe-haskell" ] ++
+        [ "    if impl(ghc >= 8.8.1)"
+        , "        ghc-options: -fno-safe-haskell" ] ++
         [ "    if flag(threaded-rts)"
         , "        ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "        cc-options: -DTHREADED_RTS"
@@ -1461,7 +1447,8 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         [ "    exposed: False"
         , "    include-dirs:"
         ] ++ indent2 includeDirs ++
-        [ "    ghc-options: -fno-safe-haskell" ] ++
+        [ "    if impl(ghc >= 8.8.1)"
+        , "        ghc-options: -fno-safe-haskell" ] ++
         [ "    if flag(threaded-rts)"
         , "        ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS"
         , "        cc-options: -DTHREADED_RTS"
@@ -1513,21 +1500,18 @@ generatePrerequisites ghcFlavor = do
       =<< readFile' "./mk/get-win32-tarballs.sh"
     )
 
-  system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal update\""
-  system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal install alex happy --overwrite-policy=always\""
   system_ "bash -c ./boot"
   system_ "bash -c \"./configure --enable-tarballs-autodownload\""
   withCurrentDirectory "hadrian" $ do
-    system_ "bash -c \"unset GHC_PACKAGE_PATH && cabal build exe:hadrian --ghc-option=-j\""
+    system_ "cabal build exe:hadrian --ghc-options=-j"
     system_ $ unwords $ [
-            "bash -c \"unset GHC_PACKAGE_PATH && cabal run exe:hadrian --"
+            "cabal run exe:hadrian --"
           , "--directory=.."
           , "--build-root=ghc-lib"
         ] ++
         [ "--bignum=native" | ghcSeries ghcFlavor >= GHC_9_0 ] ++
         [ "--integer-simple" | ghcSeries ghcFlavor < GHC_9_0 ] ++
-        ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) (dataFiles ghcFlavor) ++
-        ["\""]
+        ghcLibParserExtraFiles ghcFlavor ++ map (dataDir </>) (dataFiles ghcFlavor)
 
 -- Given an Hsc, Alex, or Happy file, generate a placeholder module
 -- with the same module imports.

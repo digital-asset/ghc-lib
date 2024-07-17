@@ -64,4 +64,3 @@ ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts _resolv
         -- Before placeholder module generation
         applyPatchGhcInternalEventWindowsHsc ghcFlavor
         setupModuleDepsPlaceholders ghcFlavor
-        setupModuleDepsExtraDeps ghcFlavor
