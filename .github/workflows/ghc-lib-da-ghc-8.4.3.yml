@@ -1,6 +1,7 @@
 name: ghc-lib-da-ghc-8.4.3
 on:
   push:
+  pull_request:
 jobs:
   runhaskell:
     name: ${{ matrix.os }}
