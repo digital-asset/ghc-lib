@@ -365,7 +365,6 @@ buildDists
         pkg_ghclib_parser = "ghc-lib-parser-" ++ version
         ghcFlavorArg = ghcFlavorOpt ghcFlavor
 
-    system_ "cabal update"
     system_ "cabal build exe:ghc-lib-gen"
     system_ $ "cabal run exe:ghc-lib-gen -- ghc ../patches --ghc-lib-parser " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " " ++ stackResolverOpt resolver
     patchVersion version "ghc/ghc-lib-parser.cabal"
@@ -412,7 +411,7 @@ buildDists
 
     writeFile "cabal.project" (
       unlines $
-        [ "packages: " 
+        [ "packages: "
         , "  ghc-lib-parser/ghc-lib-parser.cabal"
         , "  ghc-lib/ghc-lib.cabal"
         , "  examples/ghc-lib-test-utils/ghc-lib-test-utils.cabal"
@@ -440,7 +439,7 @@ buildDists
       writeCabalCmdFile exe = do
         let filename = exe
             cmd = "cabal run exe:" ++ exe ++ " --project-dir ../.. -- "
-        writeFile filename cmd 
+        writeFile filename cmd
         pure filename
 
       ghcOptionsWithHaddock :: Maybe String -> String
