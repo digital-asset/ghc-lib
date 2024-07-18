@@ -56,6 +56,7 @@ import Data.List.Extra hiding (find)
 import Data.Char
 import Data.Maybe
 import Data.Ord
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List.NonEmpty
 
@@ -283,27 +284,54 @@ ghcLibExtraFiles ghcFlavor =
 placeholderModulesDir :: FilePath
 placeholderModulesDir = "placeholder_modules"
 
+getGhcInfo :: IO [(String, String)]
+getGhcInfo = do
+  xs <- systemOutput_ "ghc --info"
+  case reads xs of
+    [(info, _)] -> return info
+    _ -> error "failed to read output from `ghc info --info`"
+
 ghcNumericVersion :: IO String
 ghcNumericVersion = do
-  systemOutput_ "bash -c \"echo -n $(ghc --numeric-version)\""
+  ghcInfo <- getGhcInfo
+  let ghcInfoMap = Map.fromList ghcInfo
+  pure $ fromJust $ Map.lookup "Project version" ghcInfoMap
+
+cygpath :: FilePath -> IO FilePath
+cygpath p = systemOutput_ $ "bash -c 'echo -n $(cygpath -u \"" ++ p ++ "\")'"
 
 cabalPackageDb :: String -> IO String
 cabalPackageDb ghcNumericVersion = do
   cabalStoreDir <-
     if not isWindows then
-      systemOutput_ "bash -c \"cabal path --store-dir\""
+      systemOutput_ "cabal path --store-dir"
     else
-      systemOutput_ "bash -c \"echo -n $(cygpath -u $(cabal path --store-dir))\""
-  ghcDir <- systemOutput_ $ "bash -c \"echo -n $(ls " ++ cabalStoreDir ++ " | grep " ++ ghcNumericVersion ++ ")\""
+      cygpath . replace "\\" "\\\\" =<< systemOutput_ "cabal path --store-dir"
+  ghcInfo <- getGhcInfo
+  let ghcInfoMap = Map.fromList ghcInfo
+  let ghcDir =
+        case Map.lookup "Project Unit Id" ghcInfoMap of
+          Just projectUnitId -> projectUnitId -- e.g. ghc-9.10.1-2e29
+          Nothing -> "ghc-" ++ ghcNumericVersion
   pure $ cabalStoreDir ++ "/" ++ ghcDir ++ "/package.db"
 
-ghcPackagePath :: String -> String -> IO String
-ghcPackagePath cabalPackageDb ghcNumericVersion =
+ghcPackageDb :: String -> IO String
+ghcPackageDb _ghcNumericVersion = do
+  ghcInfo <- getGhcInfo
+  let ghcInfoMap = Map.fromList ghcInfo
+  let packageDb = replace "\\" "\\\\" $ fromJust $ Map.lookup  "Global Package DB" ghcInfoMap
+  if not isWindows then
+    pure packageDb
+  else
+    cygpath packageDb
+
+ghcPackagePath :: String -> String -> String -> IO String
+ghcPackagePath ghcPackageDb cabalPackageDb ghcNumericVersion =
   pure $ "GHC_PACKAGE_PATH=" ++ cabalPackageDb ++
     (if not isWindows then
         ":"
       else
-       ":/c/ghcup/ghc/" ++ ghcNumericVersion ++ "/lib/package.conf.d"
+       ":" ++ ghcPackageDb
     )
 
 semaphoreCompatBootExists :: IO Bool
@@ -388,8 +416,9 @@ readGhcMakeModeOutputFile file hsSrcDirs = do
 ghcPackagePath' :: IO String
 ghcPackagePath' = do
   ghcNumericVersion <- ghcNumericVersion
+  ghcPackageDb <- ghcPackageDb ghcNumericVersion
   cabalPackageDb <- cabalPackageDb ghcNumericVersion
-  ghcPackagePath cabalPackageDb ghcNumericVersion
+  ghcPackagePath ghcPackageDb cabalPackageDb ghcNumericVersion
 
 calcParserModules :: GhcFlavor -> IO [String]
 calcParserModules ghcFlavor = do
