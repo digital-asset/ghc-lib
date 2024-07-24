@@ -1,7 +1,11 @@
 name: ghc-lib-ghc-9.10.1-ghc-9.8.2
 on:
   push:
+    branches:
+    - master
   pull_request:
+    branches:
+    - master
 jobs:
   runhaskell:
     name: ${{ matrix.os }}
