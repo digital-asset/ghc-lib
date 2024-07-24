@@ -76,7 +76,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "41f1354dafe35aa6023d6c2553793208afa3fc31" -- 2024-07-14
+current = "12d3b66cedd3c80e7c1e030238c92d26631cab8d" -- 2024-07-17
 
 -- Command line argument generators.
 
@@ -365,7 +365,6 @@ buildDists
         pkg_ghclib_parser = "ghc-lib-parser-" ++ version
         ghcFlavorArg = ghcFlavorOpt ghcFlavor
 
-    system_ "cabal update"
     system_ "cabal build exe:ghc-lib-gen"
     system_ $ "cabal run exe:ghc-lib-gen -- ghc ../patches --ghc-lib-parser " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " " ++ stackResolverOpt resolver
     patchVersion version "ghc/ghc-lib-parser.cabal"
@@ -412,7 +411,7 @@ buildDists
 
     writeFile "cabal.project" (
       unlines $
-        [ "packages: " 
+        [ "packages: "
         , "  ghc-lib-parser/ghc-lib-parser.cabal"
         , "  ghc-lib/ghc-lib.cabal"
         , "  examples/ghc-lib-test-utils/ghc-lib-test-utils.cabal"
@@ -440,7 +439,7 @@ buildDists
       writeCabalCmdFile exe = do
         let filename = exe
             cmd = "cabal run exe:" ++ exe ++ " --project-dir ../.. -- "
-        writeFile filename cmd 
+        writeFile filename cmd
         pure filename
 
       ghcOptionsWithHaddock :: Maybe String -> String

@@ -13,6 +13,11 @@ copyright: Digital Asset 2018-2024
 category: Development
 build-type: Simple
 
+flag semaphore-compat
+    default: False
+    manual: True
+    description: Install semaphore-compat from Hackage
+
 common base
   default-language: Haskell2010
   ghc-options:
@@ -31,16 +36,26 @@ common lib
 library
   import: lib
   hs-source-dirs: ghc-lib-gen/src
-  exposed-modules: Ghclibgen
-                   GhclibgenFlavor
-                   GhclibgenOpts
+  exposed-modules:
+    Ghclibgen
+    GhclibgenFlavor
+    GhclibgenOpts
   other-modules: Paths_ghc_lib_gen
   autogen-modules: Paths_ghc_lib_gen
 
-common cli
-  import: base
-  build-depends: directory, optparse-applicative, ghc-lib-gen
-
 executable ghc-lib-gen
-  import: cli
+  import: base
+  build-depends:
+     directory, optparse-applicative, ghc-lib-gen
+  if flag(semaphore-compat)
+    build-depends: semaphore-compat
   main-is: ghc-lib-gen/src/Main.hs
+
+executable ghc-lib-build-tool
+  import: base
+  build-tool-depends: alex:alex, happy:happy
+  build-depends:
+    directory, filepath, time, extra, optparse-applicative
+  if flag(semaphore-compat)
+    build-depends: semaphore-compat
+  main-is: CI.hs

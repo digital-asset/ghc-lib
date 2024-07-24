@@ -48,7 +48,7 @@ By far the easist way to produce `ghc-lib-parser` and `ghc-lib` packages is to e
 # Setup
 git clone git@github.com:digital-asset/ghc-lib.git
 cd ghc-lib
-stack runhaskell --package extra --package optparse-applicative CI.hs -- --ghc-flavor=ghc-8.8.1
+cabal run exe:ghc-lib-build-tool -- --ghc-flavor=ghc-8.8.1
 ```
 
 ## Releasing `ghc-lib` (notes for maintainers)
@@ -70,14 +70,13 @@ general case: the `--ghc-flavor` flag is replaced with an "enabling" flag
 `--da` and three more specific flags. A full call example would be:
 
 ```
-stack runhaskell --package extra \
-                 --package optparse-applicative \
-                 CI.hs -- --da \
-                          --merge-base-sha=ghc-8.8.1-release \
-                          --patch=upstream/da-master-8.8.1 \
-                          --patch=upstream/da-unit-ids-8.8.1 \
-                          --gen-flavor=da-ghc-8.8.1 \
-                          --upstream=https://github.com/digital-asset/ghc.git
+cabal run exe:ghc-lib-build-tool -- \
+  --da \
+  --merge-base-sha=ghc-8.8.1-release \
+  --patch=upstream/da-master-8.8.1 \
+  --patch=upstream/da-unit-ids-8.8.1 \
+  --gen-flavor=da-ghc-8.8.1 \
+     --upstream=https://github.com/digital-asset/ghc.git
 ```
 
 The DAML-specific process only differs from the normal one in that it patches

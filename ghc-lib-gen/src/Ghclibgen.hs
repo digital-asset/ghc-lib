@@ -288,11 +288,14 @@ ghcNumericVersion = do
   systemOutput_ "bash -c \"echo -n $(ghc --numeric-version)\""
 
 cabalPackageDb :: String -> IO String
-cabalPackageDb _ghcNumericVersion = do
-  if isWindows then
-    systemOutput_ "bash -c \"echo -n /c/cabal/store/$(ls /c/cabal/store | grep $(ghc --numeric-version))/package.db\""
-  else
-    systemOutput_ "bash -c \"echo -n $HOME/.cabal/store/$(ls $HOME/.cabal/store | grep $(ghc --numeric-version))/package.db\""
+cabalPackageDb ghcNumericVersion = do
+  cabalStoreDir <-
+    if not isWindows then
+      systemOutput_ "bash -c \"cabal path --store-dir\""
+    else
+      systemOutput_ "bash -c \"echo -n $(cygpath -u $(cabal path --store-dir))\""
+  ghcDir <- systemOutput_ $ "bash -c \"echo -n $(ls " ++ cabalStoreDir ++ " | grep " ++ ghcNumericVersion ++ ")\""
+  pure $ cabalStoreDir ++ "/" ++ ghcDir ++ "/package.db"
 
 ghcPackagePath :: String -> String -> IO String
 ghcPackagePath cabalPackageDb ghcNumericVersion =
@@ -349,18 +352,11 @@ calcModuleDeps includeDirs _hsSrcDirs hsSrcIncludes ghcFlavor ghcPackagePath sem
         , "-package base"
         ] ++
         [ "-package exceptions" | series == GHC_9_0 ] ++
-        [ flag | series >= GHC_9_8
-          ,  not semaphoreCompatBootExists
-          , flag <-
-            [ "-ignore-package os-string" ] ++
-            [ "-package filepath" ]++
-            [ "-package " ++ if not isWindows then "unix" else "Win32" ]
-          ] ++
-        ["-package semaphore-compat" | series >= GHC_9_8] ++
+        [ "-package semaphore-compat" | series >= GHC_9_8 ] ++
         hsSrcIncludes ++
         [ rootModulePath ]
       cmd' =
-        if semaphoreCompatBootExists then
+        if series < GHC_9_8 || semaphoreCompatBootExists then
           cmd
         else
           "bash -c \"" ++ ghcPackagePath ++ " " ++ cmd ++ "\""

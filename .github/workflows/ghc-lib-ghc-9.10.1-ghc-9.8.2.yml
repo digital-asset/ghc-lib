@@ -1,6 +1,7 @@
 name: ghc-lib-ghc-9.10.1-ghc-9.8.2
 on:
   push:
+  pull_request:
 jobs:
   runhaskell:
     name: ${{ matrix.os }}
@@ -14,53 +15,36 @@ jobs:
       - name: Install build tools (macOS)
         run: brew install automake
         if: matrix.os == 'macos'
-      - name: Install msys2 (windows)
+      - name: Configure msys2 (windows)
         shell: bash
         run: |-
-          cd /c
-          curl -L https://github.com/commercialhaskell/stackage-content/releases/download/msys2-20230526/msys2-20230526-x86_64.tar.xz -o msys2-20230526-x86_64.tar.xz
-          tar xvf ./msys2-20230526-x86_64.tar.xz > /dev/null
+          echo "MSYSTEM=CLANG64" >> $GITHUB_ENV
+          echo "/c/mingw64/usr/bin" >> $GITHUB_PATH
+          echo "/c/msys64/usr/bin" >> $GITHUB_PATH
         if: matrix.os == 'windows'
-      - name: Install ghcup
+      - name: Install ghcup (windows)
         shell: bash
         run: |-
-          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | \
-            BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
-            BOOTSTRAP_HASKELL_GHC_VERSION=9.8.2 \
-            BOOTSTRAP_HASKELL_CABAL_VERSION=latest \
-            BOOTSTRAP_HASKELL_INSTALL_NO_STACK=1 \
-            BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=1 \
-            BOOTSTRAP_HASKELL_ADJUST_BASHRC=N sh
-      - name: Setup cabal (windows)
-        shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail '{0}'
-        run: |-
-          PATH=/c/cabal/bin:/c/.ghcup/ghc-9.8.2/bin:/c/.ghcup/bin:$PATH
-          export PATH
-          cabal update
-          cabal install alex happy
-          cabal --store-dir="c:\\cabal\\store" --lib --force-reinstalls --package-env=- install extra-1.7.16 optparse-applicative-0.18.1.0
+          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_GHC_VERSION=9.8.2 BOOTSTRAP_HASKELL_CABAL_VERSION=latest BOOTSTRAP_HASKELL_INSTALL_NO_STACK=1 BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=1 BOOTSTRAP_HASKELL_ADJUST_BASHRC=N sh
+          echo "/c/ghcup/bin" >> $GITHUB_PATH
+          echo "/c/ghcup/ghc/9.8.2/bin" >> $GITHUB_PATH
+          echo "/c/cabal/bin" >> $GITHUB_PATH
         if: matrix.os == 'windows'
-      - name: Setup cabal(unix)
+      - name: Install ghcup (unix)
         shell: bash
         run: |-
-          PATH="$HOME/.cabal/bin":"$HOME/.ghcup/ghc/9.8.2/bin":"$HOME/.ghcup/bin":"$PATH"
-          export PATH
-          cabal install alex happy
-          cabal --store-dir=$HOME/.cabal/store --lib --force-reinstalls --package-env=- install extra-1.7.16 optparse-applicative-0.18.1.0
-        if: matrix.os == 'ubuntu' || matrix.os == 'macos'
+          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_GHC_VERSION=9.8.2 BOOTSTRAP_HASKELL_CABAL_VERSION=latest BOOTSTRAP_HASKELL_INSTALL_NO_STACK=1 BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=1 BOOTSTRAP_HASKELL_ADJUST_BASHRC=N sh
+          echo "$HOME/.ghcup/bin" >> $GITHUB_PATH
+          echo "$HOME/.ghcup/ghc/9.8.2/bin" >> $GITHUB_PATH
+          echo "$HOME/.cabal/bin" >> $GITHUB_PATH
+        if: matrix.os == 'ubuntu' || matrix.os ==  'macos'
       - name: Run CI.hs (windows)
         shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail '{0}'
         run: |-
-          PATH=/c/cabal/bin:/c/ghcup/ghc/9.8.2/bin:/c/ghcup/bin:/c/msys64/usr/bin:/c/mingw64/bin:"/c/program files/git/bin":"$PATH"
-          export PATH
-          MSYSTEM=CLANG64; export MSYSTEM
           pacman -S autoconf automake-wrapper make patch python tar mintty --noconfirm
-          runghc --ghc-arg=-clear-package-db --ghc-arg=-global-package-db --ghc-arg=-user-package-db --ghc-arg=-package-db --ghc-arg=/c/cabal/store/$(ls /c/cabal/store)/package.db CI.hs --ghc-flavor ghc-9.10.1
+          cabal run exe:ghc-lib-build-tool -- --ghc-flavor ghc-9.10.1
         if: matrix.os == 'windows'
       - name: Run CI.hs (unix)
         shell: bash
-        run: |-
-          PATH="$HOME/.cabal/bin":"$HOME/.ghcup/ghc/9.8.2/bin":"$HOME/.ghcup/bin":"$PATH"
-          export PATH
-          runghc --ghc-arg=-clear-package-db --ghc-arg=-global-package-db --ghc-arg=-user-package-db --ghc-arg=-package-db --ghc-arg=$HOME/.cabal/store/$(ls $HOME/.cabal/store)/package.db CI.hs --ghc-flavor ghc-9.10.1
+        run: cabal run exe:ghc-lib-build-tool -- --ghc-flavor ghc-9.10.1
         if: matrix.os == 'ubuntu' || matrix.os ==  'macos'
