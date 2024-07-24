@@ -7,23 +7,19 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE CPP #-}
 import Control.Monad.Extra
+import Data.Foldable
+import Data.List.Extra
+import Data.Time.Calendar
+import Data.Time.Clock
+import GHC.Stack
+import qualified Options.Applicative as Opts
 import System.Directory
+import System.Exit
 import System.FilePath
 import System.IO.Extra
-import System.Info.Extra
+import System.IO.Unsafe
 import System.Process.Extra
 import System.Time.Extra
-import System.Info (os, arch)
-import System.Exit
-import System.Environment
-import Data.Maybe
-import Data.List.Extra
-import Data.Time.Clock
-import Data.Time.Calendar
-import qualified Options.Applicative as Opts
-import Data.Foldable
-import GHC.Stack
-import System.IO.Unsafe
 
 main :: IO ()
 main = do
@@ -33,24 +29,15 @@ main = do
             <> Opts.progDesc "Build ghc-lib and ghc-lib-parser tarballs."
             <> Opts.header "CI - CI script for ghc-lib"
           )
-    Options { ghcFlavor, noGhcCheckout, noBuilds, stackOptions, versionSuffix } <- Opts.execParser opts
-    version <- buildDists ghcFlavor noGhcCheckout noBuilds stackOptions versionSuffix
+    Options { ghcFlavor, noGhcCheckout, noBuilds, versionSuffix } <- Opts.execParser opts
+    version <- buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix
     putStrLn version
 
 data Options = Options
     { ghcFlavor :: GhcFlavor
     , noGhcCheckout :: Bool
     , noBuilds :: Bool
-    , stackOptions :: StackOptions
     , versionSuffix :: Maybe String
-    } deriving (Show)
-
-data StackOptions = StackOptions
-    { stackYaml :: Maybe String -- Optional config file
-    , resolver :: Maybe String  -- If 'Just _', override stack.yaml.
-    , verbosity :: Maybe String -- If provided, pass '--verbosity=xxx' to 'stack build'. Valid values are "silent",  "error", "warn", "info" or "debug".
-    , cabalVerbose :: Bool -- If enabled, pass '--cabal-verbose' to 'stack build'.
-    , ghcOptions :: Maybe String -- If 'Just _', pass '--ghc-options="xxx"' to 'stack build' (for ghc verbose, try 'v3').
     } deriving (Show)
 
 data GhcFlavor = Da DaFlavor
@@ -77,18 +64,6 @@ data DaFlavor = DaFlavor
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
 current = "12d3b66cedd3c80e7c1e030238c92d26631cab8d" -- 2024-07-17
-
--- Command line argument generators.
-
-stackYamlOpt :: Maybe FilePath -> String
-stackYamlOpt = \case
-  Just stackYaml -> "--stack-yaml " ++ stackYaml
-  Nothing -> ""
-
-stackResolverOpt :: Maybe String -> String
-stackResolverOpt = \case
-  Just resolver -> "--resolver " ++ resolver
-  Nothing -> ""
 
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
@@ -138,19 +113,6 @@ cppOpts :: GhcFlavor -> String
 cppOpts (Da DaFlavor {cpp}) = unwords $ concat [["--cpp", v] | v <- cpp]
 cppOpts _ = ""
 
-stackVerbosityOpt :: Maybe String -> String
-stackVerbosityOpt = \case
-  Just verbosity -> "--verbosity=" ++ verbosity
-  Nothing -> ""
-
-cabalVerboseOpt :: Bool -> String
-cabalVerboseOpt True = "--cabal-verbose"; cabalVerboseOpt False = ""
-
-ghcOptionsOpt :: Maybe String -> String
-ghcOptionsOpt = \case
-  Just options -> "--ghc-options=\"" ++ options ++ "\""
-  Nothing -> ""
-
 genDateSuffix :: IO String
 genDateSuffix = do
   UTCTime day _ <- getCurrentTime
@@ -184,6 +146,7 @@ genVersionStr flavor suffix =
       Ghc942      -> "9.4.2"
       Ghc941      -> "9.4.1"
       Ghc928      -> "9.2.8"
+      Ghc927      -> "9.2.7"
       Ghc926      -> "9.2.6"
       Ghc925      -> "9.2.5"
       Ghc924      -> "9.2.4"
@@ -221,7 +184,6 @@ parseOptions = Options
           ( Opts.long "no-builds"
           <> Opts.help "If enabled, don't build & test packages & examples"
           )
-    <*> parseStackOptions
     <*> Opts.optional
           ( Opts.strOption
             ( Opts.long "version-suffix"
@@ -305,38 +267,8 @@ parseOptions = Options
           <> Opts.showDefault
           <> Opts.value "https://github.com/digital-asset/ghc.git")
 
-parseStackOptions :: Opts.Parser StackOptions
-parseStackOptions = StackOptions
-    <$> Opts.optional ( Opts.strOption
-        ( Opts.long "stack-yaml"
-       <> Opts.help "If specified, pass '--stack-yaml=xxx' to stack"
-        ))
-    <*> Opts.optional ( Opts.strOption
-        ( Opts.long "resolver"
-       <> Opts.help "If specified, pass '--resolver=xxx' to stack"
-        ))
-    <*> Opts.optional ( Opts.strOption
-        ( Opts.long "verbosity"
-       <> Opts.help "If specified, pass '--verbosity=xxx' to stack"
-        ))
-    <*> Opts.switch
-        ( Opts.long "cabal-verbose"
-       <> Opts.help "If specified, pass '--cabal-verbose' to stack"
-        )
-    <*> Opts.optional ( Opts.strOption
-        ( Opts.long "ghc-options"
-       <> Opts.help "If specified, pass '--ghc-options=\"xxx\"' to stack"
-        ))
-
-buildDists :: GhcFlavor -> Bool -> Bool -> StackOptions -> Maybe String -> IO String
-buildDists
-  ghcFlavor
-  noGhcCheckout
-  noBuilds
-  StackOptions {stackYaml, resolver, verbosity, cabalVerbose, ghcOptions}
-  versionSuffix
-  =
-  do
+buildDists :: GhcFlavor -> Bool -> Bool -> Maybe String -> IO String
+buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
     filesInDot <- getDirectoryContents "."
     let lockFiles = filter (isExtensionOf ".lock") filesInDot
         tarBalls  = filter (isExtensionOf ".tar.gz") filesInDot
@@ -366,12 +298,12 @@ buildDists
         ghcFlavorArg = ghcFlavorOpt ghcFlavor
 
     system_ "cabal build exe:ghc-lib-gen"
-    system_ $ "cabal run exe:ghc-lib-gen -- ghc ../patches --ghc-lib-parser " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " " ++ stackResolverOpt resolver
+    system_ $ "cabal run exe:ghc-lib-gen -- ghc ../patches --ghc-lib-parser " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor
     patchVersion version "ghc/ghc-lib-parser.cabal"
     mkTarball pkg_ghclib_parser
     renameDirectory pkg_ghclib_parser "ghc-lib-parser"
     removeFile "ghc/ghc-lib-parser.cabal"
-    system_ $ "cabal run exe:ghc-lib-gen -- ghc ../patches --ghc-lib " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " " ++ stackResolverOpt resolver ++ " " ++ "--skip-init"
+    system_ $ "cabal run exe:ghc-lib-gen -- ghc ../patches --ghc-lib " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " --skip-init"
     patchVersion version "ghc/ghc-lib.cabal"
     patchConstraints version "ghc/ghc-lib.cabal"
     mkTarball pkg_ghclib
@@ -409,8 +341,7 @@ buildDists
 
     when noBuilds exitSuccess
 
-    writeFile "cabal.project" (
-      unlines $
+    writeFile "cabal.project" ( unlines $
         [ "packages: "
         , "  ghc-lib-parser/ghc-lib-parser.cabal"
         , "  ghc-lib/ghc-lib.cabal"
@@ -420,8 +351,9 @@ buildDists
         ] ++
         [ "constraints: ghc-lib-test-mini-compile +daml-unit-ids" | Da {} <- [ghcFlavor] ]
       )
-    miniHlintCmdFile <- writeCabalCmdFile "ghc-lib-test-mini-hlint"
-    miniCompileCmdFile <- writeCabalCmdFile "ghc-lib-test-mini-compile"
+
+    writeCabalCmdFile "ghc-lib-test-mini-hlint"
+    writeCabalCmdFile "ghc-lib-test-mini-compile"
 
     cmd "cabal build --ghc-options=-j all"
 
@@ -435,31 +367,11 @@ buildDists
 
     where
 
-      writeCabalCmdFile :: String -> IO FilePath
+      writeCabalCmdFile :: String -> IO ()
       writeCabalCmdFile exe = do
         let filename = exe
             cmd = "cabal run exe:" ++ exe ++ " --project-dir ../.. -- "
         writeFile filename cmd
-        pure filename
-
-      ghcOptionsWithHaddock :: Maybe String -> String
-      ghcOptionsWithHaddock = ghcOptionsOpt
-
-      prelude :: (String, String) -> String
-#if __GLASGOW_HASKELL__ == 902 && __GLASGOW_HASKELL_PATCHLEVEL1__ == 2
-      prelude ("darwin", _) = "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi"
-#endif
-      prelude _ = ""
-
-      stack :: String -> IO ()
-      stack action = cmd $ prelude (os, arch) ++ " stack " ++
-        concatMap (<> " ")
-                 [ stackYamlOpt stackYaml
-                 , stackResolverOpt resolver
-                 , stackVerbosityOpt verbosity
-                 , cabalVerboseOpt cabalVerbose
-                 ] ++
-        action
 
       cmd :: String -> IO ()
       cmd x = do

@@ -12,6 +12,11 @@ jobs:
         os: [ubuntu, macos, windows]
     steps:
       - uses: actions/checkout@v4
+      - uses: haskell-actions/setup@v2
+        id: setup-haskell
+        with:
+          ghc-version: 9.6.5
+          cabal-version: 'latest'
       - name: Install build tools (macOS)
         run: brew install automake
         if: matrix.os == 'macos'
@@ -22,22 +27,6 @@ jobs:
           echo "/c/mingw64/usr/bin" >> $GITHUB_PATH
           echo "/c/msys64/usr/bin" >> $GITHUB_PATH
         if: matrix.os == 'windows'
-      - name: Install ghcup (windows)
-        shell: bash
-        run: |-
-          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_GHC_VERSION=9.6.5 BOOTSTRAP_HASKELL_CABAL_VERSION=latest BOOTSTRAP_HASKELL_INSTALL_NO_STACK=1 BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=1 BOOTSTRAP_HASKELL_ADJUST_BASHRC=N sh
-          echo "/c/ghcup/bin" >> $GITHUB_PATH
-          echo "/c/ghcup/ghc/9.6.5/bin" >> $GITHUB_PATH
-          echo "/c/cabal/bin" >> $GITHUB_PATH
-        if: matrix.os == 'windows'
-      - name: Install ghcup (unix)
-        shell: bash
-        run: |-
-          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_GHC_VERSION=9.6.5 BOOTSTRAP_HASKELL_CABAL_VERSION=latest BOOTSTRAP_HASKELL_INSTALL_NO_STACK=1 BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=1 BOOTSTRAP_HASKELL_ADJUST_BASHRC=N sh
-          echo "$HOME/.ghcup/bin" >> $GITHUB_PATH
-          echo "$HOME/.ghcup/ghc/9.6.5/bin" >> $GITHUB_PATH
-          echo "$HOME/.cabal/bin" >> $GITHUB_PATH
-        if: matrix.os == 'ubuntu' || matrix.os ==  'macos'
       - name: Run CI.hs (windows)
         shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail '{0}'
         run: |-

@@ -56,6 +56,7 @@ import Data.List.Extra hiding (find)
 import Data.Char
 import Data.Maybe
 import Data.Ord
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List.NonEmpty
 
@@ -283,84 +284,64 @@ ghcLibExtraFiles ghcFlavor =
 placeholderModulesDir :: FilePath
 placeholderModulesDir = "placeholder_modules"
 
+getGhcInfo :: IO [(String, String)]
+getGhcInfo = do
+  xs <- systemOutput_ "ghc --info"
+  case reads xs of
+    [(info, _)] -> return info
+    _ -> error "failed to read output from `ghc info --info`"
+
 ghcNumericVersion :: IO String
 ghcNumericVersion = do
-  systemOutput_ "bash -c \"echo -n $(ghc --numeric-version)\""
+  ghcInfo <- getGhcInfo
+  let ghcInfoMap = Map.fromList ghcInfo
+  pure $ fromJust $ Map.lookup "Project version" ghcInfoMap
 
 cabalPackageDb :: String -> IO String
 cabalPackageDb ghcNumericVersion = do
-  cabalStoreDir <-
-    if not isWindows then
-      systemOutput_ "bash -c \"cabal path --store-dir\""
-    else
-      systemOutput_ "bash -c \"echo -n $(cygpath -u $(cabal path --store-dir))\""
-  ghcDir <- systemOutput_ $ "bash -c \"echo -n $(ls " ++ cabalStoreDir ++ " | grep " ++ ghcNumericVersion ++ ")\""
+  cabalStoreDir <- replace "\\" "\\\\" <$> systemOutput_ "cabal path --store-dir"
+  ghcInfo <- getGhcInfo
+  let ghcInfoMap = Map.fromList ghcInfo
+  let ghcDir =
+        case Map.lookup "Project Unit Id" ghcInfoMap of
+          Just projectUnitId -> projectUnitId -- e.g. ghc-9.10.1-2e29
+          Nothing -> "ghc-" ++ ghcNumericVersion
   pure $ cabalStoreDir ++ "/" ++ ghcDir ++ "/package.db"
-
-ghcPackagePath :: String -> String -> IO String
-ghcPackagePath cabalPackageDb ghcNumericVersion =
-  pure $ "GHC_PACKAGE_PATH=" ++ cabalPackageDb ++
-    (if not isWindows then
-        ":"
-      else
-       ":/c/ghcup/ghc/" ++ ghcNumericVersion ++ "/lib/package.conf.d"
-    )
-
-semaphoreCompatBootExists :: IO Bool
-semaphoreCompatBootExists =
-  (== ExitSuccess) . fst <$> systemOutput "bash -c \"ghc-pkg list | grep semaphore-compat\""
 
 setupModuleDepsPlaceholders :: GhcFlavor -> IO ()
 setupModuleDepsPlaceholders _ = do
-  forM_ [
-      "compiler/"
-    , "libraries/ghc-heap/"
-    , "libraries/ghc-internal/"
-    , "libraries/ghci/"
-    ] $ \path ->
-          whenM (doesDirectoryExist path) $
-             genPlaceholderModules path
-  forM_ [
-      "compiler/"
-    , "libraries/ghc-internal/src/"
-    ] $ \path ->
-          whenM (doesDirectoryExist path) $ do
-            files <- filter ((`elem` [".hs-boot"]) . takeExtension) <$> listFilesRecursive path
-            forM_ files $ \file -> do
-              let p = fromJust (stripPrefix path file)
-                  new_p = placeholderModulesDir </> p
-                  dir = System.FilePath.takeDirectory new_p
-              createDirectoryIfMissing True dir
-              copyFile file new_p
+  forM_
+    [ "compiler/",
+      "libraries/ghc-heap/",
+      "libraries/ghc-internal/",
+      "libraries/ghci/"
+    ]
+    $ \path ->
+      whenM (doesDirectoryExist path) $
+        genPlaceholderModules path
+  forM_
+    [ "compiler/",
+      "libraries/ghc-internal/src/"
+    ]
+    $ \path ->
+      whenM (doesDirectoryExist path) $ do
+        files <- filter ((`elem` [".hs-boot"]) . takeExtension) <$> listFilesRecursive path
+        forM_ files $ \file -> do
+          let p = fromJust (stripPrefix path file)
+              new_p = placeholderModulesDir </> p
+              dir = System.FilePath.takeDirectory new_p
+          createDirectoryIfMissing True dir
+          copyFile file new_p
 
-calcModuleDeps :: [FilePath] -> [FilePath] -> [FilePath] -> GhcFlavor -> String -> Bool -> String -> String
-calcModuleDeps includeDirs _hsSrcDirs hsSrcIncludes ghcFlavor ghcPackagePath semaphoreCompatBootExists ghcMakeModeOutputFile = do
-  let series = ghcSeries ghcFlavor
-      rootModulePath = placeholderModulesDir </> "Main.hs"
-      cmd = unwords $
-        [ "ghc" ] ++
-        [ "-optP -DGHCI" | series < GHC_8_10 ] ++
-        [ "-optP -DSTAGE=2" | series < GHC_8_10 ] ++
-        [ "-optP -DGHC_IN_GHCI" | series < GHC_9_2 ] ++
-        [ "-dep-suffix ''"
-        , "-dep-makefile " ++ ghcMakeModeOutputFile
-        , "-M"
-        ] ++
-        includeDirs ++
-        [ "-ignore-package ghc"
-        , "-ignore-package ghci"
-        , "-package base"
-        ] ++
-        [ "-package exceptions" | series == GHC_9_0 ] ++
-        [ "-package semaphore-compat" | series >= GHC_9_8 ] ++
-        hsSrcIncludes ++
-        [ rootModulePath ]
-      cmd' =
-        if series < GHC_9_8 || semaphoreCompatBootExists then
-          cmd
-        else
-          "bash -c \"" ++ ghcPackagePath ++ " " ++ cmd ++ "\""
-    in cmd'
+calcModuleDeps :: [FilePath] -> [FilePath] -> [FilePath] -> GhcFlavor -> FilePath -> String -> String
+calcModuleDeps includeDirs _hsSrcDirs hsSrcIncludes ghcFlavor cabalPackageDb ghcMakeModeOutputFile =
+  unwords $
+    ["ghc -M -dep-suffix '' -dep-makefile " ++ ghcMakeModeOutputFile] ++
+    ["-clear-package-db -global-package-db -user-package-db -package-db " ++ cabalPackageDb] ++ ["-package semaphore-compat" | series >= GHC_9_8] ++
+    includeDirs ++ hsSrcIncludes ++
+    [placeholderModulesDir </> "Main.hs"]
+  where
+    series = ghcSeries ghcFlavor
 
 readGhcMakeModeOutputFile :: FilePath -> [FilePath] -> IO [String]
 readGhcMakeModeOutputFile file hsSrcDirs = do
@@ -368,28 +349,23 @@ readGhcMakeModeOutputFile file hsSrcDirs = do
   -- The idea here is harvest from lines like
   -- 'compiler/prelude/PrelRules.o : compiler/prelude/PrelRules.hs',
   -- just the module name e.g. in this example, 'PrelRules'.
-      -- Strip comment lines.
+  -- Strip comment lines.
   let depends = filter (not . isPrefixOf "#") (lines buf)
       -- Restrict to Haskell source file lines.
       moduleLines = filter (isSuffixOf ".hs") depends
       -- Strip each line up-to and including ':'.
       modulePaths = map (trim . snd) (mapMaybe (stripInfix ":") moduleLines)
       -- Remove leading source directories from what's left.
-      strippedModulePaths = foldl
-        (\acc p -> map (replace (p ++ "/") "") acc)
-        modulePaths
-        hsSrcDirs
+      strippedModulePaths =
+        foldl
+          (\acc p -> map (replace (p ++ "/") "") acc)
+          modulePaths
+          hsSrcDirs
       -- Lastly, manipulate text like 'GHC/Exts/Heap/Constants.hs'
       -- into 'GHC.Exts.Heap.Constants'.
-      modules = [ replace "/" "." . dropSuffix ".hs" $ m | m <- strippedModulePaths, m /= "Main.hs" ]
+      modules = [replace "/" "." . dropSuffix ".hs" $ m | m <- strippedModulePaths, m /= "Main.hs"]
 
   return $ nubSort modules
-
-ghcPackagePath' :: IO String
-ghcPackagePath' = do
-  ghcNumericVersion <- ghcNumericVersion
-  cabalPackageDb <- cabalPackageDb ghcNumericVersion
-  ghcPackagePath cabalPackageDb ghcNumericVersion
 
 calcParserModules :: GhcFlavor -> IO [String]
 calcParserModules ghcFlavor = do
@@ -398,12 +374,11 @@ calcParserModules ghcFlavor = do
       mainFile = "../ghc-lib-gen/ghc-lib-parser" </> show series </> "Main.hs"
   copyFile mainFile rootModulePath
   lib <- mapM readCabalFile (cabalFileLibraries ghcFlavor)
-  ghcPackagePath <- ghcPackagePath'
-  semaphoreCompatBootExists <- semaphoreCompatBootExists
-  let includeDirs = map ("-I" ++ ) (ghcLibParserIncludeDirs ghcFlavor)
+  cabalPackageDb <- cabalPackageDb =<< ghcNumericVersion
+  let includeDirs = map ("-I" ++) (ghcLibParserIncludeDirs ghcFlavor)
       hsSrcDirs = placeholderModulesDir : ghcLibParserHsSrcDirs True ghcFlavor lib
-      hsSrcIncludes = map ("-i" ++ ) hsSrcDirs
-      cmd' = calcModuleDeps includeDirs hsSrcDirs hsSrcIncludes ghcFlavor ghcPackagePath semaphoreCompatBootExists ".parser-depends"
+      hsSrcIncludes = map ("-i" ++) hsSrcDirs
+      cmd' = calcModuleDeps includeDirs hsSrcDirs hsSrcIncludes ghcFlavor cabalPackageDb ".parser-depends"
   putStrLn "# Generating 'ghc/.parser-depends'..."
   putStrLn $ "\n\n# Running: " ++ cmd'
   system_ cmd'
@@ -416,12 +391,11 @@ calcLibModules ghcFlavor = do
       mainFile = "../ghc-lib-gen/ghc-lib" </> show series </> "Main.hs"
   copyFile mainFile rootModulePath
   lib <- mapM readCabalFile (cabalFileLibraries ghcFlavor)
-  ghcPackagePath <- ghcPackagePath'
-  semaphoreCompatBootExists <- semaphoreCompatBootExists
-  let includeDirs = map ("-I" ++ ) (ghcLibIncludeDirs ghcFlavor)
+  cabalPackageDb <- cabalPackageDb =<< ghcNumericVersion
+  let includeDirs = map ("-I" ++) (ghcLibIncludeDirs ghcFlavor)
       hsSrcDirs = placeholderModulesDir : ghcLibHsSrcDirs True ghcFlavor lib
-      hsSrcIncludes = map ("-i" ++ ) hsSrcDirs
-      cmd' = calcModuleDeps includeDirs hsSrcDirs hsSrcIncludes ghcFlavor ghcPackagePath semaphoreCompatBootExists ".lib-depends"
+      hsSrcIncludes = map ("-i" ++) hsSrcDirs
+      cmd' = calcModuleDeps includeDirs hsSrcDirs hsSrcIncludes ghcFlavor cabalPackageDb ".lib-depends"
   putStrLn "# Generating 'ghc/.lib-depends'..."
   putStrLn $ "\n\n# Running: " ++ cmd'
   system_ cmd'
@@ -1379,14 +1353,12 @@ generateCppOpts :: GhcFlavor -> [String] -> String
 generateCppOpts ghcFlavor customCppOpts =
   unwords $ [
       ghcStageDef ghcFlavor
-    , ghciDef ghcFlavor
     , ghcInGhciDef ghcFlavor
     , bootstrapTh ghcFlavor
     ] ++
   customCppOpts
   where
-    ghciDef, ghcInGhciDef, ghcStageDef :: GhcFlavor -> String
-    ghciDef ghcFlavor = if ghcSeries ghcFlavor > GHC_8_10 then "" else "-DGHCI"
+    ghcInGhciDef, ghcStageDef :: GhcFlavor -> String
     ghcInGhciDef = \case f | ghcSeries f >= GHC_9_2 -> ""; _ -> "-DGHC_IN_GHCI"
     ghcStageDef = \case f | ghcSeries f >= GHC_8_10 -> ""; _ -> "-DSTAGE=2"
     bootstrapTh = \case f | ghcSeries f <= GHC_9_10 -> ""; _ -> "-DBOOTSTRAP_TH"

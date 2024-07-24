@@ -1,4 +1,4 @@
-name: ghc-lib-da-ghc-8.4.3
+name: ghc-lib-ghc-9.0.2-ghc-8.10.7
 on:
   push:
   pull_request:
@@ -15,7 +15,7 @@ jobs:
       - uses: haskell-actions/setup@v2
         id: setup-haskell
         with:
-          ghc-version: 8.4.3
+          ghc-version: 8.10.7
           cabal-version: 'latest'
       - name: Install build tools (macOS)
         run: brew install automake
@@ -31,9 +31,9 @@ jobs:
         shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail '{0}'
         run: |-
           pacman -S autoconf automake-wrapper make patch python tar mintty --noconfirm
-          cabal run exe:ghc-lib-build-tool -- --da
+          cabal run exe:ghc-lib-build-tool --constraint=any."happy==1.19.12" --constraint="any.alex==3.2.7.3" -- --ghc-flavor ghc-9.0.2
         if: matrix.os == 'windows-latest'
       - name: Run CI.hs (unix)
         shell: bash
-        run: cabal run exe:ghc-lib-build-tool -- --da
+        run: cabal run exe:ghc-lib-build-tool --constraint="any.happy==1.19.12" --constraint="any.alex==3.2.7.3" -- --ghc-flavor ghc-9.0.2
         if: matrix.os == 'ubuntu-latest' || matrix.os ==  'macos-13'
