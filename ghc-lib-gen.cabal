@@ -21,7 +21,6 @@ flag semaphore-compat
 common base
   default-language: Haskell2010
   ghc-options:
-  ghc-options:
     -Wall -Wincomplete-record-updates -Wredundant-constraints -Widentities
     -Wunused-imports -Wno-name-shadowing
   build-depends: base >= 4.10 && < 5
