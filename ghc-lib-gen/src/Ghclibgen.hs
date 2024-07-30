@@ -43,13 +43,11 @@ module Ghclibgen (
 
 import Control.Exception (handle)
 import Control.Monad.Extra
-import System.Exit (ExitCode(..))
 import System.Process.Extra
 import System.FilePath hiding ((</>), normalise, dropTrailingPathSeparator)
 import System.FilePath.Posix ((</>), normalise, dropTrailingPathSeparator) -- Make sure we generate / on all platforms.
 import System.Directory
 import System.Directory.Extra
-import System.Info.Extra
 import System.IO.Error (isEOFError)
 import System.IO.Extra
 import Data.List.Extra hiding (find)
@@ -1030,7 +1028,7 @@ applyPatchCmmParseNoImplicitPrelude _ = do
     =<< readFile' cmmParse
 
 applyPatchHadrianCabalProject :: GhcFlavor -> IO ()
-applyPatchHadrianCabalProject ghcFlavor = do
+applyPatchHadrianCabalProject _ = do
     cabalProjectContents <- lines' <$> readFile' cabalProject
     cabalProjectContents <- pure (unlines (cabalProjectContents ++ [ "flags:-selftest -with_bazel" ]))
     writeFile cabalProject cabalProjectContents
@@ -1039,7 +1037,6 @@ applyPatchHadrianCabalProject ghcFlavor = do
       lines' s = [ l | l <- lines s , not $ "index-state" `isPrefixOf` l ]
       cabalProject = "hadrian" </> "cabal.project"
       cabalProjectFreeze = cabalProject ++ ".freeze"
-      ghcApi = ghcSeries ghcFlavor
 
 -- Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
