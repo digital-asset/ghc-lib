@@ -1,0 +1,16 @@
+name: ormolu-check
+on:
+  push:
+  pull_request:
+jobs:
+  ormolu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/run-ormolu@v16
+        with:
+          pattern: |
+            CI.hs
+            ghc-lib-gen/src/*.hs
+            examples/ghc-lib-test-utils/src/*.hs
+          mode: check

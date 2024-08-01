@@ -2,25 +2,24 @@
 -- affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 
-module Main(main) where
+module Main (main) where
 
+import Control.Monad
 import Ghclibgen
 import GhclibgenOpts
-
-import System.Directory
 import Options.Applicative
-import Control.Monad
+import System.Directory
 
 main :: IO ()
 main = ghclibgen =<< execParser opts
   where
     opts =
       info
-      (helper <*> ghclibgenVersion <*> ghclibgenOpts)
-      (fullDesc
-        <> header "ghc-lib-gen - ghc-lib cabal file generator"
-        <> progDesc "Generate a ghc-lib target Cabal file"
-      )
+        (helper <*> ghclibgenVersion <*> ghclibgenOpts)
+        ( fullDesc
+            <> header "ghc-lib-gen - ghc-lib cabal file generator"
+            <> progDesc "Generate a ghc-lib target Cabal file"
+        )
 
 ghclibgen :: GhclibgenOpts -> IO ()
 ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts _resolver) = do
@@ -46,21 +45,21 @@ ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts _resolv
 
     init :: GhcFlavor -> IO ()
     init ghcFlavor = do
-        applyPatchTemplateHaskellCabal ghcFlavor
-        applyPatchHadrianCabalProject ghcFlavor
-        applyPatchHeapClosures ghcFlavor
-        applyPatchRtsIncludePaths ghcFlavor
-        applyPatchGhcPrim ghcFlavor
-        applyPatchDisableCompileTimeOptimizations ghcFlavor
-        -- These lines must come before 'generatePrerequisites':
-        applyPatchAclocal ghcFlavor -- Do before ./boot && ./configure
-        applyPatchFptoolsAlex ghcFlavor
-        applyPatchFpFindCxxStdLib ghcFlavor
-        generatePrerequisites ghcFlavor
-        -- Renamings come after 'generatePrerequisites':
-        applyPatchDerivedConstants ghcFlavor -- Needs DerivedConstants.h
-        applyPatchHsVersions ghcFlavor
-        applyPatchGHCiMessage ghcFlavor -- Needs ghcversion.h
-        -- Before placeholder module generation
-        applyPatchGhcInternalEventWindowsHsc ghcFlavor
-        setupModuleDepsPlaceholders ghcFlavor
+      applyPatchTemplateHaskellCabal ghcFlavor
+      applyPatchHadrianCabalProject ghcFlavor
+      applyPatchHeapClosures ghcFlavor
+      applyPatchRtsIncludePaths ghcFlavor
+      applyPatchGhcPrim ghcFlavor
+      applyPatchDisableCompileTimeOptimizations ghcFlavor
+      -- These lines must come before 'generatePrerequisites':
+      applyPatchAclocal ghcFlavor -- Do before ./boot && ./configure
+      applyPatchFptoolsAlex ghcFlavor
+      applyPatchFpFindCxxStdLib ghcFlavor
+      generatePrerequisites ghcFlavor
+      -- Renamings come after 'generatePrerequisites':
+      applyPatchDerivedConstants ghcFlavor -- Needs DerivedConstants.h
+      applyPatchHsVersions ghcFlavor
+      applyPatchGHCiMessage ghcFlavor -- Needs ghcversion.h
+      -- Before placeholder module generation
+      applyPatchGhcInternalEventWindowsHsc ghcFlavor
+      setupModuleDepsPlaceholders ghcFlavor

@@ -1,62 +1,64 @@
 -- Copyright (c) 2021-2022 Digital Asset (Switzerland) GmbH and/or its
 -- affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
-{-# OPTIONS_GHC -Werror=unused-imports -Werror=unused-local-binds -Werror=unused-top-binds -Werror=orphans #-}
 {-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -Werror=unused-imports -Werror=unused-local-binds -Werror=unused-top-binds -Werror=orphans #-}
 
 module TestUtils where
 
-import Test.Tasty.Options
 import Data.Typeable (Typeable)
+import Test.Tasty.Options
 
 newtype StackYaml = StackYaml (Maybe String)
   deriving (Eq, Ord, Typeable)
+
 -- Give as a path relative to the directory containing
 -- ghc-lib-test-mini-hlint.cabal. e.g ../../stack.yaml
 
 newtype Resolver = Resolver (Maybe String)
   deriving (Eq, Ord, Typeable)
 
-data GhcVersion = DaGhc881
-                | Ghc881
-                | Ghc882
-                | Ghc883
-                | Ghc884
-                | Ghc8101
-                | Ghc8102
-                | Ghc8103
-                | Ghc8104
-                | Ghc8105
-                | Ghc8106
-                | Ghc8107
-                | Ghc901
-                | Ghc902
-                | Ghc921
-                | Ghc922
-                | Ghc923
-                | Ghc924
-                | Ghc925
-                | Ghc926
-                | Ghc927
-                | Ghc928
-                | Ghc941
-                | Ghc942
-                | Ghc943
-                | Ghc944
-                | Ghc945
-                | Ghc946
-                | Ghc947
-                | Ghc948
-                | Ghc961
-                | Ghc962
-                | Ghc963
-                | Ghc964
-                | Ghc965
-                | Ghc966
-                | Ghc981
-                | Ghc982
-                | Ghc9101
-                | GhcMaster
+data GhcVersion
+  = DaGhc881
+  | Ghc881
+  | Ghc882
+  | Ghc883
+  | Ghc884
+  | Ghc8101
+  | Ghc8102
+  | Ghc8103
+  | Ghc8104
+  | Ghc8105
+  | Ghc8106
+  | Ghc8107
+  | Ghc901
+  | Ghc902
+  | Ghc921
+  | Ghc922
+  | Ghc923
+  | Ghc924
+  | Ghc925
+  | Ghc926
+  | Ghc927
+  | Ghc928
+  | Ghc941
+  | Ghc942
+  | Ghc943
+  | Ghc944
+  | Ghc945
+  | Ghc946
+  | Ghc947
+  | Ghc948
+  | Ghc961
+  | Ghc962
+  | Ghc963
+  | Ghc964
+  | Ghc965
+  | Ghc966
+  | Ghc981
+  | Ghc982
+  | Ghc9101
+  | GhcMaster
   deriving (Eq, Ord, Typeable)
 
 instance Show GhcVersion where
@@ -64,42 +66,43 @@ instance Show GhcVersion where
 
 showGhcVersion :: GhcVersion -> String
 showGhcVersion = \case
-    Ghc9101 -> "ghc-9.10.1"
-    Ghc982 -> "ghc-9.8.2"
-    Ghc981 -> "ghc-9.8.1"
-    Ghc961 -> "ghc-9.6.1"
-    Ghc948 -> "ghc-9.4.8"
-    Ghc947 -> "ghc-9.4.7"
-    Ghc946 -> "ghc-9.4.6"
-    Ghc945 -> "ghc-9.4.5"
-    Ghc944 -> "ghc-9.4.4"
-    Ghc943 -> "ghc-9.4.3"
-    Ghc942 -> "ghc-9.4.2"
-    Ghc941 -> "ghc-9.4.1"
-    Ghc923 -> "ghc-9.2.3"
-    Ghc922 -> "ghc-9.2.2"
-    Ghc921 -> "ghc-9.2.1"
-    Ghc901 -> "ghc-9.0.1"
-    Ghc902 -> "ghc-9.0.2"
-    Ghc8101 -> "ghc-8.10.1"
-    Ghc8102 -> "ghc-8.10.2"
-    Ghc8103 -> "ghc-8.10.3"
-    Ghc8104 -> "ghc-8.10.4"
-    Ghc8105 -> "ghc-8.10.5"
-    Ghc8106 -> "ghc-8.10.6"
-    Ghc8107 -> "ghc-8.10.7"
-    Ghc881 -> "ghc-8.8.1"
-    Ghc882 -> "ghc-8.8.2"
-    Ghc883 -> "ghc-8.8.3"
-    Ghc884 -> "ghc-8.8.4"
-    DaGhc881 -> "da-ghc-8.8.1"
-    GhcMaster -> "ghc-master"
+  Ghc9101 -> "ghc-9.10.1"
+  Ghc982 -> "ghc-9.8.2"
+  Ghc981 -> "ghc-9.8.1"
+  Ghc961 -> "ghc-9.6.1"
+  Ghc948 -> "ghc-9.4.8"
+  Ghc947 -> "ghc-9.4.7"
+  Ghc946 -> "ghc-9.4.6"
+  Ghc945 -> "ghc-9.4.5"
+  Ghc944 -> "ghc-9.4.4"
+  Ghc943 -> "ghc-9.4.3"
+  Ghc942 -> "ghc-9.4.2"
+  Ghc941 -> "ghc-9.4.1"
+  Ghc923 -> "ghc-9.2.3"
+  Ghc922 -> "ghc-9.2.2"
+  Ghc921 -> "ghc-9.2.1"
+  Ghc901 -> "ghc-9.0.1"
+  Ghc902 -> "ghc-9.0.2"
+  Ghc8101 -> "ghc-8.10.1"
+  Ghc8102 -> "ghc-8.10.2"
+  Ghc8103 -> "ghc-8.10.3"
+  Ghc8104 -> "ghc-8.10.4"
+  Ghc8105 -> "ghc-8.10.5"
+  Ghc8106 -> "ghc-8.10.6"
+  Ghc8107 -> "ghc-8.10.7"
+  Ghc881 -> "ghc-8.8.1"
+  Ghc882 -> "ghc-8.8.2"
+  Ghc883 -> "ghc-8.8.3"
+  Ghc884 -> "ghc-8.8.4"
+  DaGhc881 -> "da-ghc-8.8.1"
+  GhcMaster -> "ghc-master"
 
 newtype GhcFlavor = GhcFlavor GhcVersion
-  deriving(Eq, Ord, Typeable)
+  deriving (Eq, Ord, Typeable)
 
 readFlavor :: String -> Maybe GhcFlavor
-readFlavor = (GhcFlavor <$>) . \case
+readFlavor =
+  (GhcFlavor <$>) . \case
     -- HEAD
     "ghc-master" -> Just GhcMaster
     -- ghc-9.10
