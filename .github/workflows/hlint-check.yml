@@ -1,0 +1,47 @@
+name: hlint-check
+on:
+  push:
+  pull_request:
+jobs:
+  hlint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: haskell-actions/hlint-setup@v2
+      with:
+        version: '3.8'
+    - name: 'ghc-lib'
+      uses: haskell-actions/hlint-run@v2
+      with:
+        path: '["CI.hs", "ghc-lib-gen/src", "examples/ghc-lib-test-utils/src"]'
+        fail-on: warning
+  hlint-examples:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [GHC_8_8, GHC_8_10, GHC_9_0, GHC_9_2, GHC_9_4, GHC_9_6, GHC_9_8, GHC_9_10, GHC_9_12]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: haskell-actions/hlint-setup@v2
+      with:
+        version: '3.8'
+    - run: |-
+        mkdir -p examples/ghc-lib-test-mini-hlint/extra-source-files
+        mkdir -p examples/ghc-lib-test-mini-compile/extra-source-files/ghc-lib
+        mkdir -p examples/ghc-lib-test-mini-compile/extra-source-files/ghc-lib-parser
+        cp -r ghc-lib-gen/ghc-lib-parser/* examples/ghc-lib-test-mini-hlint/extra-source-files/
+        cp -r ghc-lib-gen/ghc-lib-parser/* examples/ghc-lib-test-mini-compile/extra-source-files/ghc-lib-parser/
+        cp -r ghc-lib-gen/ghc-lib/* examples/ghc-lib-test-mini-compile/extra-source-files/ghc-lib/
+      shell: bash
+    - name: 'ghc-lib-test-mini-hlint'
+      uses: haskell-actions/hlint-run@v2
+      with:
+        hlint-bin: hlint --cpp-include examples/ghc-lib-test-mini-hlint/extra-source-files --cpp-define ${{matrix.version}}
+        path: '["examples/ghc-lib-test-mini-hlint/src"]'
+        fail-on: warning
+    - name: 'ghc-lib-test-mini-compile'
+      uses: haskell-actions/hlint-run@v2
+      with:
+        hlint-bin: hlint --cpp-include examples/ghc-lib-test-mini-compile/extra-source-files --cpp-define ${{matrix.version}}
+        path: '["examples/ghc-lib-test-mini-compile/src"]'
+        fail-on: warning
