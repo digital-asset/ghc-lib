@@ -1,4 +1,4 @@
-name: ghc-lib-ghc-HEAD-ghc-9.10.1
+name: Build
 on:
   schedule: # run on master...
   - cron:  '0 0 * * *' # .... once a day at midnight
