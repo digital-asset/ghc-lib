@@ -1,4 +1,5 @@
-# ghc-lib [![Hackage version](https://img.shields.io/hackage/v/ghc-lib.svg?label=Hackage)](https://hackage.haskell.org/package/ghc-lib) [![Stackage version](https://www.stackage.org/package/ghc-lib/badge/nightly?label=Stackage)](https://www.stackage.org/package/ghc-lib) [![Build Status](https://dev.azure.com/digitalasset/ghc-lib/_apis/build/status/digital-asset.ghc-lib?branchName=master)](https://dev.azure.com/digitalasset/ghc-lib/_build/latest?definitionId=11&branchName=master)
+# ghc-lib [![Hackage version](https://img.shields.io/hackage/v/ghc-lib.svg?label=Hackage)](https://hackage.haskell.org/package/ghc-lib) [![Stackage version](https://www.stackage.org/package/ghc-lib/badge/nightly?label=Stackage)](https://www.stackage.org/package/ghc-lib) [![Build](https://github.com/digital-asset/ghc-lib/actions/workflows/ghc-lib-ghc-HEAD-ghc-9.10.1.yml/badge.svg)](https://github.com/digital-asset/ghc-lib/actions/)
+
 Copyright © 2019-2023, Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
 SPDX-License-Identifier: (Apache-2.0 OR BSD-3-Clause)
 
