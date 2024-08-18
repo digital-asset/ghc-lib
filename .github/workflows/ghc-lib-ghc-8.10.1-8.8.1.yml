@@ -1,0 +1,39 @@
+name: ghc-lib-ghc-8.10.1-ghc-8.8.1
+on:
+  push:
+  pull_request:
+jobs:
+  runhaskell:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-13, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/setup@v2
+        id: setup-haskell
+        with:
+          ghc-version: 8.8.1
+          cabal-version: 'latest'
+      - name: Install build tools (macOS)
+        run: brew install automake
+        if: matrix.os == 'macos-13'
+      - name: Configure msys2 (windows)
+        shell: bash
+        run: |-
+          echo "MSYSTEM=CLANG64" >> $GITHUB_ENV
+          echo "/c/mingw64/usr/bin" >> $GITHUB_PATH
+          echo "/c/msys64/usr/bin" >> $GITHUB_PATH
+        if: matrix.os == 'windows-latest'
+      - name: Run CI.hs (windows)
+        shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail '{0}'
+        run: |-
+          pacman -S autoconf automake-wrapper make patch python tar mintty --noconfirm
+          cabal run exe:ghc-lib-build-tool -- --ghc-flavor ghc-8.10.1
+        if: matrix.os == 'windows-latest'
+      - name: Run CI.hs (unix)
+        shell: bash
+        run: cabal run exe:ghc-lib-build-tool -- --ghc-flavor ghc-8.10.1
+        if: matrix.os == 'ubuntu-latest' || matrix.os ==  'macos-13'
