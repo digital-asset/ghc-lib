@@ -317,6 +317,7 @@ calcModuleDeps includeDirs _hsSrcDirs hsSrcIncludes ghcFlavor cabalPackageDb ghc
     [ ["ghc -M -dep-suffix '' -dep-makefile " ++ ghcMakeModeOutputFile],
       ["-clear-package-db -global-package-db -user-package-db -package-db " ++ cabalPackageDb],
       ["-package semaphore-compat" | series >= GHC_9_8],
+      ["-fno-safe-haskell" | series >= GHC_9_0], -- avoid warning: [GHC-98887] -XGeneralizedNewtypeDeriving is not allowed in Safe Haskell; ignoring -XGeneralizedNewtypeDeriving
       includeDirs,
       hsSrcIncludes,
       [placeholderModulesDir </> "Main.hs"]
