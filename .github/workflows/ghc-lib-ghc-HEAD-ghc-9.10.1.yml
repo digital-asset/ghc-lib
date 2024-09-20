@@ -35,5 +35,5 @@ jobs:
         if: matrix.os == 'windows'
       - name: Run CI.hs (unix)
         shell: bash
-        run: cabal run exe:ghc-lib-build-tool -- --ghc-flavor ""
+        run: cabal run exe:ghc-lib-build-tool --constraint="any.happy==1.20.1.1" -- --ghc-flavor ""
         if: matrix.os == 'ubuntu' || matrix.os ==  'macos'
