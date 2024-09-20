@@ -52,7 +52,7 @@ executable ghc-lib-gen
 
 executable ghc-lib-build-tool
   import: base
-  build-tool-depends: alex:alex, happy:happy
+  build-tool-depends: alex:alex, happy:happy < 2.0
   build-depends:
     directory, filepath, time, extra, optparse-applicative
   if flag(semaphore-compat)
