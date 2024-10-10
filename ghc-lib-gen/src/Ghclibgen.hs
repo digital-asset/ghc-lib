@@ -141,6 +141,7 @@ ghcLibHsSrcDirs forDepends ghcFlavor lib =
           GHC_9_8 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform"]
           GHC_9_10 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
           GHC_9_12 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src"]
+          GHC_9_14 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src"]
    in sortDiffListByLength all $ Set.fromList [dir | not forDepends, dir <- exclusions]
 
 -- File path constants.
@@ -1166,6 +1167,8 @@ baseBounds = \case
   Ghc982 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
   -- base-4.20.0.0
   Ghc9101 -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
+  -- base-4.20.0.0 TODO bump
+  Ghc9121 -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
   GhcMaster ->
     -- e.g. "9.11.20230119"
     -- (c.f. 'rts/include/ghcversion.h')
@@ -1179,11 +1182,11 @@ commonBuildDepends ghcFlavor =
     -- base
     base = [baseBounds ghcFlavor]
     specific
-      | ghcSeries ghcFlavor > GHC_9_10 =
+      | ghcSeries ghcFlavor >= GHC_9_12 =
           [ "ghc-prim > 0.2 && < 0.12",
             "containers >= 0.6.2.1 && < 0.8",
             "bytestring >= 0.11.4 && < 0.13",
-            "time >= 1.4 && < 1.13",
+            "time >= 1.4 && < 1.15",
             "filepath >= 1.5 && < 1.6",
             "os-string >= 2.0.1 && < 2.1"
           ]
