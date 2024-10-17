@@ -49,6 +49,7 @@ data GhcFlavor
   | Ghc966
   | Ghc981
   | Ghc982
+  | Ghc983
   | Ghc9101
   | Ghc9121
   | GhcMaster
