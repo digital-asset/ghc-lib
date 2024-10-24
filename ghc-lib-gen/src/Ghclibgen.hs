@@ -920,6 +920,17 @@ mangleCSymbols ghcFlavor = do
   let initGenSym = "initGenSym"
   let enableTimingStats = "enableTimingStats"
   let setHeapSize = "setHeapSize"
+  let keepCAFsForGHCi = "keepCAFsForGHCi"
+  keepCAFsForCHCiExists <- doesFileExist "compiler/cbits/keepCAFsForGHCi.c"
+  when keepCAFsForCHCiExists $ do
+    let file = "compiler/cbits/keepCAFsForGHCi.c"
+     in writeFile file
+          . prefixSymbol keepCAFsForGHCi
+          =<< readFile' file
+    let file = "compiler/GHC.hs"
+     in writeFile file
+          . prefixForeignImport keepCAFsForGHCi
+          =<< readFile' file
   let file = "compiler/cbits/genSym.c"
    in writeFile file
         . prefixSymbol genSym
@@ -1410,6 +1421,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
   (lib, _bin, parserModules, _) <- libBinParserLibModules ghcFlavor
   let hsSrcDirs = replace ["libraries/ghc-boot-th/../ghc-internal/src"] ["libraries/ghc-internal/src"] (ghcLibParserHsSrcDirs False ghcFlavor lib)
   let includeDirs = replace ["libraries/ghc-internal/include"] [] (ghcLibParserIncludeDirs ghcFlavor)
+  keepCAFsForCHCiExists <- doesFileExist "compiler/cbits/keepCAFsForGHCi.c"
   writeFile "ghc-lib-parser.cabal" . unlines . map trimEnd . join $
     [ [ "cabal-version: 3.0",
         "build-type: Simple",
@@ -1482,7 +1494,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
       indent2 ["compiler/cbits/genSym.c"],
       indent2 ["compiler/cbits/cutils.c" | ghcSeries ghcFlavor >= GHC_9_0],
       indent2 ["compiler/parser/cutils.c" | ghcSeries ghcFlavor < GHC_9_0],
-      indent2 ["compiler/cbits/keepCAFsForGHCi.c" | ghcFlavor `elem` [Ghc926, Ghc927, Ghc928, Ghc945, Ghc946, Ghc947, Ghc948] || ghcSeries ghcFlavor >= GHC_9_6],
+      indent2 ["compiler/cbits/keepCAFsForGHCi.c" | keepCAFsForCHCiExists],
       ["    hs-source-dirs:"],
       indent2 hsSrcDirs,
       ["    autogen-modules:"],
