@@ -27,6 +27,7 @@ module Ghclibgen
     applyPatchStage,
     applyPatchNoMonoLocalBinds,
     applyPatchCmmParseNoImplicitPrelude,
+    applyPatchCompilerGHCUnitTypes,
     applyPatchHadrianCabalProject,
     applyPatchGhcInternalEventWindowsHsc,
     applyPatchTemplateHaskellLanguageHaskellTHSyntax,
@@ -1060,6 +1061,15 @@ applyPatchHadrianCabalProject _ = do
     cabalProject = "hadrian" </> "cabal.project"
     cabalProjectFreeze = cabalProject ++ ".freeze"
 
+applyPatchCompilerGHCUnitTypes :: GhcFlavor -> IO ()
+applyPatchCompilerGHCUnitTypes ghcFlavor = do
+  when (ghcFlavor == Ghc9101) $ do
+    writeFile "compiler/GHC/Unit/Types.hs"
+      . replace
+        "import Control.DeepSeq"
+        "import Control.DeepSeq (NFData(..))"
+      =<< readFile' "compiler/GHC/Unit/Types.hs"
+
 -- Data type representing an approximately parsed Cabal file.
 data Cabal = Cabal
   { cabalDir :: FilePath, -- the directory this file exists in
@@ -1175,7 +1185,8 @@ baseBounds = \case
   -- base-4.19.0.0, ghc-prim-0.11.0
   Ghc981 -> "base >= 4.17 && < 4.19.1" -- [ghc-9.4.1, ghc-9.8.2)
   -- base-4.19.1.0
-  Ghc982 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
+  Ghc982 -> "base >= 4.17 && < 4.19.2" -- [ghc-9.4.1, ghc-9.10.1)
+  -- base-4.19.2.0
   Ghc983 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
   -- base-4.20.0.0
   Ghc9101 -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
