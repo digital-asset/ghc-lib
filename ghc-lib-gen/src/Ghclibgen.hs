@@ -1298,7 +1298,7 @@ libBinParserLibModules ghcFlavor = do
 happyBounds :: GhcFlavor -> String
 happyBounds ghcFlavor
   | series < GHC_9_8 = "== 1.20.*"
-  | otherwise = "== 1.20.* || >= 2.0.2 && < 2.1" -- c.f. m4/fptools_happy.m4
+  | otherwise = "== 1.20.* || == 2.0.2 || >= 2.1.2 && < 2.2" -- c.f. m4/fptools_happy.m4
   where
     series = ghcSeries ghcFlavor
 
