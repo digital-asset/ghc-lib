@@ -1206,7 +1206,7 @@ commonBuildDepends ghcFlavor =
           [ "ghc-prim > 0.2 && < 0.12",
             "containers >= 0.6.2.1 && < 0.8",
             "bytestring >= 0.11.4 && < 0.13",
-            "time >= 1.4 && < 1.13",
+            "time >= 1.4 && < 1.15",
             "filepath >= 1 && < 1.6"
           ]
       | ghcSeries ghcFlavor >= GHC_9_8 =
