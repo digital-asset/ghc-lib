@@ -496,7 +496,7 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
     branch = \case
       Ghc9121 -> "ghc-9.12"
       Ghc9101 -> "ghc-9.10.1-release"
-      Ghc983 -> "ghc-9.8"
+      Ghc983 -> "ghc-9.8.3-release"
       Ghc982 -> "ghc-9.8.2-release"
       Ghc981 -> "ghc-9.8.1-release"
       Ghc966 -> "ghc-9.6.6-release"
