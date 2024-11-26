@@ -193,6 +193,23 @@ mkDynFlags filename s = do
       (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
       return dflags
 
+#elif (defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12))
+
+  let baseFlags =
+        (defaultDynFlags fakeSettings) {
+          ghcLink = NoLink
+        , backend = noBackend
+        , homeUnitId_ = toUnitId (stringToUnit ghclibPrimUnitId)
+        }
+  parsePragmasIntoDynFlags filename s baseFlags
+  where
+    parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
+    parsePragmasIntoDynFlags filepath contents dflags0 = do
+      let (_, opts) = getOptions (initParserOpts dflags0)
+                        (stringToStringBuffer contents) filepath
+      (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
+      return dflags
+
 #else
 
   let baseFlags =
@@ -206,6 +223,7 @@ mkDynFlags filename s = do
     parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
     parsePragmasIntoDynFlags filepath contents dflags0 = do
       let (_, opts) = getOptions (initParserOpts dflags0)
+                        (supportedLanguagePragmas dflags0)
                         (stringToStringBuffer contents) filepath
       (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
       return dflags
@@ -394,9 +412,7 @@ fakeSettings = Settings {
 
     platform =  genericPlatform
 
-#else
-   {- defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12) || defined (GHC_9_14) -}
-
+#elif (defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12))
     sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
   , sTargetPlatform=platform
@@ -404,6 +420,43 @@ fakeSettings = Settings {
   , sToolSettings=toolSettings
   }
   where
+    fileSettings = FileSettings {
+         fileSettings_topDir="."
+       , fileSettings_toolDir=Nothing
+       , fileSettings_ghcUsagePath="."
+       , fileSettings_ghciUsagePath="."
+       , fileSettings_globalPackageDatabase="."
+       }
+
+    toolSettings = ToolSettings {
+         toolSettings_opt_P_fingerprint=fingerprint0
+       }
+
+    platformMisc = PlatformMisc {
+       }
+
+    ghcNameVersion = GhcNameVersion{
+         ghcNameVersion_programName="ghc"
+       , ghcNameVersion_projectVersion=cProjectVersion
+      }
+
+    platform =  genericPlatform
+
+#else
+   {- defined (GHC_9_14) -}
+
+    sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+  , sToolSettings=toolSettings
+  , sUnitSettings=unitSettings
+  }
+  where
+    unitSettings = UnitSettings {
+        unitSettings_baseUnitId = stringToUnitId "base"
+      }
+
     fileSettings = FileSettings {
          fileSettings_topDir="."
        , fileSettings_toolDir=Nothing
