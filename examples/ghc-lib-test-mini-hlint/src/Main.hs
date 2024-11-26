@@ -181,11 +181,30 @@ parsePragmasIntoDynFlags flags filepath str =
       sDoc : _ -> do putStrLn sDoc; return Nothing
      where
        sDocs = [ showSDoc flags msg | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs ]
+#elif (defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12))
+  catchErrors $ do
+    let (_, opts) = getOptions (initParserOpts flags)
+                      (stringToStringBuffer str) filepath
+    (flags, _, _) <- parseDynamicFilePragma flags opts
+    return $ Just flags
+  where
+    catchErrors :: IO (Maybe DynFlags) -> IO (Maybe DynFlags)
+    catchErrors act = handleGhcException reportGhcException
+                        (handleSourceError reportSourceErr act)
+
+    reportGhcException e = do print e; return Nothing
+
+    reportSourceErr msgs = case sDocs of
+        [] -> return Nothing
+        sDoc : _ -> do putStrLn sDoc; return Nothing
+      where
+        sDocs = [ showSDoc flags msg | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs ]
 #else
-    {- defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12) || defined (GHC_9_14) -}
+    {- defined (GHC_9_14) -}
 
   catchErrors $ do
     let (_, opts) = getOptions (initParserOpts flags)
+                      (supportedLanguagePragmas flags)
                       (stringToStringBuffer str) filepath
     (flags, _, _) <- parseDynamicFilePragma flags opts
     return $ Just flags
@@ -631,8 +650,7 @@ fakeSettings = Settings {
 
     platform=genericPlatform
 
-#else
-   {- defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12) || defined (GHC_9_14) -}
+#elif (defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12))
 
     sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
@@ -641,6 +659,37 @@ fakeSettings = Settings {
   , sToolSettings=toolSettings
   }
   where
+    fileSettings = FileSettings {
+      }
+
+    toolSettings = ToolSettings {
+        toolSettings_opt_P_fingerprint=fingerprint0
+      }
+
+    platformMisc = PlatformMisc {
+      }
+
+    ghcNameVersion = GhcNameVersion{
+         ghcNameVersion_programName="ghc"
+       , ghcNameVersion_projectVersion=cProjectVersion
+      }
+
+    platform=genericPlatform
+#else
+ {- defined (GHC_9_14) -}
+
+    sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+  , sToolSettings=toolSettings
+  , sUnitSettings=unitSettings
+  }
+  where
+    unitSettings = UnitSettings {
+        unitSettings_baseUnitId = stringToUnitId "base"
+      }
+
     fileSettings = FileSettings {
       }
 
