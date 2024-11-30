@@ -937,6 +937,13 @@ mangleCSymbols ghcFlavor = do
         . prefixSymbol genSym
         . prefixSymbol initGenSym
         =<< readFile' file
+  when (ghcFlavor == Ghc984) $
+    let file = "compiler/cbits/genSym.c"
+     in writeFile file
+          . replace
+            "HsWord64 u = atomic_inc64"
+            "HsWord64 u = atomic_inc"
+          =<< readFile' file
   let files
         | ghcSeries ghcFlavor >= GHC_9_0 = map ("compiler/GHC/Types" </>) ["Unique/Supply.hs", "Unique.hs"]
         | otherwise = ["compiler/basicTypes/UniqSupply.hs"]
@@ -1188,6 +1195,7 @@ baseBounds = \case
   Ghc982 -> "base >= 4.17 && < 4.19.2" -- [ghc-9.4.1, ghc-9.10.1)
   -- base-4.19.2.0
   Ghc983 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
+  Ghc984 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
   -- base-4.20.0.0
   Ghc9101 -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
   -- base-4.20.0.0 TODO bump
@@ -1218,14 +1226,14 @@ commonBuildDepends ghcFlavor =
             "containers >= 0.6.2.1 && < 0.8",
             "bytestring >= 0.11.4 && < 0.13",
             "time >= 1.4 && < 1.15",
-            "filepath >= 1 && < 1.6"
+            "filepath >= 1.5 && < 1.6"
           ]
       | ghcSeries ghcFlavor >= GHC_9_8 =
           [ "ghc-prim > 0.2 && < 0.12",
-            "containers >= 0.6.2.1 && < 0.7",
+            "containers >= 0.6.2.1 && < 0.8",
             "bytestring >= 0.11.4 && < 0.13",
-            "time >= 1.4 && < 1.13",
-            "filepath >= 1 && < 1.5"
+            "time >= 1.4 && < 1.15",
+            "filepath >= 1.5 && < 1.6"
           ]
       | ghcSeries ghcFlavor >= GHC_9_6 =
           [ "ghc-prim > 0.2 && < 0.11",
