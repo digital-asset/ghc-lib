@@ -1,3 +1,4 @@
+
 -- Copyright (c) 2019-2024 Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
@@ -99,7 +100,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "caaf53881d5cc82ebff617f39ad5363429d2eccf" -- 2024-11-25
+current = "bfacc086604c18e30758772a05a8c81e3a4e01bc" -- 2024-12-16
 
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
@@ -344,18 +345,32 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
   gitCheckout ghcFlavor
   system_ "cd ghc && git checkout ."
 
+  -- Move this directory so that we can include/exclude it from
+  -- hs-source-dirs conditionally depdending on the build compiler
+  -- version.
+  ghcBootThGHCInternalDirExists <- doesDirectoryExist "ghc/libraries/ghc-boot-th/GHC/Internal"
+  when ghcBootThGHCInternalDirExists $ do
+    system_ "bash -c \"mkdir -p ghc/libraries/ghc-boot-th-internal/GHC\""
+    system_ "bash -c \"mv ghc/libraries/ghc-boot-th/GHC/Internal ghc/libraries/ghc-boot-th-internal/GHC\""
+
   version <- tag
   let pkg_ghclib = "ghc-lib-" ++ version
       pkg_ghclib_parser = "ghc-lib-parser-" ++ version
       ghcFlavorArg = ghcFlavorOpt ghcFlavor
 
-  system_ "cabal build exe:ghc-lib-gen"
-  system_ $ "cabal run exe:ghc-lib-gen -- ghc ../patches --ghc-lib-parser " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor
+#if __GLASGOW_HASKELL__ < 912
+  let extraCabalFlags = ""
+#else
+  let extraCabalFlags = "--allow-newer=\"hashable:base,unordered-containers:template-haskell\" "
+#endif
+
+  system_ $ "cabal build " ++ extraCabalFlags ++ "exe:ghc-lib-gen"
+  system_ $ "cabal run " ++ extraCabalFlags ++ "exe:ghc-lib-gen -- ghc ../patches --ghc-lib-parser " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor
   patchVersion version "ghc/ghc-lib-parser.cabal"
   mkTarball pkg_ghclib_parser
   renameDirectory pkg_ghclib_parser "ghc-lib-parser"
   removeFile "ghc/ghc-lib-parser.cabal"
-  system_ $ "cabal run exe:ghc-lib-gen -- ghc ../patches --ghc-lib " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " --skip-init"
+  system_ $ "cabal run " ++ extraCabalFlags ++ "exe:ghc-lib-gen -- ghc ../patches --ghc-lib " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " --skip-init"
   patchVersion version "ghc/ghc-lib.cabal"
   patchConstraints version "ghc/ghc-lib.cabal"
   mkTarball pkg_ghclib
@@ -413,8 +428,8 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
 
   system_ $ "cd examples/ghc-lib-test-mini-hlint && cabal test --project-dir ../.. --test-show-details direct --test-options \"--color always --test-command ../../ghc-lib-test-mini-hlint " ++ ghcFlavorArg ++ "\""
   system_ $ "cd examples/ghc-lib-test-mini-compile && cabal test --project-dir ../.. --test-show-details direct --test-options \"--color always --test-command ../../ghc-lib-test-mini-compile " ++ ghcFlavorArg ++ "\""
-  system_ "cabal exec -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
-  system_ "cabal exec -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
+  system_ "cabal -v0 exec -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
+  system_ "cabal -v0 exec -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
 
   -- Something like, "8.8.1.20190828".
   tag -- The return value of type 'IO string'.
@@ -422,7 +437,7 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
     writeCabalCmdFile :: String -> IO ()
     writeCabalCmdFile exe = do
       let filename = exe
-          cmd = "cabal run exe:" ++ exe ++ " --project-dir ../.. -- "
+          cmd = "cabal -v0 run exe:" ++ exe ++ " --project-dir ../.. -- "
       writeFile filename cmd
 
     cmd :: String -> IO ()
@@ -498,7 +513,7 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
 
     branch :: GhcFlavor -> String
     branch = \case
-      Ghc9121 -> "ghc-9.12"
+      Ghc9121 -> "ghc-9.12.1-release"
       Ghc9101 -> "ghc-9.10.1-release"
       Ghc984 -> "ghc-9.8.4-release"
       Ghc983 -> "ghc-9.8.3-release"
