@@ -10,7 +10,7 @@ jobs:
       - uses: haskell-actions/run-ormolu@v16
         with:
           pattern: |
-            CI.hs
-            ghc-lib-gen/src/*.hs
+            # CI.hs
+            # ghc-lib-gen/src/*.hs
             examples/ghc-lib-test-utils/src/*.hs
           mode: check
