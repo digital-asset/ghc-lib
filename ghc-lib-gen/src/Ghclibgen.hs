@@ -1314,7 +1314,7 @@ libBinParserLibModules ghcFlavor = do
 
 happyBounds :: GhcFlavor -> String
 happyBounds ghcFlavor
-  | series < GHC_9_8 = "== 1.20.*"
+  | series < GHC_9_8 = "< 1.21"
   | otherwise = "== 1.20.* || == 2.0.2 || >= 2.1.2 && < 2.2" -- c.f. m4/fptools_happy.m4
   where
     series = ghcSeries ghcFlavor
@@ -1393,7 +1393,7 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         "    build-depends:"
       ],
       indent2 (Data.List.NonEmpty.toList (withCommas (ghcLibBuildDepends ghcFlavor))),
-      ["    build-tool-depends: alex:alex >= 3.1, " ++ "happy:happy " ++ happyBounds ghcFlavor],
+      ["    build-tool-depends: alex:alex >= 3.1 && < 3.5.2.0, " ++ "happy:happy " ++ happyBounds ghcFlavor],
       ["    other-extensions:"],
       indent2 (askField lib "other-extensions:"),
       ["    default-extensions:"],
@@ -1513,7 +1513,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
       [ "    if impl(ghc >= 9.10)",
         "      build-depends: ghc-internal"
       ],
-      ["    build-tool-depends: alex:alex >= 3.1, " ++ "happy:happy " ++ happyBounds ghcFlavor],
+      ["    build-tool-depends: alex:alex >= 3.1 && < 3.5.2.0, " ++ "happy:happy " ++ happyBounds ghcFlavor],
       ["    other-extensions:"],
       indent2 (askField lib "other-extensions:"),
       ["    default-extensions:"],

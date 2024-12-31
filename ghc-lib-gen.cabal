@@ -53,9 +53,9 @@ executable ghc-lib-gen
 executable ghc-lib-build-tool
   import: base
   if impl (ghc > 9.12.0)
-    build-tool-depends: alex:alex, happy:happy == 1.20.* || == 2.0.2 || >= 2.1.2 && < 2.2
+    build-tool-depends: alex:alex < 3.5.2.0, happy:happy == 1.20.* || == 2.0.2 || >= 2.1.2 && < 2.2
   else
-    build-tool-depends: alex:alex, happy:happy < 2.0
+    build-tool-depends: alex:alex < 3.5.2.0, happy:happy < 2.0
   build-depends:
     directory, filepath, time, extra, optparse-applicative
   if flag(semaphore-compat)

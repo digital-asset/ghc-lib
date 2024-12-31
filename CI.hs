@@ -100,7 +100,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "8b266671bcfe9ef5a25f0a78ea7dcca68b78dc32" -- 2024-12-19
+current = "278a53ee698d961d97afb60be9db2d8bf60b4074" -- 2024-12-30
 
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
@@ -358,19 +358,13 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
       pkg_ghclib_parser = "ghc-lib-parser-" ++ version
       ghcFlavorArg = ghcFlavorOpt ghcFlavor
 
-#if __GLASGOW_HASKELL__ < 912
-  let extraCabalFlags = ""
-#else
-  let extraCabalFlags = "--allow-newer=\"hashable:base,unordered-containers:template-haskell\" "
-#endif
-
-  system_ $ "cabal build " ++ extraCabalFlags ++ "exe:ghc-lib-gen"
-  system_ $ "cabal run " ++ extraCabalFlags ++ "exe:ghc-lib-gen -- ghc ../patches --ghc-lib-parser " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor
+  system_ $ "cabal build " ++ "exe:ghc-lib-gen"
+  system_ $ "cabal run " ++ "exe:ghc-lib-gen -- ghc ../patches --ghc-lib-parser " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor
   patchVersion version "ghc/ghc-lib-parser.cabal"
   mkTarball pkg_ghclib_parser
   renameDirectory pkg_ghclib_parser "ghc-lib-parser"
   removeFile "ghc/ghc-lib-parser.cabal"
-  system_ $ "cabal run " ++ extraCabalFlags ++ "exe:ghc-lib-gen -- ghc ../patches --ghc-lib " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " --skip-init"
+  system_ $ "cabal run " ++ "exe:ghc-lib-gen -- ghc ../patches --ghc-lib " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " --skip-init"
   patchVersion version "ghc/ghc-lib.cabal"
   patchConstraints version "ghc/ghc-lib.cabal"
   mkTarball pkg_ghclib
