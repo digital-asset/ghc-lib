@@ -320,6 +320,9 @@ calcModuleDeps includeDirs _hsSrcDirs hsSrcIncludes ghcFlavor cabalPackageDb ghc
     [ ["ghc -M -dep-suffix '' -dep-makefile " ++ ghcMakeModeOutputFile],
       ["-clear-package-db -global-package-db -user-package-db -package-db " ++ cabalPackageDb],
       ["-package semaphore-compat" | series >= GHC_9_8],
+#if __GLASGOW_HASKELL__ == 908 && __GLASGOW_HASKELL_PATCHLEVEL1__ == 4
+      ["-hide-package os-string"], -- avoid System.OsString ambiguity with filepath-1.4.301.0
+#endif
       ["-fno-safe-haskell" | series >= GHC_9_0], -- avoid warning: [GHC-98887] -XGeneralizedNewtypeDeriving is not allowed in Safe Haskell; ignoring -XGeneralizedNewtypeDeriving
       ["-DBIGNUM_NATIVE" | series > GHC_9_12],
       includeDirs,
@@ -938,6 +941,7 @@ mangleCSymbols ghcFlavor = do
    in writeFile file
         . prefixSymbol genSym
         . prefixSymbol initGenSym
+        . replace "#if !MIN_VERSION_GLASGOW_HASKELL(9,9,0,0)" "#if !MIN_VERSION_GLASGOW_HASKELL(9,8,4,0)"
         =<< readFile' file
   when (ghcFlavor == Ghc984) $
     let file = "compiler/cbits/genSym.c"
