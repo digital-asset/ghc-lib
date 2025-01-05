@@ -27,6 +27,7 @@ module Ghclibgen
     applyPatchStage,
     applyPatchNoMonoLocalBinds,
     applyPatchCmmParseNoImplicitPrelude,
+    applyPatchCompilerGHCParserLexer,
     applyPatchCompilerGHCUnitTypes,
     applyPatchHadrianCabalProject,
     applyPatchGhcInternalEventWindowsHsc,
@@ -1074,6 +1075,13 @@ applyPatchHadrianCabalProject _ = do
     cabalProject = "hadrian" </> "cabal.project"
     cabalProjectFreeze = cabalProject ++ ".freeze"
 
+applyPatchCompilerGHCParserLexer :: GhcFlavor -> IO ()
+applyPatchCompilerGHCParserLexer ghcFlavor = do
+  when (ghcSeries ghcFlavor >= GHC_9_12) $ do
+    writeFile "compiler/GHC/Parser/Lexer.x"
+      . replace "{-# INLINE alexScanUser #-}" ""
+      =<< readFile' "compiler/GHC/Parser/Lexer.x"
+
 applyPatchCompilerGHCUnitTypes :: GhcFlavor -> IO ()
 applyPatchCompilerGHCUnitTypes ghcFlavor = do
   when (ghcFlavor == Ghc9101) $ do
@@ -1397,7 +1405,7 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         "    build-depends:"
       ],
       indent2 (Data.List.NonEmpty.toList (withCommas (ghcLibBuildDepends ghcFlavor))),
-      ["    build-tool-depends: alex:alex >= 3.1 && < 3.5.2.0, " ++ "happy:happy " ++ happyBounds ghcFlavor],
+      ["    build-tool-depends: alex:alex >= 3.1, " ++ "happy:happy " ++ happyBounds ghcFlavor],
       ["    other-extensions:"],
       indent2 (askField lib "other-extensions:"),
       ["    default-extensions:"],
@@ -1517,7 +1525,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
       [ "    if impl(ghc >= 9.10)",
         "      build-depends: ghc-internal"
       ],
-      ["    build-tool-depends: alex:alex >= 3.1 && < 3.5.2.0, " ++ "happy:happy " ++ happyBounds ghcFlavor],
+      ["    build-tool-depends: alex:alex >= 3.1, " ++ "happy:happy " ++ happyBounds ghcFlavor],
       ["    other-extensions:"],
       indent2 (askField lib "other-extensions:"),
       ["    default-extensions:"],
@@ -1567,20 +1575,12 @@ generatePrerequisites ghcFlavor = do
         =<< readFile' "./mk/get-win32-tarballs.sh"
     )
 
-  -- When there is a new GHC release it takes time for package bounds
-  -- to get updated.
-#if __GLASGOW_HASKELL__ == 912
-  let hadrianExtraCabalFlags = "--allow-newer "
-#else
-  let hadrianExtraCabalFlags = ""
-#endif
-
   system_ "bash -c ./boot"
   system_ "bash -c \"./configure --enable-tarballs-autodownload\""
   withCurrentDirectory "hadrian" $ do
-    system_ $ "cabal build " ++ hadrianExtraCabalFlags ++ "exe:hadrian --ghc-options=-j"
+    system_ $ "cabal build exe:hadrian --ghc-options=-j"
     system_ . unwords . join $
-      [ [ "cabal run " ++ hadrianExtraCabalFlags ++ "exe:hadrian --",
+      [ [ "cabal run exe:hadrian --",
           "--directory=..",
           "--build-root=ghc-lib"
         ],
