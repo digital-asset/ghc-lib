@@ -1578,7 +1578,7 @@ generatePrerequisites ghcFlavor = do
   system_ "bash -c ./boot"
   system_ "bash -c \"./configure --enable-tarballs-autodownload\""
   withCurrentDirectory "hadrian" $ do
-    system_ $ "cabal build exe:hadrian --ghc-options=-j"
+    system_ "cabal build exe:hadrian --ghc-options=-j"
     system_ . unwords . join $
       [ [ "cabal run exe:hadrian --",
           "--directory=..",
