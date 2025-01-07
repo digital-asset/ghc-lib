@@ -1,6 +1,6 @@
-# ghc-lib [![Hackage version](https://img.shields.io/hackage/v/ghc-lib.svg?label=Hackage)](https://hackage.haskell.org/package/ghc-lib) [![Stackage version](https://www.stackage.org/package/ghc-lib/badge/nightly?label=Stackage)](https://www.stackage.org/package/ghc-lib) [![Build](https://github.com/digital-asset/ghc-lib/actions/workflows/ghc-lib-ghc-HEAD-ghc-9.10.1.yml/badge.svg)](https://github.com/digital-asset/ghc-lib/actions/)
+# ghc-lib [![Hackage version](https://img.shields.io/hackage/v/ghc-lib.svg?label=Hackage)](https://hackage.haskell.org/package/ghc-lib) [![Stackage version](https://www.stackage.org/package/ghc-lib/badge/nightly?label=Stackage)](https://www.stackage.org/package/ghc-lib) [![Build](https://github.com/digital-asset/ghc-lib/actions/workflows/ghc-lib-ghc-HEAD-ghc-9.12.1.yml/badge.svg)](https://github.com/digital-asset/ghc-lib/actions/)
 
-Copyright © 2019-2023, Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
+Copyright © 2019-2025, Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
 SPDX-License-Identifier: (Apache-2.0 OR BSD-3-Clause)
 
 The [GHC API](https://hackage.haskell.org/package/ghc) allows you to use the [GHC compiler](https://www.haskell.org/ghc/) as a library, so you can parse, analyze and compile Haskell code. The GHC API comes preinstalled with GHC, and is tied to that GHC version - if you are using GHC 8.6.3, you get version 8.6.3 of the API, and can't change it. The `ghc-lib` project solves that problem, letting you mix and match versions of the GHC compiler and GHC API. Why might you want that?

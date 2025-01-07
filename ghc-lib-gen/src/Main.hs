@@ -53,6 +53,7 @@ ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts _resolv
       applyPatchGhcPrim ghcFlavor
       applyPatchDisableCompileTimeOptimizations ghcFlavor
       -- These lines must come before 'generatePrerequisites':
+      applyPatchCompilerGHCParserLexer ghcFlavor
       applyPatchAclocal ghcFlavor -- Do before ./boot && ./configure
       applyPatchFptoolsAlex ghcFlavor
       applyPatchFpFindCxxStdLib ghcFlavor

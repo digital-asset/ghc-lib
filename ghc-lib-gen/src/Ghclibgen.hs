@@ -27,6 +27,7 @@ module Ghclibgen
     applyPatchStage,
     applyPatchNoMonoLocalBinds,
     applyPatchCmmParseNoImplicitPrelude,
+    applyPatchCompilerGHCParserLexer,
     applyPatchCompilerGHCUnitTypes,
     applyPatchHadrianCabalProject,
     applyPatchGhcInternalEventWindowsHsc,
@@ -141,7 +142,7 @@ ghcLibHsSrcDirs forDepends ghcFlavor lib =
           GHC_9_4 -> ["ghc-lib/stage0/libraries/ghc-boot/build", "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-heap", "libraries/ghci"]
           GHC_9_6 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghci"]
           GHC_9_8 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform"]
-          GHC_9_10 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
+          GHC_9_10 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot-th-internal", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
           GHC_9_12 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot-th-internal", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src"]
           GHC_9_14 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot-th-internal", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src"]
    in sortDiffListByLength all $ Set.fromList [dir | not forDepends, dir <- exclusions]
@@ -320,6 +321,9 @@ calcModuleDeps includeDirs _hsSrcDirs hsSrcIncludes ghcFlavor cabalPackageDb ghc
     [ ["ghc -M -dep-suffix '' -dep-makefile " ++ ghcMakeModeOutputFile],
       ["-clear-package-db -global-package-db -user-package-db -package-db " ++ cabalPackageDb],
       ["-package semaphore-compat" | series >= GHC_9_8],
+#if __GLASGOW_HASKELL__ == 908 && __GLASGOW_HASKELL_PATCHLEVEL1__ == 4
+      ["-hide-package os-string"], -- avoid System.OsString ambiguity with filepath-1.4.301.0
+#endif
       ["-fno-safe-haskell" | series >= GHC_9_0], -- avoid warning: [GHC-98887] -XGeneralizedNewtypeDeriving is not allowed in Safe Haskell; ignoring -XGeneralizedNewtypeDeriving
       ["-DBIGNUM_NATIVE" | series > GHC_9_12],
       includeDirs,
@@ -938,6 +942,7 @@ mangleCSymbols ghcFlavor = do
    in writeFile file
         . prefixSymbol genSym
         . prefixSymbol initGenSym
+        . replace "#if !MIN_VERSION_GLASGOW_HASKELL(9,9,0,0)" "#if !MIN_VERSION_GLASGOW_HASKELL(9,8,4,0)"
         =<< readFile' file
   when (ghcFlavor == Ghc984) $
     let file = "compiler/cbits/genSym.c"
@@ -1069,6 +1074,13 @@ applyPatchHadrianCabalProject _ = do
     lines' s = [l | l <- lines s, not $ "index-state" `isPrefixOf` l]
     cabalProject = "hadrian" </> "cabal.project"
     cabalProjectFreeze = cabalProject ++ ".freeze"
+
+applyPatchCompilerGHCParserLexer :: GhcFlavor -> IO ()
+applyPatchCompilerGHCParserLexer ghcFlavor = do
+  when (ghcSeries ghcFlavor >= GHC_9_12) $ do
+    writeFile "compiler/GHC/Parser/Lexer.x"
+      . replace "{-# INLINE alexScanUser #-}" ""
+      =<< readFile' "compiler/GHC/Parser/Lexer.x"
 
 applyPatchCompilerGHCUnitTypes :: GhcFlavor -> IO ()
 applyPatchCompilerGHCUnitTypes ghcFlavor = do
@@ -1314,7 +1326,7 @@ libBinParserLibModules ghcFlavor = do
 
 happyBounds :: GhcFlavor -> String
 happyBounds ghcFlavor
-  | series < GHC_9_8 = "== 1.20.*"
+  | series < GHC_9_8 = "< 1.21"
   | otherwise = "== 1.20.* || == 2.0.2 || >= 2.1.2 && < 2.2" -- c.f. m4/fptools_happy.m4
   where
     series = ghcSeries ghcFlavor
@@ -1563,20 +1575,12 @@ generatePrerequisites ghcFlavor = do
         =<< readFile' "./mk/get-win32-tarballs.sh"
     )
 
-  -- When there is a new GHC release it takes time for package bounds
-  -- to get updated.
-#if __GLASGOW_HASKELL__ == 912
-  let hadrianExtraCabalFlags = "--allow-newer "
-#else
-  let hadrianExtraCabalFlags = ""
-#endif
-
   system_ "bash -c ./boot"
   system_ "bash -c \"./configure --enable-tarballs-autodownload\""
   withCurrentDirectory "hadrian" $ do
-    system_ $ "cabal build " ++ hadrianExtraCabalFlags ++ "exe:hadrian --ghc-options=-j"
+    system_ "cabal build exe:hadrian --ghc-options=-j"
     system_ . unwords . join $
-      [ [ "cabal run " ++ hadrianExtraCabalFlags ++ "exe:hadrian --",
+      [ [ "cabal run exe:hadrian --",
           "--directory=..",
           "--build-root=ghc-lib"
         ],
