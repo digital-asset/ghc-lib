@@ -942,8 +942,12 @@ mangleCSymbols ghcFlavor = do
    in writeFile file
         . prefixSymbol genSym
         . prefixSymbol initGenSym
-        . replace "#if !MIN_VERSION_GLASGOW_HASKELL(9,9,0,0)" "#if !MIN_VERSION_GLASGOW_HASKELL(9,8,4,0)"
-        =<< readFile' file
+          =<< readFile' file
+  when (ghcFlavor <= Ghc9121) $
+    let file = "compiler/cbits/genSym.c"
+    in writeFile file
+       . replace "#if !MIN_VERSION_GLASGOW_HASKELL(9,9,0,0)" "#if !MIN_VERSION_GLASGOW_HASKELL(9,8,4,0)"
+       =<< readFile' file
   when (ghcFlavor == Ghc984) $
     let file = "compiler/cbits/genSym.c"
      in writeFile file
