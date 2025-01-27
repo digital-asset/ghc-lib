@@ -80,11 +80,17 @@ cabalFileLibraries ghcFlavor =
     ]
 
 -- C-preprocessor "include dirs" for 'ghc-lib-parser'.
-ghcLibParserIncludeDirs :: GhcFlavor -> [FilePath]
-ghcLibParserIncludeDirs ghcFlavor =
+ghcLibParserIncludeDirs :: Bool -> GhcFlavor -> [FilePath]
+ghcLibParserIncludeDirs _forDepends ghcFlavor =
   join
     [ case ghcSeries ghcFlavor of
-        series | series > GHC_9_10 -> ["libraries/ghc-internal/include", "rts/include", "rts/include/stg"]
+        series | series >= GHC_9_10 ->
+                 [ "rts/include"
+                 , "rts/include/stg"
+#if __GLASGOW_HASKELL__ == 910
+                , "libraries/ghc-internal/include"
+#endif
+                 ]
         series | series > GHC_9_8 -> ["rts/include", "rts/include/stg"]
         series | series >= GHC_9_4 -> ["rts/include"] -- ghcconfig.h, ghcversion.h
         series | series < GHC_9_4 -> ["includes"] -- ghcconfig.h, MachDeps.h, MachRegs.h, CodeGen.Platform.hs
@@ -95,7 +101,7 @@ ghcLibParserIncludeDirs ghcFlavor =
     ]
 
 -- C-preprocessor "include dirs" for 'ghc-lib'.
-ghcLibIncludeDirs :: GhcFlavor -> [FilePath]
+ghcLibIncludeDirs :: Bool -> GhcFlavor -> [FilePath]
 ghcLibIncludeDirs = ghcLibParserIncludeDirs
 
 -- Sort by length so the longest paths are at the front. We do this
@@ -109,14 +115,18 @@ sortDiffListByLength all excludes =
 -- The "hs-source-dirs" universe.
 allHsSrcDirs :: Bool -> GhcFlavor -> [Cabal] -> [FilePath]
 allHsSrcDirs forDepends ghcFlavor lib =
-  join
+  filter (/= "libraries/ghc-boot-th/../ghc-internal/src") (join
     [ [stage0Compiler],
+#if __GLASGOW_HASKELL__ == 910
+      -- ghc -M needs source paths to GHC.Internal modules
+      ["ghc-lib/stage0/libraries/ghc-internal/build" | forDepends],
+      [dir | forDepends, dir <- ["libraries/ghc-boot-th-internal", "libraries/ghc-internal/src"]],
+#endif
       [dir | forDepends, dir <- [stage0Ghci, stage0GhcHeap]],
       [stage0GhcBoot | ghcSeries ghcFlavor >= GHC_8_10],
       map takeDirectory (cabalFileLibraries ghcFlavor),
-      map (dropTrailingPathSeparator . normalise) (askFiles lib "hs-source-dirs:"),
-      ["libraries/ghc-boot-th-internal"]
-    ]
+      map (dropTrailingPathSeparator . normalise) (askFiles lib "hs-source-dirs:")
+    ])
 
 -- The "hs-source-dirs" for 'ghc-lib-parser'.
 ghcLibParserHsSrcDirs :: Bool -> GhcFlavor -> [Cabal] -> [FilePath]
@@ -127,7 +137,7 @@ ghcLibParserHsSrcDirs forDepends ghcFlavor lib =
           GHC_8_8 -> ["compiler/codeGen", "compiler/hieFile", "compile/llvmGen", "compiler/stranal", "compiler/rename", "compiler/stgSyn", "compiler/llvmGen"]
           GHC_8_10 -> ["compiler/nativeGen", "compiler/deSugar", "compiler/hieFile", "compiler/llvmGen", "compiler/stranal", "compiler/rename", "compiler/stgSyn"]
           _ -> []
-   in sortDiffListByLength all $ Set.fromList [dir | not forDepends, dir <- exclusions]
+  in sortDiffListByLength all $ Set.fromList [dir | not forDepends, dir <- exclusions]
 
 -- The "hs-source-dirs" for 'ghc-lib'.
 ghcLibHsSrcDirs :: Bool -> GhcFlavor -> [Cabal] -> [FilePath]
@@ -142,9 +152,9 @@ ghcLibHsSrcDirs forDepends ghcFlavor lib =
           GHC_9_4 -> ["ghc-lib/stage0/libraries/ghc-boot/build", "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-heap", "libraries/ghci"]
           GHC_9_6 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghci"]
           GHC_9_8 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform"]
-          GHC_9_10 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot-th-internal", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
-          GHC_9_12 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot-th-internal", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src"]
-          GHC_9_14 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot-th-internal", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src"]
+          GHC_9_10 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
+          GHC_9_12 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
+          GHC_9_14 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
    in sortDiffListByLength all $ Set.fromList [dir | not forDepends, dir <- exclusions]
 
 -- File path constants.
@@ -217,7 +227,7 @@ rtsDependencies ghcFlavor =
 
 compilerDependencies :: GhcFlavor -> [FilePath]
 compilerDependencies ghcFlavor =
-  map (stage0Compiler </>) . join $
+  (map (stage0Compiler </>) . join $
     [ ["primop-can-fail.hs-incl" | series < GHC_9_10],
       ["primop-code-size.hs-incl", "primop-commutable.hs-incl", "primop-data-decl.hs-incl", "primop-fixity.hs-incl"],
       [if series < GHC_9_10 then "primop-has-side-effects.hs-incl" else "primop-effects.hs-incl"],
@@ -225,8 +235,14 @@ compilerDependencies ghcFlavor =
       ["primop-docs.hs-incl" | series >= GHC_9_0],
       [incl | series >= GHC_9_10, incl <- ["primop-is-work-free.hs-incl", "primop-is-cheap.hs-incl"]],
       ["primop-deprecations.hs-incl" | series > GHC_9_10],
-      ["GHC/Platform/Constants.hs" | series >= GHC_9_2]
-    ]
+      ["GHC/Platform/Constants.hs" | series >= GHC_9_2] ]) ++
+#if __GLASGOW_HASKELL__ != 910
+  []
+#else
+  -- GHC.Internal.Prim needs to be found by 'ghc -M' so provide it.
+  [ "ghc-lib/stage0/libraries/ghc-internal/build/GHC/Internal/Prim.hs" | series > GHC_9_12] ++
+  [ "ghc-lib/stage0/libraries/ghc-internal/build/GHC/Internal/PrimopWrappers.hs" | series > GHC_9_12]
+#endif
   where
     series = ghcSeries ghcFlavor
 
@@ -295,15 +311,19 @@ setupModuleDepsPlaceholders _ = do
   forM_
     [ "compiler/",
       "libraries/ghc-heap/",
+#if __GLASGOW_HASKELL__ == 910
       "libraries/ghc-internal/",
+#endif
       "libraries/ghci/"
     ]
     $ \path ->
       whenM (doesDirectoryExist path) $
         genPlaceholderModules path
   forM_
-    [ "compiler/",
-      "libraries/ghc-internal/src/"
+    [ "compiler/"
+#if __GLASGOW_HASKELL__ == 910
+    , "libraries/ghc-internal/"
+#endif
     ]
     $ \path ->
       whenM (doesDirectoryExist path) $ do
@@ -365,7 +385,7 @@ calcParserModules ghcFlavor = do
   copyFile mainFile rootModulePath
   lib <- mapM readCabalFile (cabalFileLibraries ghcFlavor)
   cabalPackageDb <- cabalPackageDb =<< ghcNumericVersion
-  let includeDirs = map ("-I" ++) (ghcLibParserIncludeDirs ghcFlavor)
+  let includeDirs = map ("-I" ++) (ghcLibParserIncludeDirs True ghcFlavor)
       hsSrcDirs = placeholderModulesDir : ghcLibParserHsSrcDirs True ghcFlavor lib
       hsSrcIncludes = map ("-i" ++) hsSrcDirs
       cmd' = calcModuleDeps includeDirs hsSrcDirs hsSrcIncludes ghcFlavor cabalPackageDb ".parser-depends"
@@ -382,7 +402,7 @@ calcLibModules ghcFlavor = do
   copyFile mainFile rootModulePath
   lib <- mapM readCabalFile (cabalFileLibraries ghcFlavor)
   cabalPackageDb <- cabalPackageDb =<< ghcNumericVersion
-  let includeDirs = map ("-I" ++) (ghcLibIncludeDirs ghcFlavor)
+  let includeDirs = map ("-I" ++) (ghcLibIncludeDirs True ghcFlavor)
       hsSrcDirs = placeholderModulesDir : ghcLibHsSrcDirs True ghcFlavor lib
       hsSrcIncludes = map ("-i" ++) hsSrcDirs
       cmd' = calcModuleDeps includeDirs hsSrcDirs hsSrcIncludes ghcFlavor cabalPackageDb ".lib-depends"
@@ -1321,12 +1341,22 @@ libBinParserLibModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String], [String])
 libBinParserLibModules ghcFlavor = do
   lib <- mapM readCabalFile (cabalFileLibraries ghcFlavor)
   bin <- readCabalFile cabalFileBinary
+#if __GLASGOW_HASKELL__ != 910
+  -- ghc -M didn't see libraries/ghc-internal/src.
+  parserModules <- calcParserModules ghcFlavor
+  libModules <- calcLibModules ghcFlavor
+  return (lib, [bin], parserModules, libModules)
+#else
+  -- Strip ghc -M deps in libraries/ghc-internal/src. Any GHC.Internal
+  -- modules we actually need we put in the .cabal files we'll list
+  -- explicitly later.
   parserModules <- filterGhcInternalModules <$> calcParserModules ghcFlavor
   libModules <- filterGhcInternalModules <$> calcLibModules ghcFlavor
   return (lib, [bin], parserModules, libModules)
   where
     filterGhcInternalModules :: [String] -> [String]
     filterGhcInternalModules = filter (not . isInfixOf "GHC.Internal")
+#endif
 
 happyBounds :: GhcFlavor -> String
 happyBounds ghcFlavor
@@ -1353,8 +1383,8 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
             (Set.fromList parserModules))
       ```
   -}
-  let hsSrcDirs = replace ["libraries/ghc-boot-th/../ghc-internal/src"] [] (ghcLibHsSrcDirs False ghcFlavor lib)
-  let includeDirs = replace ["libraries/ghc-internal/include"] [] (ghcLibIncludeDirs ghcFlavor)
+  let hsSrcDirs = ghcLibHsSrcDirs False ghcFlavor lib
+  let includeDirs = ghcLibIncludeDirs False ghcFlavor
   writeFile "ghc-lib.cabal" . unlines . map trimEnd . join $
     [ [ "cabal-version: 3.0",
         "build-type: Simple",
@@ -1422,6 +1452,7 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
       ["    reexported-modules:"],
       indent2 (Data.List.NonEmpty.toList (withCommas (Data.List.NonEmpty.fromList $ nubSort parserModules))),
       if ghcSeries ghcFlavor > GHC_9_10 then
+        -- ghc-lib w/ghc-9.10.1 re-exports ghc-lib-parser GHC.Internal modules
         join [
                ["    if impl(ghc < 9.12.1)"],
                ["      reexported-modules:"],
@@ -1467,10 +1498,8 @@ performExtraFilesSubstitutions ghcFlavor files =
 generateGhcLibParserCabal :: GhcFlavor -> [String] -> IO ()
 generateGhcLibParserCabal ghcFlavor customCppOpts = do
   (lib, _bin, parserModules, _) <- libBinParserLibModules ghcFlavor
-  -- Remove 'ghc-interal/src', 'ghc-boot-th/internal' etc. They are
-  -- dealt with later explicitly.
-  let hsSrcDirs = filter (not . isInfixOf "internal") $ ghcLibParserHsSrcDirs False ghcFlavor lib
-  let includeDirs = filter (/= "libraries/ghc-internal/include") $ ghcLibParserIncludeDirs ghcFlavor
+  let hsSrcDirs = ghcLibParserHsSrcDirs False ghcFlavor lib
+  let includeDirs = ghcLibParserIncludeDirs False ghcFlavor
   keepCAFsForCHCiExists <- doesFileExist "compiler/cbits/keepCAFsForGHCi.c"
   writeFile "ghc-lib-parser.cabal" . unlines . map trimEnd . join $
     [ [ "cabal-version: 3.0",
@@ -1553,6 +1582,7 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
       ["    exposed-modules:"],
       indent2 parserModules,
       if ghcSeries ghcFlavor > GHC_9_10 then
+        -- ghc-lib-parser with ghc-9.10.1 needs to contain GHC.Internal modules
         join [
                ["    if impl(ghc < 9.12.1)"],
                ["      hs-source-dirs:"],
