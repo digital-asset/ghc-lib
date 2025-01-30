@@ -100,7 +100,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "595013d41464c1e328369bb81ce0ea2814e91b68" -- 2025-01-24
+current = "70f7741acd9d50a6cc07553aeaae600afe4a72b8" -- 2025-01-27
 
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
@@ -422,6 +422,7 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
 
   system_ $ "cd examples/ghc-lib-test-mini-hlint && cabal test --project-dir ../.. --test-show-details direct --test-options \"--color always --test-command ../../ghc-lib-test-mini-hlint " ++ ghcFlavorArg ++ "\""
   system_ $ "cd examples/ghc-lib-test-mini-compile && cabal test --project-dir ../.. --test-show-details direct --test-options \"--color always --test-command ../../ghc-lib-test-mini-compile " ++ ghcFlavorArg ++ "\""
+
   system_ "cabal -v0 exec -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
   system_ "cabal -v0 exec -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
 

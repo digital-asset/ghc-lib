@@ -54,6 +54,7 @@ import Paths_ghc_lib
 
 import System.Environment
 import System.Directory
+import System.FilePath(takeDirectory)
 import System.IO.Extra
 import qualified Data.Map.Strict as Map
 import Data.IORef
@@ -63,12 +64,14 @@ main = do
   args <- getArgs
   case args of
     [file] -> do
+      let dir = takeDirectory file
       s <- readFile' file
       flags <- mkDynFlags file s
       dataDir <- getDataDir
       createDirectoryIfMissing True $ dataDir ++ "/../mingw" -- hack: avoid "could not detect toolchain mingw"
       cm <- runGhc (Just dataDir) $ do
-              setSessionDynFlags flags
+              let searchPaths = [dir]
+              setSessionDynFlags flags { importPaths = searchPaths }
               compileToCoreSimplified file
       putStrLn $ showSDoc flags $ ppr cm
     _ -> fail "Exactly one file argument required"
@@ -77,8 +80,10 @@ ghclibPrimUnitId :: String
 ghclibPrimUnitId =
 #if defined (DAML_UNIT_IDS)
  "daml-prim"
-#else
+#elif defined(GHC_9_12) || defined (GHC_9_10) || defined (GHC_9_8) || defined (GHC_9_6) || defined (GHC_9_4) || defined (GHC_9_2) || defined (GHC_9_0) || defined (GHC_8_10) || defined (GHC_8_8)
  "ghc-prim"
+#else
+ "ghc-internal"
 #endif
 
 -- Create a DynFlags which is sufficiently filled in to work, but not

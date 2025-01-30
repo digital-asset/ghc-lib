@@ -64,6 +64,9 @@ data GhcVersion
   | GhcMaster
   deriving (Eq, Ord, Typeable)
 
+data GhcSeries = GHC_8_8 | GHC_8_10 | GHC_9_0 | GHC_9_2 | GHC_9_4 | GHC_9_6 | GHC_9_8 | GHC_9_10 | GHC_9_12 | GHC_9_14
+  deriving (Eq, Ord)
+
 instance Show GhcVersion where
   show = showGhcVersion
 
@@ -105,6 +108,19 @@ showGhcVersion = \case
 
 newtype GhcFlavor = GhcFlavor GhcVersion
   deriving (Eq, Ord, Typeable)
+
+ghcSeries :: GhcFlavor -> GhcSeries
+ghcSeries (GhcFlavor f)
+  | DaGhc881 <= f && f < Ghc8101 = GHC_8_8
+  | Ghc8101 <= f && f < Ghc901 = GHC_8_10
+  | Ghc901 <= f && f < Ghc921 = GHC_9_0
+  | Ghc921 <= f && f < Ghc941 = GHC_9_2
+  | Ghc941 <= f && f < Ghc961 = GHC_9_4
+  | Ghc961 <= f && f < Ghc981 = GHC_9_6
+  | Ghc981 <= f && f < Ghc9101 = GHC_9_8
+  | Ghc9101 <= f && f < Ghc9121 = GHC_9_10
+  | Ghc9121 <= f && f < GhcMaster = GHC_9_12
+  | otherwise = GHC_9_14
 
 readFlavor :: String -> Maybe GhcFlavor
 readFlavor =

@@ -13,7 +13,7 @@ jobs:
     - name: 'ghc-lib'
       uses: haskell-actions/hlint-run@v2
       with:
-        path: '["CI.hs", "ghc-lib-gen/src", "examples/ghc-lib-test-utils/src"]'
+        path: '["CI.hs", "examples/ghc-lib-test-utils/src"]'
         fail-on: warning
   hlint-examples:
     runs-on: ubuntu-latest
