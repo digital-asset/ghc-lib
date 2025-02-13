@@ -87,7 +87,7 @@ ghcLibParserIncludeDirs _forDepends ghcFlavor =
         series | series >= GHC_9_10 ->
                  [ "rts/include"
                  , "rts/include/stg"
-#if __GLASGOW_HASKELL__ == 910
+#if __GLASGOW_HASKELL__ == 910 || __GLASGOW_HASKELL__ == 908
                 , "libraries/ghc-internal/include"
 #endif
                  ]
@@ -117,7 +117,7 @@ allHsSrcDirs :: Bool -> GhcFlavor -> [Cabal] -> [FilePath]
 allHsSrcDirs forDepends ghcFlavor lib =
   filter (/= "libraries/ghc-boot-th/../ghc-internal/src") (join
     [ [stage0Compiler],
-#if __GLASGOW_HASKELL__ == 910
+#if __GLASGOW_HASKELL__ == 910 || __GLASGOW_HASKELL__ == 908
       -- ghc -M needs source paths to GHC.Internal modules
       ["ghc-lib/stage0/libraries/ghc-internal/build" | forDepends],
       [dir | forDepends, dir <- ["libraries/ghc-boot-th-internal", "libraries/ghc-internal/src"]],
@@ -311,7 +311,7 @@ setupModuleDepsPlaceholders _ = do
   forM_
     [ "compiler/",
       "libraries/ghc-heap/",
-#if __GLASGOW_HASKELL__ == 910
+#if __GLASGOW_HASKELL__ == 910 || __GLASGOW_HASKELL__ == 908
       "libraries/ghc-internal/",
 #endif
       "libraries/ghci/"
@@ -321,7 +321,7 @@ setupModuleDepsPlaceholders _ = do
         genPlaceholderModules path
   forM_
     [ "compiler/"
-#if __GLASGOW_HASKELL__ == 910
+#if __GLASGOW_HASKELL__ == 910 || __GLASGOW_HASKELL__ == 908
     , "libraries/ghc-internal/"
 #endif
     ]
@@ -1341,7 +1341,7 @@ libBinParserLibModules :: GhcFlavor -> IO ([Cabal], [Cabal], [String], [String])
 libBinParserLibModules ghcFlavor = do
   lib <- mapM readCabalFile (cabalFileLibraries ghcFlavor)
   bin <- readCabalFile cabalFileBinary
-#if __GLASGOW_HASKELL__ != 910
+#if !(__GLASGOW_HASKELL__ == 910 || __GLASGOW_HASKELL__ == 908)
   -- ghc -M didn't see libraries/ghc-internal/src.
   parserModules <- calcParserModules ghcFlavor
   libModules <- calcLibModules ghcFlavor
