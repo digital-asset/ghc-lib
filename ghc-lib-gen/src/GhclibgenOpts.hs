@@ -98,6 +98,7 @@ readFlavor = eitherReader $ \case
   -- ghc-9.10
   "ghc-9.10.1" -> Right Ghc9101
   -- ghc-9.8
+  "ghc-9.8.5" -> Right Ghc985
   "ghc-9.8.4" -> Right Ghc984
   "ghc-9.8.3" -> Right Ghc983
   "ghc-9.8.2" -> Right Ghc982
