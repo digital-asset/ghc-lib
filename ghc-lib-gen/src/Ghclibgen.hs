@@ -1452,14 +1452,28 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
       ],
       ["    reexported-modules:"],
       indent2 (Data.List.NonEmpty.toList (withCommas (Data.List.NonEmpty.fromList $ nubSort parserModules))),
-      if ghcSeries ghcFlavor > GHC_9_10 then
-        -- ghc-lib w/ghc-9.10.1 re-exports ghc-lib-parser GHC.Internal modules
-        join [
-               ["    if impl(ghc < 9.12.1)"],
-               ["      reexported-modules:"],
-               indent3 (Data.List.NonEmpty.toList (withCommas (Data.List.NonEmpty.fromList [  "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax", "GHC.Internal.TH.Ppr", "GHC.Internal.TH.PprLib", "GHC.Internal.TH.Lib.Map"])))
-             ]
-      else [],
+      if ghcSeries ghcFlavor > GHC_9_12
+        then
+          join [
+                 ["    if impl(ghc < 9.12.1)"],
+                 ["      hs-source-dirs:"],
+                 ["        libraries/ghc-internal/src"],
+                 ["        libraries/ghc-boot-th-internal"],
+                 ["      reexported-modules:"],
+                 indent3 (Data.List.NonEmpty.toList (withCommas (Data.List.NonEmpty.fromList [ "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax"])))
+               ]
+        else
+          if ghcSeries ghcFlavor > GHC_9_10
+          then
+            join [
+                   ["    if impl(ghc < 9.12.1)"],
+                   ["      hs-source-dirs:"],
+                   ["        libraries/ghc-internal/src"],
+                   ["        libraries/ghc-boot-th-internal"],
+                   ["      reexported-modules:"],
+                   indent3 (Data.List.NonEmpty.toList (withCommas (Data.List.NonEmpty.fromList [  "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax", "GHC.Internal.TH.Ppr", "GHC.Internal.TH.PprLib", "GHC.Internal.TH.Lib.Map"])))
+               ]
+          else [],
       [ "    exposed-modules:",
         "        Paths_ghc_lib"
       ],
@@ -1582,17 +1596,29 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
       indent2 [x | ghcSeries ghcFlavor < GHC_9_0, x <- ["Lexer", "Parser"]],
       ["    exposed-modules:"],
       indent2 parserModules,
-      if ghcSeries ghcFlavor > GHC_9_10 then
-        -- ghc-lib-parser with ghc-9.10.1 needs to contain GHC.Internal modules
-        join [
-               ["    if impl(ghc < 9.12.1)"],
-               ["      hs-source-dirs:"],
-               ["        libraries/ghc-internal/src"],
-               ["        libraries/ghc-boot-th-internal"],
-               ["      exposed-modules:"],
-               indent3 [  "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax", "GHC.Internal.TH.Ppr", "GHC.Internal.TH.PprLib", "GHC.Internal.TH.Lib.Map"]
-             ]
-      else []
+      if ghcSeries ghcFlavor > GHC_9_12
+        then
+          join [
+                 ["    if impl(ghc < 9.12.1)"],
+                 ["      hs-source-dirs:"],
+                 ["        libraries/ghc-internal/src"],
+                 ["        libraries/ghc-boot-th-internal"],
+                 ["      exposed-modules:"],
+                 indent3 [  "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax"]
+               ]
+      else
+        if ghcSeries ghcFlavor > GHC_9_10
+          then
+            join [
+                   ["    if impl(ghc < 9.12.1)"],
+                   ["      hs-source-dirs:"],
+                   ["        libraries/ghc-internal/src"],
+                   ["        libraries/ghc-boot-th-internal"],
+                   ["      exposed-modules:"],
+                   indent3 [  "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax", "GHC.Internal.TH.Ppr", "GHC.Internal.TH.PprLib", "GHC.Internal.TH.Lib.Map"]
+                 ]
+         else
+          []
     ]
   putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 
