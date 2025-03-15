@@ -1456,9 +1456,6 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         then
           join [
                  ["    if impl(ghc < 9.12.1)"],
-                 ["      hs-source-dirs:"],
-                 ["        libraries/ghc-internal/src"],
-                 ["        libraries/ghc-boot-th-internal"],
                  ["      reexported-modules:"],
                  indent3 (Data.List.NonEmpty.toList (withCommas (Data.List.NonEmpty.fromList [ "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax"])))
                ]
@@ -1467,9 +1464,6 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
           then
             join [
                    ["    if impl(ghc < 9.12.1)"],
-                   ["      hs-source-dirs:"],
-                   ["        libraries/ghc-internal/src"],
-                   ["        libraries/ghc-boot-th-internal"],
                    ["      reexported-modules:"],
                    indent3 (Data.List.NonEmpty.toList (withCommas (Data.List.NonEmpty.fromList [  "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax", "GHC.Internal.TH.Ppr", "GHC.Internal.TH.PprLib", "GHC.Internal.TH.Lib.Map"])))
                ]
