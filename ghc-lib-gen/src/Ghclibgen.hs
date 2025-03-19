@@ -1239,6 +1239,7 @@ baseBounds = \case
   Ghc9101 -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
   -- base-4.21.0.0
   Ghc9121 -> "base >= 4.19 && < 4.22" -- [ghc-9.8.1, ghc-9.14.1)
+  Ghc9122 -> "base >= 4.19 && < 4.22" -- [ghc-9.8.1, ghc-9.14.1)
   GhcMaster ->
     -- e.g. "9.11.20230119"
     -- (c.f. 'rts/include/ghcversion.h')

@@ -62,6 +62,7 @@ data GhcVersion
   | Ghc985
   | Ghc9101
   | Ghc9121
+  | Ghc9122
   | GhcMaster
   deriving (Eq, Ord, Typeable)
 
@@ -73,6 +74,7 @@ instance Show GhcVersion where
 
 showGhcVersion :: GhcVersion -> String
 showGhcVersion = \case
+  Ghc9122 -> "ghc-9.12.2"
   Ghc9121 -> "ghc-9.12.1"
   Ghc9101 -> "ghc-9.10.1"
   Ghc985 -> "ghc-9.8.5"
@@ -130,6 +132,7 @@ readFlavor =
     -- HEAD
     "ghc-master" -> Just GhcMaster
     -- ghc-9.12
+    "ghc-9.12.2" -> Just Ghc9122
     "ghc-9.12.1" -> Just Ghc9121
     -- ghc-9.10
     "ghc-9.10.1" -> Just Ghc9101
