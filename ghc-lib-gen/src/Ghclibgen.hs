@@ -1455,9 +1455,8 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
       if ghcSeries ghcFlavor > GHC_9_12
         then
           join [
-                 ["    if impl(ghc < 9.12.1)"],
-                 ["      reexported-modules:"],
-                 indent3 (Data.List.NonEmpty.toList (withCommas (Data.List.NonEmpty.fromList [ "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax"])))
+                 ["    reexported-modules:"],
+                 indent2 (Data.List.NonEmpty.toList (withCommas (Data.List.NonEmpty.fromList [ "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax"])))
                ]
         else
           if ghcSeries ghcFlavor > GHC_9_10
@@ -1593,12 +1592,11 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
       if ghcSeries ghcFlavor > GHC_9_12
         then
           join [
-                 ["    if impl(ghc < 9.12.1)"],
-                 ["      hs-source-dirs:"],
-                 ["        libraries/ghc-internal/src"],
-                 ["        libraries/ghc-boot-th-internal"],
-                 ["      exposed-modules:"],
-                 indent3 [  "GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax"]
+                 ["    hs-source-dirs:"],
+                 ["      libraries/ghc-internal/src"],
+                 ["      libraries/ghc-boot-th-internal"],
+                 ["    exposed-modules:"],
+                 indent2 ["GHC.Internal.ForeignSrcLang", "GHC.Internal.LanguageExtensions", "GHC.Internal.Lexeme", "GHC.Internal.TH.Syntax"]
                ]
       else
         if ghcSeries ghcFlavor > GHC_9_10
