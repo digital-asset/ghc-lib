@@ -1,4 +1,4 @@
-name: ghc-lib-ghc-9.12.1-ghc-9.10.1
+name: ghc-lib-ghc-9.12.2-ghc-9.10.1
 on:
   push:
   pull_request:
@@ -31,9 +31,9 @@ jobs:
         shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail '{0}'
         run: |-
           pacman -S autoconf automake-wrapper make patch python tar mintty --noconfirm
-          cabal run exe:ghc-lib-build-tool -- --ghc-flavor ghc-9.12.1
+          cabal run exe:ghc-lib-build-tool -- --ghc-flavor ghc-9.12.2
         if: matrix.os == 'windows'
       - name: Run CI.hs (unix)
         shell: bash
-        run: cabal run exe:ghc-lib-build-tool -- --ghc-flavor ghc-9.12.1
+        run: cabal run exe:ghc-lib-build-tool -- --ghc-flavor ghc-9.12.2
         if: matrix.os == 'ubuntu' || matrix.os ==  'macos'
