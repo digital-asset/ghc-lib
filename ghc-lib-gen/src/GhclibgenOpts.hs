@@ -1,4 +1,4 @@
--- Copyright (c) 2019 - 2023 Digital Asset (Switzerland) GmbH and/or
+-- Copyright (c) 2019-2025 Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 {-# LANGUAGE LambdaCase #-}
@@ -105,6 +105,7 @@ readFlavor = eitherReader $ \case
   "ghc-9.8.2" -> Right Ghc982
   "ghc-9.8.1" -> Right Ghc981
   -- ghc-9.6
+  "ghc-9.6.7" -> Right Ghc967
   "ghc-9.6.6" -> Right Ghc966
   "ghc-9.6.5" -> Right Ghc965
   "ghc-9.6.4" -> Right Ghc964
