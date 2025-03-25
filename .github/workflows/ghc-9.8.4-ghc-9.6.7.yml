@@ -1,4 +1,4 @@
-name: ghc-lib-ghc-9.6.6-ghc-9.4.8
+name: ghc-lib-ghc-9.8.4-ghc-9.6.7
 on:
   push:
   pull_request:
@@ -15,7 +15,7 @@ jobs:
       - uses: haskell-actions/setup@v2
         id: setup-haskell
         with:
-          ghc-version: 9.4.8
+          ghc-version: 9.6.7
           cabal-version: 'latest'
       - name: Install build tools (macOS)
         run: brew install automake
@@ -31,9 +31,9 @@ jobs:
         shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail '{0}'
         run: |-
           pacman -S autoconf automake-wrapper make patch python tar mintty --noconfirm
-          cabal run exe:ghc-lib-build-tool -- --ghc-flavor ghc-9.6.6
+          cabal run exe:ghc-lib-build-tool --constraint='ghc-lib-gen +semaphore-compat' -- --ghc-flavor ghc-9.8.4
         if: matrix.os == 'windows'
       - name: Run CI.hs (unix)
         shell: bash
-        run: cabal run exe:ghc-lib-build-tool -- --ghc-flavor ghc-9.6.6
+        run: cabal run exe:ghc-lib-build-tool --constraint='ghc-lib-gen +semaphore-compat' -- --ghc-flavor ghc-9.8.4
         if: matrix.os == 'ubuntu' || matrix.os ==  'macos'

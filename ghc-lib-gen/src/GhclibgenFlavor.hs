@@ -1,4 +1,4 @@
--- Copyright (c) 2019 - 2023 Digital Asset (Switzerland) GmbH and/or
+-- Copyright (c) 2019-2025 Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 {-# LANGUAGE LambdaCase #-}
@@ -46,6 +46,7 @@ data GhcFlavor
   | Ghc963
   | Ghc964
   | Ghc965
+  | Ghc967
   | Ghc966
   | Ghc981
   | Ghc982
