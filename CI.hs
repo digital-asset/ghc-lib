@@ -349,7 +349,9 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
       system_ "cd ghc && git clean -xdf && git submodule foreach git clean -xdf && git submodule foreach git checkout . && git checkout ."
     else do
       system_ "git clone https://gitlab.haskell.org/ghc/ghc.git"
-      system_ "cd ghc && git fetch --tags"
+      case ghcFlavor of
+        GhcMaster hash -> system_ ("cd ghc && git fetch origin"  ++ " " ++ hash)
+        _ -> system_ "cd ghc && git fetch origin --tags"
   gitCheckout ghcFlavor
   system_ "cd ghc && git checkout ."
 
