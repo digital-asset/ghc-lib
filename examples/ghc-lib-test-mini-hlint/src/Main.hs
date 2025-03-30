@@ -97,8 +97,18 @@ parse filename flags str = unP GHC.Parser.parseModule parseState
 
 #endif
 
+#if defined (GHC_8_8) || defined (GHC_8_10) || defined (GHC_9_0) || defined (GHC_9_2) || defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12)
+
 parsePragmasIntoDynFlags :: DynFlags -> FilePath -> String -> IO (Maybe DynFlags)
 parsePragmasIntoDynFlags flags filepath str =
+
+#else
+
+-- ghc-api >= 9.14.1
+parsePragmasIntoDynFlags :: Logger -> DynFlags -> FilePath -> String -> IO (Maybe DynFlags)
+parsePragmasIntoDynFlags logger flags filepath str =
+
+#endif
 
 #if defined (GHC_8_8) || defined (GHC_8_10) || defined (GHC_9_0)
 
@@ -181,7 +191,9 @@ parsePragmasIntoDynFlags flags filepath str =
       sDoc : _ -> do putStrLn sDoc; return Nothing
      where
        sDocs = [ showSDoc flags msg | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs ]
+
 #elif (defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12))
+
   catchErrors $ do
     let (_, opts) = getOptions (initParserOpts flags)
                       (stringToStringBuffer str) filepath
@@ -200,13 +212,14 @@ parsePragmasIntoDynFlags flags filepath str =
       where
         sDocs = [ showSDoc flags msg | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs ]
 #else
+
     {- defined (GHC_9_14) -}
 
   catchErrors $ do
     let (_, opts) = getOptions (initParserOpts flags)
                       (supportedLanguagePragmas flags)
                       (stringToStringBuffer str) filepath
-    (flags, _, _) <- parseDynamicFilePragma flags opts
+    (flags, _, _) <- parseDynamicFilePragma logger flags opts
     return $ Just flags
   where
     catchErrors :: IO (Maybe DynFlags) -> IO (Maybe DynFlags)
@@ -449,8 +462,7 @@ main = do
       let opts = initDiagOpts flags
       printMessages logger opts msgs
 
-#else
-   {- defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12) || defined (GHC_9_14) -}
+#elif defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12)
 
 main :: IO ()
 main = do
@@ -474,6 +486,32 @@ main = do
       let opts = initDiagOpts flags
           print_config = initPrintConfig flags
       logger <- initLogger
+      printMessages logger print_config opts msgs
+
+#else
+
+main :: IO ()
+main = do
+  args <- getArgs
+  case args of
+    [file] -> do
+      s <- readFile' file
+      logger <- initLogger
+      flags <- parsePragmasIntoDynFlags logger (defaultDynFlags fakeSettings) file s
+      whenJust flags $ \flags ->
+         case parse file (flags `gopt_set` Opt_KeepRawTokenStream)s of
+            PFailed s -> report logger flags $ GhcPsMessage <$> snd (getPsMessages s)
+            POk s m -> do
+              let (wrns, errs) = getPsMessages s
+              report logger flags $ fmap GhcPsMessage wrns
+              report logger flags $ fmap GhcPsMessage errs
+              when (null errs) $ analyzeModule flags m
+    _ -> fail "Exactly one file argument required"
+  where
+    report :: Logger -> DynFlags -> Messages GhcMessage -> IO ()
+    report logger flags msgs = do
+      let opts = initDiagOpts flags
+          print_config = initPrintConfig flags
       printMessages logger print_config opts msgs
 
 #endif

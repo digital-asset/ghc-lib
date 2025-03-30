@@ -230,7 +230,8 @@ mkDynFlags filename s = do
       let (_, opts) = getOptions (initParserOpts dflags0)
                         (supportedLanguagePragmas dflags0)
                         (stringToStringBuffer contents) filepath
-      (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
+      logger <- initLogger
+      (dflags, _, _) <- parseDynamicFilePragma logger dflags0 opts
       return dflags
 
 #endif
