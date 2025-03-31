@@ -1,5 +1,4 @@
-
--- Copyright (c) 2019-2024 Digital Asset (Switzerland) GmbH and/or
+-- Copyright (c) 2019-2025 Digital Asset (Switzerland) GmbH and/or
 -- its affiliates. All rights reserved.  SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 -- CI script, compatible with all of Travis, Appveyor and Azure.
@@ -54,6 +53,7 @@ data GhcFlavor
   | Ghc983
   | Ghc982
   | Ghc981
+  | Ghc967
   | Ghc966
   | Ghc965
   | Ghc964
@@ -102,7 +102,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "25d46547f8767475d8ab98cac07c78571848ef18" -- 2025-03-19
+current = "3bc507db6906fc415aa0b91fec4b5feb8d3dd03c" -- 2025-03-24
 
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
@@ -114,6 +114,7 @@ ghcFlavorOpt = \case
   Ghc983 -> "--ghc-flavor ghc-9.8.3"
   Ghc982 -> "--ghc-flavor ghc-9.8.2"
   Ghc981 -> "--ghc-flavor ghc-9.8.1"
+  Ghc967 -> "--ghc-flavor ghc-9.6.7"
   Ghc966 -> "--ghc-flavor ghc-9.6.6"
   Ghc965 -> "--ghc-flavor ghc-9.6.5"
   Ghc964 -> "--ghc-flavor ghc-9.6.4"
@@ -181,6 +182,7 @@ genVersionStr flavor suffix =
       Ghc983 -> "9.8.3"
       Ghc982 -> "9.8.2"
       Ghc981 -> "9.8.1"
+      Ghc967 -> "9.6.7"
       Ghc966 -> "9.6.6"
       Ghc965 -> "9.6.5"
       Ghc964 -> "9.6.4"
@@ -252,6 +254,7 @@ parseOptions =
       "ghc-9.8.3" -> Right Ghc983
       "ghc-9.8.2" -> Right Ghc982
       "ghc-9.8.1" -> Right Ghc981
+      "ghc-9.6.7" -> Right Ghc967
       "ghc-9.6.6" -> Right Ghc966
       "ghc-9.6.5" -> Right Ghc965
       "ghc-9.6.4" -> Right Ghc964
@@ -526,6 +529,7 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
       Ghc983 -> "ghc-9.8.3-release"
       Ghc982 -> "ghc-9.8.2-release"
       Ghc981 -> "ghc-9.8.1-release"
+      Ghc967 -> "ghc-9.6.7-release"
       Ghc966 -> "ghc-9.6.6-release"
       Ghc965 -> "ghc-9.6.5-release"
       Ghc964 -> "ghc-9.6.4-release"

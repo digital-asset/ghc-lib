@@ -1,4 +1,4 @@
--- Copyright (c) 2021-2022 Digital Asset (Switzerland) GmbH and/or its
+-- Copyright (c) 2021-2025 Digital Asset (Switzerland) GmbH and/or its
 -- affiliates. All rights reserved. SPDX-License-Identifier:
 -- (Apache-2.0 OR BSD-3-Clause)
 {-# LANGUAGE LambdaCase #-}
@@ -54,6 +54,7 @@ data GhcVersion
   | Ghc963
   | Ghc964
   | Ghc965
+  | Ghc967
   | Ghc966
   | Ghc981
   | Ghc982
@@ -143,6 +144,7 @@ readFlavor =
     "ghc-9.8.2" -> Just Ghc982
     "ghc-9.8.1" -> Just Ghc981
     -- ghc-9.6
+    "ghc-9.6.7" -> Just Ghc967
     "ghc-9.6.6" -> Just Ghc966
     "ghc-9.6.5" -> Just Ghc965
     "ghc-9.6.4" -> Just Ghc964
