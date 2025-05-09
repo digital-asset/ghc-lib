@@ -47,6 +47,7 @@ data GhcFlavor
   | GhcMaster String
   | Ghc9122
   | Ghc9121
+  | Ghc9102
   | Ghc9101
   | Ghc985
   | Ghc984
@@ -108,6 +109,7 @@ ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
   Ghc9122 -> "--ghc-flavor ghc-9.12.2"
   Ghc9121 -> "--ghc-flavor ghc-9.12.1"
+  Ghc9102 -> "--ghc-flavor ghc-9.10.2"
   Ghc9101 -> "--ghc-flavor ghc-9.10.1"
   Ghc985 -> "--ghc-flavor ghc-9.8.5"
   Ghc984 -> "--ghc-flavor ghc-9.8.4"
@@ -176,6 +178,7 @@ genVersionStr flavor suffix =
       GhcMaster _ -> "0"
       Ghc9122 -> "9.12.2"
       Ghc9121 -> "9.12.1"
+      Ghc9102 -> "9.10.2"
       Ghc9101 -> "9.10.1"
       Ghc985 -> "9.8.5"
       Ghc984 -> "9.8.4"
@@ -248,6 +251,7 @@ parseOptions =
     readFlavor = Opts.eitherReader $ \case
       "ghc-9.12.2" -> Right Ghc9122
       "ghc-9.12.1" -> Right Ghc9121
+      "ghc-9.10.2" -> Right Ghc9102
       "ghc-9.10.1" -> Right Ghc9101
       "ghc-9.8.5" -> Right Ghc985
       "ghc-9.8.4" -> Right Ghc984
@@ -523,6 +527,7 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
     branch = \case
       Ghc9122 -> "ghc-9.12.2-release"
       Ghc9121 -> "ghc-9.12.1-release"
+      Ghc9102 -> "ghc-9.10.2-release"
       Ghc9101 -> "ghc-9.10.1-release"
       Ghc985 -> "ghc-9.8"
       Ghc984 -> "ghc-9.8.4-release"
