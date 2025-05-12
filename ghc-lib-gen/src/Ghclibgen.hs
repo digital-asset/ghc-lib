@@ -84,10 +84,17 @@ ghcLibParserIncludeDirs :: Bool -> GhcFlavor -> [FilePath]
 ghcLibParserIncludeDirs _forDepends ghcFlavor =
   join
     [ case ghcSeries ghcFlavor of
-        series | series >= GHC_9_10 ->
+        series | series >= GHC_9_12 ->
                  [ "rts/include"
                  , "rts/include/stg"
 #if __GLASGOW_HASKELL__ == 910 || __GLASGOW_HASKELL__ == 908
+                , "libraries/ghc-internal/include"
+#endif
+                 ]
+        series | series >= GHC_9_10 ->
+                 [ "rts/include"
+                 , "rts/include/stg"
+#if __GLASGOW_HASKELL__ == 910
                 , "libraries/ghc-internal/include"
 #endif
                  ]
@@ -236,12 +243,13 @@ compilerDependencies ghcFlavor =
       [incl | series >= GHC_9_10, incl <- ["primop-is-work-free.hs-incl", "primop-is-cheap.hs-incl"]],
       ["primop-deprecations.hs-incl" | series > GHC_9_10],
       ["GHC/Platform/Constants.hs" | series >= GHC_9_2] ]) ++
-#if __GLASGOW_HASKELL__ != 910
-  []
-#else
+#if __GLASGOW_HASKELL__ == 910
+  -- Build compiler is ghc.9.10.*
   -- GHC.Internal.Prim needs to be found by 'ghc -M' so provide it.
   [ "ghc-lib/stage0/libraries/ghc-internal/build/GHC/Internal/Prim.hs" | series > GHC_9_12] ++
   [ "ghc-lib/stage0/libraries/ghc-internal/build/GHC/Internal/PrimopWrappers.hs" | series > GHC_9_12]
+#else
+  []
 #endif
   where
     series = ghcSeries ghcFlavor
@@ -1241,6 +1249,7 @@ baseBounds = \case
   Ghc984 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
   Ghc985 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
   -- base-4.20.0.0
+  Ghc9102 -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
   Ghc9101 -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
   -- base-4.21.0.0
   Ghc9121 -> "base >= 4.19 && < 4.22" -- [ghc-9.8.1, ghc-9.14.1)
