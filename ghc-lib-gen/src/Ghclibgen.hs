@@ -81,23 +81,15 @@ cabalFileLibraries ghcFlavor =
 
 -- C-preprocessor "include dirs" for 'ghc-lib-parser'.
 ghcLibParserIncludeDirs :: Bool -> GhcFlavor -> [FilePath]
-ghcLibParserIncludeDirs _forDepends ghcFlavor =
+ghcLibParserIncludeDirs forDepends ghcFlavor =
   join
     [ case ghcSeries ghcFlavor of
         series | series >= GHC_9_12 ->
-                 [ "rts/include"
-                 , "rts/include/stg"
-#if __GLASGOW_HASKELL__ == 910 || __GLASGOW_HASKELL__ == 908
-                , "libraries/ghc-internal/include"
-#endif
-                 ]
+                 [ "rts/include", "rts/include/stg" ] ++
+                 [ "libraries/ghc-internal/include" | forDepends ]
         series | series >= GHC_9_10 ->
-                 [ "rts/include"
-                 , "rts/include/stg"
-#if __GLASGOW_HASKELL__ == 910
-                , "libraries/ghc-internal/include"
-#endif
-                 ]
+                 [ "rts/include", "rts/include/stg" ] ++
+                 [ "libraries/ghc-internal/include" | forDepends ]
         series | series > GHC_9_8 -> ["rts/include", "rts/include/stg"]
         series | series >= GHC_9_4 -> ["rts/include"] -- ghcconfig.h, ghcversion.h
         series | series < GHC_9_4 -> ["includes"] -- ghcconfig.h, MachDeps.h, MachRegs.h, CodeGen.Platform.hs
@@ -1276,7 +1268,7 @@ commonBuildDepends ghcFlavor =
             "os-string >= 2.0.1 && < 2.1"
           ]
       | ghcSeries ghcFlavor >= GHC_9_10 =
-          [ "ghc-prim > 0.2 && < 0.12",
+          [ "ghc-prim > 0.2 && < 0.13",
             "containers >= 0.6.2.1 && < 0.8",
             "bytestring >= 0.11.4 && < 0.13",
             "time >= 1.4 && < 1.15",

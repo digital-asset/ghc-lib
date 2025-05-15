@@ -1,4 +1,4 @@
-name: ghc-lib-ghc-9.12.2-ghc-9.10.1
+name: ghc-lib-ghc-9.12.2-ghc-9.10.2
 on:
   push:
   pull_request:
@@ -15,7 +15,7 @@ jobs:
       - uses: haskell-actions/setup@v2
         id: setup-haskell
         with:
-          ghc-version: 9.10.1
+          ghc-version: 9.10.2
           cabal-version: 'latest'
       - name: Install build tools (macOS)
         run: brew install automake
