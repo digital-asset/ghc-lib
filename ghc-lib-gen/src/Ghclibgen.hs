@@ -35,6 +35,7 @@ module Ghclibgen
     applyPatchTemplateHaskellCabal,
     applyPatchFptoolsAlex,
     applyPatchFpFindCxxStdLib,
+    applyPatchGhcInternalDataNamespace,
     generatePrerequisites,
     mangleCSymbols,
     generateGhcLibCabal,
@@ -1109,6 +1110,44 @@ applyPatchCompilerGHCParserLexer ghcFlavor = do
     writeFile "compiler/GHC/Parser/Lexer.x"
       . replace "{-# INLINE alexScanUser #-}" ""
       =<< readFile' "compiler/GHC/Parser/Lexer.x"
+
+applyPatchGhcInternalDataNamespace :: GhcFlavor -> IO ()
+#if __GLASGOW_HASKELL__ == 910
+applyPatchGhcInternalDataNamespace ghcFlavor = do
+  when (ghcSeries ghcFlavor > GHC_9_12) $ do
+    writeFile "libraries/ghc-internal/src/GHC/Internal/Data/Typeable/Internal.hs"
+      . replace
+        "    data TypeRep,"
+        "    pattern TypeRep,"
+      . replace
+        "    data App, data Con, data Con', data Fun,"
+        "    pattern App, pattern Con, pattern Con', pattern Fun,"
+      =<< readFile' "libraries/ghc-internal/src/GHC/Internal/Data/Typeable/Internal.hs"
+    writeFile "libraries/ghc-internal/src/GHC/Internal/Type/Reflection.hs"
+      . replace
+        "{-# LANGUAGE ExplicitNamespaces #-}"
+        "{-# LANGUAGE PatternSynonyms #-}"
+      . replace
+        "    , data I.TypeRep"
+        "    , pattern I.TypeRep"
+      . replace
+        "    , data I.App, data I.Con, data I.Con', data I.Fun"
+        "    , pattern I.App, pattern I.Con, pattern I.Con', pattern I.Fun"
+      =<< readFile' "libraries/ghc-internal/src/GHC/Internal/Type/Reflection.hs"
+    writeFile "libraries/ghc-internal/src/GHC/Internal/TypeLits.hs"
+      . replace
+        "  , data N.SNat, data SSymbol, data SChar"
+        "  , pattern N.SNat, pattern SSymbol, pattern SChar"
+      =<< readFile' "libraries/ghc-internal/src/GHC/Internal/TypeLits.hs"
+    writeFile "libraries/ghc-internal/src/GHC/Internal/TypeNats.hs"
+      . replace
+        "  , data SNat"
+        "  , pattern SNat"
+      =<< readFile' "libraries/ghc-internal/src/GHC/Internal/TypeNats.hs"
+#else
+applyPatchGhcInternalDataNamespace _ = do
+  return ()
+#endif
 
 applyPatchCompilerGHCUnitTypes :: GhcFlavor -> IO ()
 applyPatchCompilerGHCUnitTypes ghcFlavor = do
