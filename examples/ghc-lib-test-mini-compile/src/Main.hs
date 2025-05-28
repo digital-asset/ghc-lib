@@ -9,6 +9,10 @@ module Main (main) where
 
 -- We use 0.x for HEAD
 #if !MIN_VERSION_ghc_lib(1,0,0)
+#  define GHC_9_16
+#  include "ghc-lib-parser/ghc-9.16/Main.hs"
+#  include "ghc-lib/ghc-9.16/Main.hs"
+#elif MIN_VERSION_ghc_lib(9,14,0)
 #  define GHC_9_14
 #  include "ghc-lib-parser/ghc-9.14/Main.hs"
 #  include "ghc-lib/ghc-9.14/Main.hs"
