@@ -65,10 +65,11 @@ data GhcVersion
   | Ghc9102
   | Ghc9121
   | Ghc9122
+  | Ghc9141
   | GhcMaster
   deriving (Eq, Ord, Typeable)
 
-data GhcSeries = GHC_8_8 | GHC_8_10 | GHC_9_0 | GHC_9_2 | GHC_9_4 | GHC_9_6 | GHC_9_8 | GHC_9_10 | GHC_9_12 | GHC_9_14
+data GhcSeries = GHC_8_8 | GHC_8_10 | GHC_9_0 | GHC_9_2 | GHC_9_4 | GHC_9_6 | GHC_9_8 | GHC_9_10 | GHC_9_12 | GHC_9_14 | GHC_9_16
   deriving (Eq, Ord)
 
 instance Show GhcVersion where
@@ -76,6 +77,7 @@ instance Show GhcVersion where
 
 showGhcVersion :: GhcVersion -> String
 showGhcVersion = \case
+  Ghc9141 -> "ghc-9.14.1"
   Ghc9122 -> "ghc-9.12.2"
   Ghc9121 -> "ghc-9.12.1"
   Ghc9102 -> "ghc-9.10.2"
@@ -126,14 +128,17 @@ ghcSeries (GhcFlavor f)
   | Ghc961 <= f && f < Ghc981 = GHC_9_6
   | Ghc981 <= f && f < Ghc9101 = GHC_9_8
   | Ghc9101 <= f && f < Ghc9121 = GHC_9_10
-  | Ghc9121 <= f && f < GhcMaster = GHC_9_12
-  | otherwise = GHC_9_14
+  | Ghc9121 <= f && f < Ghc9141 = GHC_9_12
+  | Ghc9141 <= f && f < GhcMaster = GHC_9_14
+  | otherwise = GHC_9_16
 
 readFlavor :: String -> Maybe GhcFlavor
 readFlavor =
   (GhcFlavor <$>) . \case
     -- HEAD
     "ghc-master" -> Just GhcMaster
+    -- ghc-9.14
+    "ghc-9.14.1" -> Just Ghc9141
     -- ghc-9.12
     "ghc-9.12.2" -> Just Ghc9122
     "ghc-9.12.1" -> Just Ghc9121

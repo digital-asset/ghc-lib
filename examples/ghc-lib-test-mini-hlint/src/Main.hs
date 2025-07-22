@@ -14,6 +14,9 @@ module Main (main) where
 
 -- We use 0.x for HEAD
 #if !MIN_VERSION_ghc_lib_parser(1,0,0)
+#  define GHC_9_16
+#  include "ghc-9.16/Main.hs"
+#elif MIN_VERSION_ghc_lib_parser(9,14,0)
 #  define GHC_9_14
 #  include "ghc-9.14/Main.hs"
 #elif MIN_VERSION_ghc_lib_parser(9,12,0)
@@ -213,7 +216,7 @@ parsePragmasIntoDynFlags logger flags filepath str =
         sDocs = [ showSDoc flags msg | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs ]
 #else
 
-    {- defined (GHC_9_14) -}
+    {- defined (GHC_9_16) -}
 
   catchErrors $ do
     let (_, opts) = getOptions (initParserOpts flags)
