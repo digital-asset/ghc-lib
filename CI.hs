@@ -104,7 +104,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "7da86e165612721c4e09f772a3fdaffc733e9293" -- 2025-07-16
+current = "6a43f8ec2e679d1240ddf6de597bc2ff55d134ca" -- 2025-08-24
 
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
