@@ -452,8 +452,7 @@ fakeSettings = Settings {
 
     platform =  genericPlatform
 
-#else
-   {- defined (GHC_9_14) -}
+#elif (defined (GHC_9_4) || defined (GHC_9_6) || defined (GHC_9_8) || defined (GHC_9_10) || defined (GHC_9_12)) || defined (GHC_9_14)
 
     sGhcNameVersion=ghcNameVersion
   , sFileSettings=fileSettings
@@ -477,6 +476,45 @@ fakeSettings = Settings {
 
     toolSettings = ToolSettings {
          toolSettings_opt_P_fingerprint=fingerprint0
+       }
+
+    platformMisc = PlatformMisc {
+       }
+
+    ghcNameVersion = GhcNameVersion{
+         ghcNameVersion_programName="ghc"
+       , ghcNameVersion_projectVersion=cProjectVersion
+      }
+
+    platform =  genericPlatform
+
+#else
+   {- defined (GHC_9_16) -}
+
+    sGhcNameVersion=ghcNameVersion
+  , sFileSettings=fileSettings
+  , sTargetPlatform=platform
+  , sPlatformMisc=platformMisc
+  , sToolSettings=toolSettings
+  , sUnitSettings=unitSettings
+  }
+  where
+    unitSettings = UnitSettings {
+        unitSettings_baseUnitId = stringToUnitId "base"
+      }
+
+    fileSettings = FileSettings {
+         fileSettings_topDir="."
+       , fileSettings_toolDir=Nothing
+       , fileSettings_ghcUsagePath="."
+       , fileSettings_ghciUsagePath="."
+       , fileSettings_globalPackageDatabase="."
+       }
+
+    toolSettings = ToolSettings {
+         toolSettings_opt_P_fingerprint=fingerprint0
+       , toolSettings_opt_JSP_fingerprint=fingerprint0
+       , toolSettings_opt_CmmP_fingerprint=fingerprint0
        }
 
     platformMisc = PlatformMisc {
