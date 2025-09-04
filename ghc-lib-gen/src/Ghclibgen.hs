@@ -1301,6 +1301,15 @@ commonBuildDepends ghcFlavor =
     -- base
     base = [baseBounds ghcFlavor]
     specific
+      | ghcSeries ghcFlavor >= GHC_9_14 =
+          [ "ghc-prim > 0.2 && < 0.14",
+            "containers >= 0.6.2.1 && < 0.9",
+            "bytestring >= 0.11.4 && < 0.13",
+            "time >= 1.4 && < 1.16",
+            "filepath >= 1.5 && < 1.6",
+            "hpc >= 0.6 && < 0.8",
+            "os-string >= 2.0.1 && < 2.1"
+          ]
       | ghcSeries ghcFlavor >= GHC_9_12 =
           [ "ghc-prim > 0.2 && < 0.14",
             "containers >= 0.6.2.1 && < 0.8",
