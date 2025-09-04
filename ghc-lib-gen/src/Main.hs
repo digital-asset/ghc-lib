@@ -63,6 +63,7 @@ ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts _resolv
       applyPatchDerivedConstants ghcFlavor -- Needs DerivedConstants.h
       applyPatchHsVersions ghcFlavor
       applyPatchGHCiMessage ghcFlavor -- Needs ghcversion.h
+      applyPatchGHCRuntimeHeap ghcFlavor -- Needs ghcversion.h
       -- Before placeholder module generation
       applyPatchGhcInternalEventWindowsHsc ghcFlavor
       setupModuleDepsPlaceholders ghcFlavor

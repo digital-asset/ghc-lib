@@ -104,7 +104,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "6a43f8ec2e679d1240ddf6de597bc2ff55d134ca" -- 2025-08-24
+current = "2da84b7a83f723dc6531cdad5ef3c7e624fda2fe" -- 2025-09-02
 
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
@@ -373,6 +373,11 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
   when ghcBootThGHCInternalDirExists $ do
     system_ "bash -c \"mkdir -p ghc/libraries/ghc-boot-th-internal/GHC\""
     system_ "bash -c \"mv ghc/libraries/ghc-boot-th/GHC/Internal ghc/libraries/ghc-boot-th-internal/GHC\""
+
+  ghcInternalHeapDirExists <- doesDirectoryExist "ghc/libraries/ghc-internal/src/GHC/Internal/Heap"
+  when ghcInternalHeapDirExists $ do
+    system_ "bash -c \"mkdir -p ghc/libraries/ghc-internal-heap/src/GHC/Internal\""
+    system_ "bash -c \"mv ghc/libraries/ghc-internal/src/GHC/Internal/Heap ghc/libraries/ghc-internal-heap/src/GHC/Internal\""
 
   version <- tag
   let pkg_ghclib = "ghc-lib-" ++ version
