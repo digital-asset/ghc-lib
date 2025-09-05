@@ -476,6 +476,8 @@ fakeSettings = Settings {
 
     toolSettings = ToolSettings {
          toolSettings_opt_P_fingerprint=fingerprint0
+       , toolSettings_opt_JSP_fingerprint=fingerprint0
+       , toolSettings_opt_CmmP_fingerprint=fingerprint0
        }
 
     platformMisc = PlatformMisc {
