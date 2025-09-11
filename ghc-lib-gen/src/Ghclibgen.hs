@@ -136,6 +136,7 @@ ghcLibParserHsSrcDirs forDepends ghcFlavor lib =
         case ghcSeries ghcFlavor of
           GHC_8_8 -> ["compiler/codeGen", "compiler/hieFile", "compile/llvmGen", "compiler/stranal", "compiler/rename", "compiler/stgSyn", "compiler/llvmGen"]
           GHC_8_10 -> ["compiler/nativeGen", "compiler/deSugar", "compiler/hieFile", "compiler/llvmGen", "compiler/stranal", "compiler/rename", "compiler/stgSyn"]
+          GHC_9_10 -> ["libraries/ghc-internal/src"]
           _ -> []
   in sortDiffListByLength all $ Set.fromList [dir | not forDepends, dir <- exclusions]
 
@@ -152,7 +153,7 @@ ghcLibHsSrcDirs forDepends ghcFlavor lib =
           GHC_9_4 -> ["ghc-lib/stage0/libraries/ghc-boot/build", "libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-heap", "libraries/ghci"]
           GHC_9_6 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghci"]
           GHC_9_8 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform"]
-          GHC_9_10 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
+          GHC_9_10 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src"]
           GHC_9_12 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
           GHC_9_14 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
           GHC_9_16 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal"]
@@ -1346,6 +1347,7 @@ baseBounds = \case
   Ghc984 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
   Ghc985 -> "base >= 4.17 && < 4.20" -- [ghc-9.4.1, ghc-9.10.1)
   -- base-4.20.0.0
+  Ghc9103 -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
   Ghc9102 -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
   Ghc9101 -> "base >= 4.18 && < 4.21" -- [ghc-9.6.1, ghc-9.12.1)
   -- base-4.21.0.0
