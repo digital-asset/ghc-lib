@@ -1562,11 +1562,17 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         "        ghc-options: -fno-safe-haskell"
       ],
       [ "    if flag(threaded-rts)",
-        "        ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS",
+        "        if impl(ghc < 9.14.0)",
+        "            ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS",
+        "        else",
+        "            ghc-options: -fobject-code -optc-DTHREADED_RTS",
         "        cc-options: -DTHREADED_RTS",
         "        cpp-options: -DTHREADED_RTS " ++ generateCppOpts ghcFlavor customCppOpts,
         "    else",
-        "        ghc-options: -fobject-code -package=ghc-boot-th",
+        "        if impl(ghc < 9.14.0)",
+         "           ghc-options: -fobject-code -package=ghc-boot-th",
+        "        else",
+         "           ghc-options: -fobject-code",
         "        cpp-options: " ++ generateCppOpts ghcFlavor customCppOpts
       ],
       [ "    if !os(windows)",
@@ -1719,8 +1725,8 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
   putStrLn "# Generating 'ghc-lib-parser.cabal'... Done!"
 
 -- Run Hadrian to build the things that the Cabal files need.
-generatePrerequisites :: GhcFlavor -> IO ()
-generatePrerequisites ghcFlavor = do
+generatePrerequisites :: GhcFlavor -> [String] -> IO ()
+generatePrerequisites ghcFlavor allowNewerSpecs = do
   when
     (ghcSeries ghcFlavor < GHC_8_10)
     ( -- Workaround a Windows bug present in at least 8.4.3. See
@@ -1735,16 +1741,28 @@ generatePrerequisites ghcFlavor = do
   system_ "bash -c ./boot"
   system_ "bash -c \"./configure --enable-tarballs-autodownload\""
   withCurrentDirectory "hadrian" $ do
-    system_ "cabal build exe:hadrian --ghc-options=-j"
+
+    let defaultAllowNewer = []
+        effectiveAllowNewer =
+          if null allowNewerSpecs then defaultAllowNewer else allowNewerSpecs
+        allowNewerArgs = concatMap (\s -> ["--allow-newer=" ++ s]) effectiveAllowNewer
+
     system_ . unwords . join $
-      [ [ "cabal run exe:hadrian --",
-          "--directory=..",
-          "--build-root=ghc-lib"
-        ],
-        ["--bignum=native" | ghcSeries ghcFlavor >= GHC_9_0],
-        ["--integer-simple" | ghcSeries ghcFlavor < GHC_9_0],
-        ghcLibParserExtraFiles ghcFlavor,
-        map (dataDir </>) $ dataFiles ghcFlavor
+      [ ["cabal", "build", "exe:hadrian", "--ghc-options=-j"]
+      , allowNewerArgs
+      ]
+
+    system_ . unwords . join $
+      [ ["cabal", "run", "exe:hadrian"]
+      , allowNewerArgs
+      , ["--"
+        , "--directory=.."
+        , "--build-root=ghc-lib"
+        ]
+      , ["--bignum=native" | ghcSeries ghcFlavor >= GHC_9_0]
+      , ["--integer-simple" | ghcSeries ghcFlavor < GHC_9_0]
+      , ghcLibParserExtraFiles ghcFlavor
+      , map (dataDir </>) $ dataFiles ghcFlavor
       ]
 
 -- Given an Hsc, Alex, or Happy file, generate a placeholder module
