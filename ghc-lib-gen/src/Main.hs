@@ -22,7 +22,7 @@ main = ghclibgen =<< execParser opts
         )
 
 ghclibgen :: GhclibgenOpts -> IO ()
-ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts _resolver) = do
+ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts _resolver allowNewer) = do
   withCurrentDirectory root $
     case target of
       GhclibParser -> do
@@ -58,7 +58,7 @@ ghclibgen (GhclibgenOpts root _patches target ghcFlavor skipInit cppOpts _resolv
       applyPatchAclocal ghcFlavor -- Do before ./boot && ./configure
       applyPatchFptoolsAlex ghcFlavor
       applyPatchFpFindCxxStdLib ghcFlavor
-      generatePrerequisites ghcFlavor
+      generatePrerequisites ghcFlavor allowNewer
       -- Renamings come after 'generatePrerequisites':
       applyPatchDerivedConstants ghcFlavor -- Needs DerivedConstants.h
       applyPatchHsVersions ghcFlavor

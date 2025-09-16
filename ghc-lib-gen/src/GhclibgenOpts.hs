@@ -32,7 +32,8 @@ data GhclibgenOpts = GhclibgenOpts
     ghclibgenOpts_ghcFlavor :: !GhcFlavor,
     ghclibgenOpts_skipInit :: !Bool,
     ghclibgenOpts_customCppFlags :: ![String],
-    ghclibgenOpts_stackResolver :: !(Maybe String)
+    ghclibgenOpts_stackResolver :: !(Maybe String),
+    ghclibgenOpts_allowNewer :: ![String]
   }
 
 -- | A parser of the "--ghc-lib" target.
@@ -80,6 +81,7 @@ ghclibgenOpts =
       )
     <*> cppCustomFlagsOpt
     <*> stackResolverOpt
+    <*> allowNewerOpt
 
 ghcFlavorOpt :: Parser GhcFlavor
 ghcFlavorOpt =
@@ -88,6 +90,13 @@ ghcFlavorOpt =
     ( long "ghc-flavor"
         <> help "The ghc-flavor to test against"
     )
+
+allowNewerOpt :: Parser [String]
+allowNewerOpt =
+  many $ strOption
+    ( long "allow-newer"
+   <> metavar "SPEC"
+   <> help "Pass --allow-newer=SPEC to cabal (repeatable). Use SPEC=all for all packages." )
 
 readFlavor :: ReadM GhcFlavor
 readFlavor = eitherReader $ \case

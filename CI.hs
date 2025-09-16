@@ -30,15 +30,30 @@ main = do
               <> Opts.progDesc "Build ghc-lib and ghc-lib-parser tarballs."
               <> Opts.header "CI - CI script for ghc-lib"
           )
-  Options {ghcFlavor, noGhcCheckout, noBuilds, versionSuffix} <- Opts.execParser opts
-  version <- buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix
+  Options {ghcFlavor, noGhcCheckout, noBuilds, versionSuffix, optsAllowNewer} <- Opts.execParser opts
+  let allowNewerSpecs = optsAllowNewer
+  let allowNewerFlags = mkAllowNewerFlags allowNewerSpecs
+  version <- buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix allowNewerFlags allowNewerSpecs
   putStrLn version
+
+mkAllowNewerFlags :: [String] -> String
+mkAllowNewerFlags xs =
+  let render = unwords . map (\s -> "--allow-newer=" ++ s)
+      def = ""
+  in case xs of
+       [] -> if null def then "" else " " ++ def
+       _  -> " " ++ render xs
+
+allowNewerProjectLines :: [String] -> [String]
+allowNewerProjectLines [] = []
+allowNewerProjectLines xs = ["allow-newer: " ++ intercalate ", " xs]
 
 data Options = Options
   { ghcFlavor :: GhcFlavor,
     noGhcCheckout :: Bool,
     noBuilds :: Bool,
-    versionSuffix :: Maybe String
+    versionSuffix :: Maybe String,
+    optsAllowNewer :: [String] -- repeatable --allow-newer flags
   }
   deriving (Show)
 
@@ -252,6 +267,7 @@ parseOptions =
               <> Opts.help "If specified, append to version string for generated ghc-lib. Otherwise use current date."
           )
       )
+    <*> allowNewerOpt
   where
     readFlavor :: Opts.ReadM GhcFlavor
     readFlavor = Opts.eitherReader $ \case
@@ -342,8 +358,18 @@ parseOptions =
               <> Opts.value "https://github.com/digital-asset/ghc.git"
           )
 
-buildDists :: GhcFlavor -> Bool -> Bool -> Maybe String -> IO String
-buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
+-- repeatable --allow-newer=SPEC
+allowNewerOpt :: Opts.Parser [String]
+allowNewerOpt =
+  Opts.many $
+    Opts.strOption
+      ( Opts.long "allow-newer"
+      <> Opts.metavar "SPEC"
+      <> Opts.help "Forward --allow-newer=SPEC to ghc-lib-gen (repeatable), e.g. hashable:base"
+      )
+
+buildDists :: GhcFlavor -> Bool -> Bool -> Maybe String -> String -> [String] -> IO String
+buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix allowNewerFlags allowNewerSpecs = do
   filesInDot <- getDirectoryContents "."
   let lockFiles = filter (isExtensionOf ".lock") filesInDot
       tarBalls = filter (isExtensionOf ".tar.gz") filesInDot
@@ -383,13 +409,20 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
       pkg_ghclib_parser = "ghc-lib-parser-" ++ version
       ghcFlavorArg = ghcFlavorOpt ghcFlavor
 
-  system_ $ "cabal build " ++ "exe:ghc-lib-gen"
-  system_ $ "cabal run " ++ "exe:ghc-lib-gen -- ghc ../patches --ghc-lib-parser " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor
+  system_ $ "cabal build exe:ghc-lib-gen" ++ allowNewerFlags
+  system_ $ "cabal run exe:ghc-lib-gen" ++ allowNewerFlags
+          ++ " -- ghc ../patches --ghc-lib-parser "
+          ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++allowNewerFlags
+
   patchVersion version "ghc/ghc-lib-parser.cabal"
   mkTarball pkg_ghclib_parser
   renameDirectory pkg_ghclib_parser "ghc-lib-parser"
   removeFile "ghc/ghc-lib-parser.cabal"
-  system_ $ "cabal run " ++ "exe:ghc-lib-gen -- ghc ../patches --ghc-lib " ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " --skip-init"
+
+  system_ $ "cabal run exe:ghc-lib-gen" ++ allowNewerFlags
+         ++ " -- ghc ../patches --ghc-lib "
+         ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ " --skip-init" ++ allowNewerFlags
+
   patchVersion version "ghc/ghc-lib.cabal"
   patchConstraints version "ghc/ghc-lib.cabal"
   mkTarball pkg_ghclib
@@ -427,26 +460,29 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix = do
 
   when noBuilds exitSuccess
 
-  writeFile
-    "cabal.project"
-    ( unlines $
-        [ "packages: ",
-          "  ghc-lib-parser/ghc-lib-parser.cabal",
-          "  ghc-lib/ghc-lib.cabal",
-          "  examples/ghc-lib-test-utils/ghc-lib-test-utils.cabal",
-          "  examples/ghc-lib-test-mini-hlint/ghc-lib-test-mini-hlint.cabal",
-          "  examples/ghc-lib-test-mini-compile/ghc-lib-test-mini-compile.cabal"
-        ]
-          ++ ["constraints: ghc-lib-test-mini-compile +daml-unit-ids" | Da {} <- [ghcFlavor]]
-    )
+  writeFile "cabal.project" . unlines $
+       allowNewerProjectLines allowNewerSpecs ++
+       [ "packages:"
+       , "  ghc-lib-parser/ghc-lib-parser.cabal"
+       , "  ghc-lib/ghc-lib.cabal"
+       , "  examples/ghc-lib-test-utils/ghc-lib-test-utils.cabal"
+       , "  examples/ghc-lib-test-mini-hlint/ghc-lib-test-mini-hlint.cabal"
+       , "  examples/ghc-lib-test-mini-compile/ghc-lib-test-mini-compile.cabal"
+       ]
+       ++ ["constraints: ghc-lib-test-mini-compile +daml-unit-ids" | Da {} <- [ghcFlavor]]
 
   writeCabalCmdFile "ghc-lib-test-mini-hlint"
   writeCabalCmdFile "ghc-lib-test-mini-compile"
 
   cmd "cabal build --ghc-options=-j all"
 
-  system_ $ "cd examples/ghc-lib-test-mini-hlint && cabal test --project-dir ../.. --test-show-details direct --test-options \"--color always --test-command ../../ghc-lib-test-mini-hlint " ++ ghcFlavorArg ++ "\""
-  system_ $ "cd examples/ghc-lib-test-mini-compile && cabal test --project-dir ../.. --test-show-details direct --test-options \"--color always --test-command ../../ghc-lib-test-mini-compile " ++ ghcFlavorArg ++ "\""
+  system_ $ "cd examples/ghc-lib-test-mini-hlint && cabal test " ++
+        "--project-dir ../.. --test-show-details direct " ++
+        ("--test-options \"--color always --test-command ../../ghc-lib-test-mini-hlint " ++ ghcFlavorArg ++ "\"")
+
+  system_ $ "cd examples/ghc-lib-test-mini-compile && cabal test " ++
+        "--project-dir ../.. --test-show-details direct " ++
+        ("--test-options \"--color always --test-command ../../ghc-lib-test-mini-compile " ++ ghcFlavorArg ++ "\"")
 
   system_ "cabal -v0 exec -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
   system_ "cabal -v0 exec -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""
