@@ -63,6 +63,7 @@ data GhcVersion
   | Ghc985
   | Ghc9101
   | Ghc9102
+  | Ghc9103
   | Ghc9121
   | Ghc9122
   | Ghc9141
@@ -80,6 +81,7 @@ showGhcVersion = \case
   Ghc9141 -> "ghc-9.14.1"
   Ghc9122 -> "ghc-9.12.2"
   Ghc9121 -> "ghc-9.12.1"
+  Ghc9103 -> "ghc-9.10.3"
   Ghc9102 -> "ghc-9.10.2"
   Ghc9101 -> "ghc-9.10.1"
   Ghc985 -> "ghc-9.8.5"
@@ -143,6 +145,7 @@ readFlavor =
     "ghc-9.12.2" -> Just Ghc9122
     "ghc-9.12.1" -> Just Ghc9121
     -- ghc-9.10
+    "ghc-9.10.3" -> Just Ghc9103
     "ghc-9.10.2" -> Just Ghc9102
     "ghc-9.10.1" -> Just Ghc9101
     -- ghc-9.8
