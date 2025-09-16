@@ -78,7 +78,8 @@ cabalFileLibraries ghcFlavor =
         "libraries/ghci/ghci.cabal",
         "compiler/ghc.cabal"
       ],
-      ["libraries/ghc-platform/ghc-platform.cabal" | ghcSeries ghcFlavor > GHC_9_8]
+      ["libraries/ghc-platform/ghc-platform.cabal" | ghcSeries ghcFlavor > GHC_9_8],
+      ["utils/ghc-toolchain/ghc-toolchain.cabal" | ghcSeries ghcFlavor > GHC_9_14]
     ]
 
 -- C-preprocessor "include dirs" for 'ghc-lib-parser'.
@@ -123,6 +124,8 @@ allHsSrcDirs forDepends ghcFlavor lib =
       [ "ghc-lib/stage0/libraries/ghc-internal/build"
        , "libraries/ghc-boot-th-internal"
        , "libraries/ghc-internal/src"
+       , "utils/ghc-internal/src"
+       , "utils/ghc-toolchain/src"
       ],
       map takeDirectory (cabalFileLibraries ghcFlavor),
       map (dropTrailingPathSeparator . normalise) (askFiles lib "hs-source-dirs:")
@@ -202,8 +205,10 @@ dataFiles ghcFlavor =
   -- helper programs they might call and the settings files they
   -- use."
   join
-    [ ["settings", "llvm-targets", "llvm-passes"],
-      ["platformConstants" | ghcSeries ghcFlavor < GHC_9_2]
+    [
+      ["settings", "llvm-targets", "llvm-passes"],
+      ["platformConstants" | ghcSeries ghcFlavor < GHC_9_2],
+      ["targets/default.target" | ghcSeries ghcFlavor > GHC_9_14]
     ]
 
 -- See 'hadrian/src/Rules/Generate.hs'.
@@ -1368,6 +1373,17 @@ commonBuildDepends ghcFlavor =
     -- base
     base = [baseBounds ghcFlavor]
     specific
+
+      | ghcSeries ghcFlavor >= GHC_9_16 =
+          [ "ghc-prim > 0.2 && < 0.14",
+            "containers >= 0.6.2.1 && < 0.9",
+            "bytestring >= 0.11.4 && < 0.13",
+            "time >= 1.4 && < 1.16",
+            "filepath >= 1.5 && < 1.6",
+            "hpc >= 0.6 && < 0.8",
+            "os-string >= 2.0.1 && < 2.1",
+            "text >= 2.1"
+          ]
       | ghcSeries ghcFlavor >= GHC_9_14 =
           [ "ghc-prim > 0.2 && < 0.14",
             "containers >= 0.6.2.1 && < 0.9",
