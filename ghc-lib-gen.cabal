@@ -60,7 +60,7 @@ executable ghc-lib-build-tool
     else
       build-tool-depends: alex:alex, happy:happy < 2.0
   build-depends:
-    directory, filepath, time, extra, optparse-applicative
+    directory, filepath, time, extra, optparse-applicative, ghc-lib-gen
   if flag(semaphore-compat)
     build-depends: semaphore-compat
   main-is: CI.hs
