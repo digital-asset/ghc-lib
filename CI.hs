@@ -20,6 +20,7 @@ import System.IO.Extra
 import System.IO.Unsafe
 import System.Process.Extra
 import System.Time.Extra
+import Ghclibgen (allowNewerProjectLines, mkAllowNewerFlags)
 
 main :: IO ()
 main = do
@@ -35,18 +36,6 @@ main = do
   let allowNewerFlags = mkAllowNewerFlags allowNewerSpecs
   version <- buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix allowNewerFlags allowNewerSpecs
   putStrLn version
-
-mkAllowNewerFlags :: [String] -> String
-mkAllowNewerFlags xs =
-  let render = unwords . map (\s -> "--allow-newer=" ++ s)
-      def = ""
-  in case xs of
-       [] -> if null def then "" else " " ++ def
-       _  -> " " ++ render xs
-
-allowNewerProjectLines :: [String] -> [String]
-allowNewerProjectLines [] = []
-allowNewerProjectLines xs = ["allow-newer: " ++ intercalate ", " xs]
 
 data Options = Options
   { ghcFlavor :: GhcFlavor,
@@ -412,7 +401,7 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix allowNewerFlags allowN
   system_ $ "cabal build exe:ghc-lib-gen" ++ allowNewerFlags
   system_ $ "cabal run exe:ghc-lib-gen" ++ allowNewerFlags
           ++ " -- ghc ../patches --ghc-lib-parser "
-          ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++allowNewerFlags
+          ++ ghcFlavorArg ++ " " ++ cppOpts ghcFlavor ++ allowNewerFlags
 
   patchVersion version "ghc/ghc-lib-parser.cabal"
   mkTarball pkg_ghclib_parser
@@ -478,11 +467,11 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix allowNewerFlags allowN
 
   system_ $ "cd examples/ghc-lib-test-mini-hlint && cabal test " ++
         "--project-dir ../.. --test-show-details direct " ++
-        ("--test-options \"--color always --test-command ../../ghc-lib-test-mini-hlint " ++ ghcFlavorArg ++ "\"")
+        "--test-options \"--color always --test-command ../../ghc-lib-test-mini-hlint " ++ ghcFlavorArg ++ "\""
 
   system_ $ "cd examples/ghc-lib-test-mini-compile && cabal test " ++
         "--project-dir ../.. --test-show-details direct " ++
-        ("--test-options \"--color always --test-command ../../ghc-lib-test-mini-compile " ++ ghcFlavorArg ++ "\"")
+        "--test-options \"--color always --test-command ../../ghc-lib-test-mini-compile " ++ ghcFlavorArg ++ "\""
 
   system_ "cabal -v0 exec -- ghc -ignore-dot-ghci -package=ghc-lib-parser -e \"print 1\""
   system_ "cabal -v0 exec -- ghc -ignore-dot-ghci -package=ghc-lib -e \"print 1\""

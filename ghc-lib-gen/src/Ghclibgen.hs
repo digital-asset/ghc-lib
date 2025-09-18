@@ -42,6 +42,8 @@ module Ghclibgen
     generateGhcLibCabal,
     generateGhcLibParserCabal,
     setupModuleDepsPlaceholders,
+    mkAllowNewerFlags,
+    allowNewerProjectLines,
   )
 where
 
@@ -1758,10 +1760,7 @@ generatePrerequisites ghcFlavor allowNewerSpecs = do
   system_ "bash -c \"./configure --enable-tarballs-autodownload\""
   withCurrentDirectory "hadrian" $ do
 
-    let defaultAllowNewer = []
-        effectiveAllowNewer =
-          if null allowNewerSpecs then defaultAllowNewer else allowNewerSpecs
-        allowNewerArgs = concatMap (\s -> ["--allow-newer=" ++ s]) effectiveAllowNewer
+    let allowNewerArgs = mkAllowNewerFlagsList allowNewerSpecs
 
     system_ . unwords . join $
       [ ["cabal", "build", "exe:hadrian", "--ghc-options=-j"]
@@ -1842,3 +1841,14 @@ genPlaceholderModules = loop
           contents <- listDirectory fp
           mapM_ (loop . (fp </>)) contents
         else when (takeExtension fp `elem` [".x", ".y", ".hsc"]) $ genPlaceholderModule fp
+
+mkAllowNewerFlags :: [String] -> String
+mkAllowNewerFlags [] = ""
+mkAllowNewerFlags xs = " " ++ unwords (mkAllowNewerFlagsList xs)
+
+mkAllowNewerFlagsList :: [String] -> [String]
+mkAllowNewerFlagsList = map ("--allow-newer=" ++)
+
+allowNewerProjectLines :: [String] -> [String]
+allowNewerProjectLines [] = []
+allowNewerProjectLines xs = ["allow-newer: " ++ intercalate ", " xs]
