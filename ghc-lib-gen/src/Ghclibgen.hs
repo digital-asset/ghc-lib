@@ -856,21 +856,30 @@ applyPatchGHCiMessage ghcFlavor =
         "#if MIN_VERSION_ghc_heap(8,11,0)"
         (unlines rs <> "#if MIN_VERSION_ghc_heap(8,11,0)")
       . replace
-          (unlines
-            [ "#if MIN_VERSION_ghc_internal(9,1500,0)"
-            , "instance Binary Heap.HalfWord where"
-            , "  put x = put (fromIntegral x :: Word32)"
-            , "  get = fromIntegral <$> (get :: Get Word32)"
-            , "#endif"
-            ])
-          (unlines
-            [ "instance Binary Heap.HalfWord where"
-            , "  put x = put (fromIntegral x :: Word32)"
-            , "  get = fromIntegral <$> (get :: Get Word32)"
-            ])
+          (unlines $
+            [ "#if MIN_VERSION_ghc_internal(9,1500,0)"] ++
+            binaryHeapHalfWordInstanceLines ++
+            ["#endif"]
+          )
+          binaryHeapHalfWordInstance
+      . replace
+          (unlines $
+            [ "#if MIN_VERSION_GLASGOW_HASKELL(9,12,2,20250919)"] ++
+            binaryHeapHalfWordInstanceLines ++
+            ["#endif"]
+          )
+          binaryHeapHalfWordInstance
       =<< readFile' messageHs
   where
     messageHs = "libraries/ghci/GHCi/Message.hs"
+
+    binaryHeapHalfWordInstanceLines =
+            [ "instance Binary Heap.HalfWord where"
+            , "  put x = put (fromIntegral x :: Word32)"
+            , "  get = fromIntegral <$> (get :: Get Word32)"
+            ]
+
+    binaryHeapHalfWordInstance = unlines binaryHeapHalfWordInstanceLines
 
 applyPatchHaddockHs :: GhcFlavor -> IO ()
 applyPatchHaddockHs ghcFlavor = do
