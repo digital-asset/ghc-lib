@@ -789,7 +789,7 @@ applyPatchGHCiInfoTable ghcFlavor = do
 
 applyPatchGHCRuntimeHeap :: GhcFlavor -> IO ()
 applyPatchGHCRuntimeHeap ghcFlavor =
-  when (ghcSeries ghcFlavor > GHC_9_14) $ do
+  when (ghcSeries ghcFlavor >= GHC_9_14) $ do
     -- Synthesize a definition of MIN_VERSION_ghc_heap. If X.Y.Z is
     -- the current version, then MIN_VERSION_ghc_heap(a, b, c) is a
     -- test of whether X.Y.Z >= a.b.c (that is, ghc-heap X.Y.Z is at
@@ -858,6 +858,13 @@ applyPatchGHCiMessage ghcFlavor =
       . replace
           (unlines $
             [ "#if MIN_VERSION_ghc_internal(9,1500,0)"] ++
+            binaryHeapHalfWordInstanceLines ++
+            ["#endif"]
+          )
+          binaryHeapHalfWordInstance
+      . replace
+          (unlines $
+            [ "#if MIN_VERSION_ghc_internal(9,1400,0)"] ++
             binaryHeapHalfWordInstanceLines ++
             ["#endif"]
           )
@@ -1144,7 +1151,7 @@ applyPatchFpFindCxxStdLib ghcFlavor = do
 applyPatchNoMonoLocalBinds :: GhcFlavor -> IO ()
 applyPatchNoMonoLocalBinds flavor = do
   let files
-        | ghcSeries flavor <= GHC_9_14 =
+        | ghcSeries flavor < GHC_9_14 =
             [ "libraries/ghc-heap/GHC/Exts/Heap/InfoTable.hsc"
             , "libraries/ghc-heap/GHC/Exts/Heap/InfoTableProf.hsc"
             ]
@@ -1730,12 +1737,12 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
       indent2 (askField lib "default-extensions:"),
       ["    if impl(ghc >= 9.2.2) "], -- cabal >= 3.6.0
       ["      cmm-sources:"],
-      indent3 ["libraries/ghc-heap/cbits/HeapPrim.cmm" | ghcSeries ghcFlavor <= GHC_9_14],
-      indent3 ["libraries/ghc-internal/cbits/HeapPrim.cmm" | ghcSeries ghcFlavor > GHC_9_14],
+      indent3 ["libraries/ghc-heap/cbits/HeapPrim.cmm" | ghcSeries ghcFlavor < GHC_9_14],
+      indent3 ["libraries/ghc-internal/cbits/HeapPrim.cmm" | ghcSeries ghcFlavor >= GHC_9_14],
       ["    else"],
       ["      c-sources:"],
-      indent3 ["libraries/ghc-heap/cbits/HeapPrim.cmm"  | ghcSeries ghcFlavor <= GHC_9_14],
-      indent3 ["libraries/ghc-internal/cbits/HeapPrim.cmm"  | ghcSeries ghcFlavor > GHC_9_14],
+      indent3 ["libraries/ghc-heap/cbits/HeapPrim.cmm"  | ghcSeries ghcFlavor < GHC_9_14],
+      indent3 ["libraries/ghc-internal/cbits/HeapPrim.cmm"  | ghcSeries ghcFlavor >= GHC_9_14],
       ["    c-sources:"],
       indent2 ["compiler/cbits/genSym.c"],
       indent2 ["compiler/cbits/cutils.c" | ghcSeries ghcFlavor >= GHC_9_0],
