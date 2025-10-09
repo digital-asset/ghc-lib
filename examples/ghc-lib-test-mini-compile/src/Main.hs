@@ -232,6 +232,7 @@ mkDynFlags filename s = do
     parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
     parsePragmasIntoDynFlags filepath contents dflags0 = do
       let (_, opts) = getOptions (initParserOpts dflags0)
+                        (initSourceErrorContext dflags0)
                         (supportedLanguagePragmas dflags0)
                         (stringToStringBuffer contents) filepath
       logger <- initLogger
