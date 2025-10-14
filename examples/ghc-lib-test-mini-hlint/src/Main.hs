@@ -216,12 +216,14 @@ parsePragmasIntoDynFlags logger flags filepath str =
         sDocs = [ showSDoc flags msg | msg <- pprMsgEnvelopeBagWithLocDefault . getMessages $ srcErrorMessages msgs ]
 #else
 
-  {- defined (GHC_9_16) -}
+  {- defined (GHC_9_16) || defined (GHC_9_14) -}
 
   catchErrors $ do
     let (_, opts) = getOptions
                       (initParserOpts flags)
+#if (defined (GHC_9_16))
                       (initSourceErrorContext flags)
+#endif
                       (supportedLanguagePragmas flags)
                       (stringToStringBuffer str) filepath
     (flags, _, _) <- parseDynamicFilePragma logger flags opts
