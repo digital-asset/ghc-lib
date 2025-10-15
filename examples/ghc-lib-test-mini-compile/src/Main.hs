@@ -219,8 +219,7 @@ mkDynFlags filename s = do
       (dflags, _, _) <- parseDynamicFilePragma dflags0 opts
       return dflags
 
-#else
-
+#elif (defined (GHC_9_14))
   let baseFlags =
         (defaultDynFlags fakeSettings) {
           ghcLink = NoLink
@@ -232,9 +231,25 @@ mkDynFlags filename s = do
     parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
     parsePragmasIntoDynFlags filepath contents dflags0 = do
       let (_, opts) = getOptions (initParserOpts dflags0)
-#if (defined (GHC_9_16))
+                        (supportedLanguagePragmas dflags0)
+                        (stringToStringBuffer contents) filepath
+      logger <- initLogger
+      (dflags, _, _) <- parseDynamicFilePragma logger dflags0 opts
+      return dflags
+
+#else
+  let baseFlags =
+        (defaultDynFlags fakeSettings) {
+          ghcLink = NoLink
+        , backend = noBackend
+        , homeUnitId_ = toUnitId (stringToUnit ghclibPrimUnitId)
+        }
+  parsePragmasIntoDynFlags filename s baseFlags
+  where
+    parsePragmasIntoDynFlags :: String -> String -> DynFlags -> IO DynFlags
+    parsePragmasIntoDynFlags filepath contents dflags0 = do
+      let (_, opts) = getOptions (initParserOpts dflags0)
                         (initSourceErrorContext dflags0)
-#endif
                         (supportedLanguagePragmas dflags0)
                         (stringToStringBuffer contents) filepath
       logger <- initLogger
