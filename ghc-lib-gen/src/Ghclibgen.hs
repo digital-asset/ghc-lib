@@ -354,6 +354,7 @@ calcModuleDeps includeDirs _hsSrcDirs hsSrcIncludes ghcFlavor cabalPackageDb ghc
 #endif
       ["-fno-safe-haskell" | series >= GHC_9_0], -- avoid warning: [GHC-98887] -XGeneralizedNewtypeDeriving is not allowed in Safe Haskell; ignoring -XGeneralizedNewtypeDeriving
       ["-DBIGNUM_NATIVE" | series > GHC_9_12],
+      ["-XGHC2024"       | series > GHC_9_14],
       includeDirs,
       hsSrcIncludes,
       [placeholderModulesDir </> "Main.hs"]
@@ -1586,8 +1587,9 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         "    description: Pass -DTHREADED_RTS to the C toolchain"
       ],
       ["library"],
-      ["    default-language: Haskell2010" | ghcFlavor < Ghc9101],
-      ["    default-language: GHC2021" | ghcFlavor >= Ghc9101],
+      ["    default-language: Haskell2010" | ghcSeries ghcFlavor < GHC_9_10],
+      ["    default-language: GHC2021" | ghcSeries ghcFlavor >= GHC_9_10 && ghcSeries ghcFlavor < GHC_9_16],
+      ["    default-language: GHC2024" | ghcSeries ghcFlavor >= GHC_9_16],
       [ "    exposed: False",
         "    include-dirs:"
       ],
@@ -1703,8 +1705,9 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         "  description: Pass -DTHREADED_RTS to the C toolchain"
       ],
       ["library"],
-      ["    default-language: Haskell2010" | ghcFlavor < Ghc9101],
-      ["    default-language: GHC2021" | ghcFlavor >= Ghc9101],
+      ["    default-language: Haskell2010" | ghcSeries ghcFlavor < GHC_9_10],
+      ["    default-language: GHC2021" | ghcSeries ghcFlavor >= GHC_9_10 && ghcSeries ghcFlavor < GHC_9_16],
+      ["    default-language: GHC2024" | ghcSeries ghcFlavor >= GHC_9_16],
       [ "    exposed: False",
         "    include-dirs:"
       ],
