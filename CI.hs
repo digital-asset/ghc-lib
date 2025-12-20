@@ -558,7 +558,7 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix allowNewerFlags allowN
 
     branch :: GhcFlavor -> String
     branch = \case
-      Ghc9141 -> "ghc-9.14"
+      Ghc9141 -> "ghc-9.14.1-release"
       Ghc9122 -> "ghc-9.12.2-release"
       Ghc9121 -> "ghc-9.12.1-release"
       Ghc9103 -> "ghc-9.10.3-release"
