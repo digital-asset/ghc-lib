@@ -142,6 +142,8 @@ ghcLibParserHsSrcDirs forDepends ghcFlavor lib =
           GHC_8_8 -> ["compiler/codeGen", "compiler/hieFile", "compile/llvmGen", "compiler/stranal", "compiler/rename", "compiler/stgSyn", "compiler/llvmGen"]
           GHC_8_10 -> ["compiler/nativeGen", "compiler/deSugar", "compiler/hieFile", "compiler/llvmGen", "compiler/stranal", "compiler/rename", "compiler/stgSyn"]
           GHC_9_10 -> ["libraries/ghc-internal/src"]
+          GHC_9_12 -> ["utils/ghc-toolchain/src" | ghcFlavor >= Ghc9123]
+          GHC_9_14 -> ["utils/ghc-toolchain/src"]
           _ -> []
   in sortDiffListByLength all $ Set.fromList [dir | not forDepends, dir <- exclusions]
 
@@ -159,9 +161,9 @@ ghcLibHsSrcDirs forDepends ghcFlavor lib =
           GHC_9_6 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghci"]
           GHC_9_8 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform"]
           GHC_9_10 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src"]
-          GHC_9_12 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
-          GHC_9_14 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"]
-          GHC_9_16 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal"]
+          GHC_9_12 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"] ++ [x | x <- ["libraries/ghc-internal/src", "utils/ghc-toolchain/src"], ghcFlavor >= Ghc9123]
+          GHC_9_14 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src", "utils/ghc-toolchain/src"]
+          GHC_9_16 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal", "libraries/ghc-internal/src", "utils/ghc-toolchain/src"]
    in sortDiffListByLength all $ Set.fromList [dir | not forDepends, dir <- exclusions]
 
 -- File path constants.
@@ -354,6 +356,7 @@ calcModuleDeps includeDirs _hsSrcDirs hsSrcIncludes ghcFlavor cabalPackageDb ghc
 #endif
       ["-fno-safe-haskell" | series >= GHC_9_0], -- avoid warning: [GHC-98887] -XGeneralizedNewtypeDeriving is not allowed in Safe Haskell; ignoring -XGeneralizedNewtypeDeriving
       ["-DBIGNUM_NATIVE" | series > GHC_9_12],
+      ["-XGHC2024"       | series > GHC_9_14],
       includeDirs,
       hsSrcIncludes,
       [placeholderModulesDir </> "Main.hs"]
@@ -1376,6 +1379,7 @@ baseBounds = \case
   -- base-4.21.0.0
   Ghc9121 -> "base >= 4.19 && < 4.22" -- [ghc-9.8.1, ghc-9.14.1)
   Ghc9122 -> "base >= 4.19 && < 4.22" -- [ghc-9.8.1, ghc-9.14.1)
+  Ghc9123 -> "base >= 4.19 && < 4.22" -- [ghc-9.8.1, ghc-9.14.1)
   -- base-4.21.0.0
   Ghc9141 -> "base >= 4.20 && < 4.23" -- [ghc-9.10.1, ghc-9.16.1)
   GhcMaster ->
@@ -1586,8 +1590,9 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         "    description: Pass -DTHREADED_RTS to the C toolchain"
       ],
       ["library"],
-      ["    default-language: Haskell2010" | ghcFlavor < Ghc9101],
-      ["    default-language: GHC2021" | ghcFlavor >= Ghc9101],
+      ["    default-language: Haskell2010" | ghcSeries ghcFlavor < GHC_9_10],
+      ["    default-language: GHC2021" | ghcSeries ghcFlavor >= GHC_9_10 && ghcSeries ghcFlavor < GHC_9_16],
+      ["    default-language: GHC2024" | ghcSeries ghcFlavor >= GHC_9_16],
       [ "    exposed: False",
         "    include-dirs:"
       ],
@@ -1596,14 +1601,14 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
         "        ghc-options: -fno-safe-haskell"
       ],
       [ "    if flag(threaded-rts)",
-        "        if impl(ghc < 9.14.0)",
+        "        if impl(ghc < 9.12.3)",
         "            ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS",
         "        else",
         "            ghc-options: -fobject-code -optc-DTHREADED_RTS",
         "        cc-options: -DTHREADED_RTS",
         "        cpp-options: -DTHREADED_RTS " ++ generateCppOpts ghcFlavor customCppOpts,
         "    else",
-        "        if impl(ghc < 9.14.0)",
+        "        if impl(ghc < 9.12.3)",
          "           ghc-options: -fobject-code -package=ghc-boot-th",
         "        else",
          "           ghc-options: -fobject-code",
@@ -1703,8 +1708,9 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         "  description: Pass -DTHREADED_RTS to the C toolchain"
       ],
       ["library"],
-      ["    default-language: Haskell2010" | ghcFlavor < Ghc9101],
-      ["    default-language: GHC2021" | ghcFlavor >= Ghc9101],
+      ["    default-language: Haskell2010" | ghcSeries ghcFlavor < GHC_9_10],
+      ["    default-language: GHC2021" | ghcSeries ghcFlavor >= GHC_9_10 && ghcSeries ghcFlavor < GHC_9_16],
+      ["    default-language: GHC2024" | ghcSeries ghcFlavor >= GHC_9_16],
       [ "    exposed: False",
         "    include-dirs:"
       ],
@@ -1713,11 +1719,17 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
         "        ghc-options: -fno-safe-haskell"
       ],
       [ "    if flag(threaded-rts)",
-        "        ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS",
+        "        if impl(ghc < 9.12.3)",
+        "            ghc-options: -fobject-code -package=ghc-boot-th -optc-DTHREADED_RTS",
+        "        else",
+        "            ghc-options: -fobject-code -optc-DTHREADED_RTS",
         "        cc-options: -DTHREADED_RTS",
         "        cpp-options: -DTHREADED_RTS " ++ generateCppOpts ghcFlavor customCppOpts,
         "    else",
-        "        ghc-options: -fobject-code -package=ghc-boot-th",
+        "        if impl(ghc < 9.12.3)",
+         "           ghc-options: -fobject-code -package=ghc-boot-th",
+        "        else",
+         "           ghc-options: -fobject-code",
         "        cpp-options: " ++ generateCppOpts ghcFlavor customCppOpts
       ],
       [ "    if !os(windows)",

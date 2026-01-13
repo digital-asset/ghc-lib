@@ -58,6 +58,7 @@ data GhcFlavor
   | Ghc9103
   | Ghc9121
   | Ghc9122
+  | Ghc9123
   | Ghc9141
   | GhcMaster
   deriving (Show, Eq, Ord)
