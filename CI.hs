@@ -110,7 +110,7 @@ data DaFlavor = DaFlavor
 
 -- Last tested gitlab.haskell.org/ghc/ghc.git at
 current :: String
-current = "b18b2c42c32488ad6d3480a56a1fcd753cad2023" -- 2026-01-17
+current = "18fd0df60d827ec1c4c84aad2283570e7635222b" -- 2026-03-07
 
 ghcFlavorOpt :: GhcFlavor -> String
 ghcFlavorOpt = \case
@@ -386,7 +386,7 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix allowNewerFlags allowN
       case ghcFlavor of
         GhcMaster hash -> system_ ("cd ghc && git fetch origin"  ++ " " ++ hash)
         _ -> system_ "cd ghc && git fetch origin --tags"
-  gitCheckout ghcFlavor
+      gitCheckout ghcFlavor
   system_ "cd ghc && git checkout ."
 
   -- Move this directory so that we can include/exclude it from

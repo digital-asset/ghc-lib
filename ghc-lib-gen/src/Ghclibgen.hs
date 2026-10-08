@@ -164,7 +164,7 @@ ghcLibHsSrcDirs forDepends ghcFlavor lib =
           GHC_9_10 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src"]
           GHC_9_12 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci"] ++ [x | x <- ["libraries/ghc-internal/src", "utils/ghc-toolchain/src"], ghcFlavor >= Ghc9123]
           GHC_9_14 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal/src", "utils/ghc-toolchain/src"]
-          GHC_9_16 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal", "libraries/ghc-internal/src", "utils/ghc-toolchain/src"]
+          GHC_10_0 -> ["libraries/template-haskell", "libraries/ghc-boot-th", "libraries/ghc-boot", "", "libraries/ghc-heap", "libraries/ghc-platform/src", "libraries/ghc-platform", "libraries/ghci", "libraries/ghc-internal", "libraries/ghc-internal/src", "utils/ghc-toolchain/src"]
    in sortDiffListByLength all $ Set.fromList [dir | not forDepends, dir <- exclusions]
 
 -- File path constants.
@@ -248,10 +248,10 @@ compilerDependencies ghcFlavor =
       [incl | series >= GHC_9_10, incl <- ["primop-is-work-free.hs-incl", "primop-is-cheap.hs-incl"]],
       ["primop-deprecations.hs-incl" | series > GHC_9_10],
       ["GHC/Platform/Constants.hs" | series >= GHC_9_2] ]) ++
-#if __GLASGOW_HASKELL__ == 912  || __GLASGOW_HASKELL__ == 910
+#if __GLASGOW_HASKELL__ == 914 || __GLASGOW_HASKELL__ == 912  || __GLASGOW_HASKELL__ == 910
   -- Build compiler is ghc.9.10.*
   -- GHC.Internal.Prim needs to be found by 'ghc -M' so provide it.
-  [ "ghc-lib/stage0/libraries/ghc-internal/build/GHC/Internal/Prim.hs" | series > GHC_9_12] ++
+  [ "ghc-lib/stage0/libraries/ghc-internal/build/GHC/Internal/Prim.hs" | series > GHC_9_12 && series < GHC_10_0 ] ++
   [ "ghc-lib/stage0/libraries/ghc-internal/build/GHC/Internal/PrimopWrappers.hs" | series > GHC_9_12]
 #else
   []
@@ -1397,7 +1397,7 @@ commonBuildDepends ghcFlavor =
     base = [baseBounds ghcFlavor]
     specific
 
-      | ghcSeries ghcFlavor >= GHC_9_16 =
+      | ghcSeries ghcFlavor >= GHC_10_0 =
           [ "ghc-prim > 0.2 && < 0.14",
             "containers >= 0.6.2.1 && < 0.9",
             "bytestring >= 0.11.4 && < 0.13",
@@ -1592,8 +1592,8 @@ generateGhcLibCabal ghcFlavor customCppOpts = do
       ],
       ["library"],
       ["    default-language: Haskell2010" | ghcSeries ghcFlavor < GHC_9_10],
-      ["    default-language: GHC2021" | ghcSeries ghcFlavor >= GHC_9_10 && ghcSeries ghcFlavor < GHC_9_16],
-      ["    default-language: GHC2024" | ghcSeries ghcFlavor >= GHC_9_16],
+      ["    default-language: GHC2021" | ghcSeries ghcFlavor >= GHC_9_10 && ghcSeries ghcFlavor < GHC_10_0],
+      ["    default-language: GHC2024" | ghcSeries ghcFlavor >= GHC_10_0],
       [ "    exposed: False",
         "    include-dirs:"
       ],
@@ -1710,8 +1710,8 @@ generateGhcLibParserCabal ghcFlavor customCppOpts = do
       ],
       ["library"],
       ["    default-language: Haskell2010" | ghcSeries ghcFlavor < GHC_9_10],
-      ["    default-language: GHC2021" | ghcSeries ghcFlavor >= GHC_9_10 && ghcSeries ghcFlavor < GHC_9_16],
-      ["    default-language: GHC2024" | ghcSeries ghcFlavor >= GHC_9_16],
+      ["    default-language: GHC2021" | ghcSeries ghcFlavor >= GHC_9_10 && ghcSeries ghcFlavor < GHC_10_0],
+      ["    default-language: GHC2024" | ghcSeries ghcFlavor >= GHC_10_0],
       [ "    exposed: False",
         "    include-dirs:"
       ],
@@ -1786,7 +1786,7 @@ generatePrerequisites ghcFlavor allowNewerSpecs = do
     )
 
   system_ "bash -c ./boot"
-  ffiArgs <- if ghcSeries ghcFlavor >= GHC_9_16
+  ffiArgs <- if ghcSeries ghcFlavor >= GHC_10_0
     then do
       -- GHC 9.16+ bundles libffi-clib by default; we need to use
       -- system libffi instead. On macOS, use xcrun to find the SDK
