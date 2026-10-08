@@ -251,7 +251,7 @@ compilerDependencies ghcFlavor =
 #if __GLASGOW_HASKELL__ == 914 || __GLASGOW_HASKELL__ == 912  || __GLASGOW_HASKELL__ == 910
   -- Build compiler is ghc.9.10.*
   -- GHC.Internal.Prim needs to be found by 'ghc -M' so provide it.
-  [ "ghc-lib/stage0/libraries/ghc-internal/build/GHC/Internal/Prim.hs" | series > GHC_9_12] ++
+  [ "ghc-lib/stage0/libraries/ghc-internal/build/GHC/Internal/Prim.hs" | series > GHC_9_12 && series < GHC_10_0 ] ++
   [ "ghc-lib/stage0/libraries/ghc-internal/build/GHC/Internal/PrimopWrappers.hs" | series > GHC_9_12]
 #else
   []
