@@ -386,7 +386,7 @@ buildDists ghcFlavor noGhcCheckout noBuilds versionSuffix allowNewerFlags allowN
       case ghcFlavor of
         GhcMaster hash -> system_ ("cd ghc && git fetch origin"  ++ " " ++ hash)
         _ -> system_ "cd ghc && git fetch origin --tags"
-  gitCheckout ghcFlavor
+      gitCheckout ghcFlavor
   system_ "cd ghc && git checkout ."
 
   -- Move this directory so that we can include/exclude it from
